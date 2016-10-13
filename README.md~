@@ -1,4 +1,0 @@
-goals
-
-* should have a concept of gas, so it doesn't use to much computational time.
-* should have a memory gas, so you don't use more ram than you paid for.

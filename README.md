@@ -1,6 +1,25 @@
-goals
+This is a language make for state channels on a blockchain.
+It is deterministic, so that every node of the blockchain gets the same result.
+It is built for the Pink Fairy blockchain.
+Functions are tail call optimized.
+Has 2 types of gas, one for space, and one for time.
+Is forth-like.
 
-* should have a concept of gas, so it doesn't use too much computational time.
-* should have a memory gas, so you don't use more ram than you paid for.
-* the compiled form should be binary.
-* It shouldn't use erlang integers, because they are of unlimited size so it could be a memory leak.
+[Example code is in this folder](/examples)
+
+
+to install:
+
+sh install.sh
+
+
+to start a node with these libraries loaded:
+
+sh start.sh
+
+
+
+to run tests on a node:
+
+1> test_chalang:test().
+

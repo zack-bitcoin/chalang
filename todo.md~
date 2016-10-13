@@ -1,6 +1,0 @@
-we should never append something to the script.
-Like how function calls currently work.
-If we do that, then we need to do expensive memory allocation and garbage collection on the order of the length of the script.
-
-The return stack is a good thing, because we can use it to avoid appending to the script.
-But, we could also cut the script into pieces, and append the pieces as a list.
