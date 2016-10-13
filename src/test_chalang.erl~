@@ -1,0 +1,15 @@
+-module(test_chalang).
+-export([test/0, run_script/2]).
+
+-define(loc, "examples/").
+run_script(X, Gas) ->
+    {ok, A} = file:read_file(?loc ++ X ++ ".fs"),
+    B = compiler_chalang:doit(<<A/binary, <<" test ">>/binary>>),
+    chalang:test(B, Gas, Gas, Gas, Gas).
+
+test() ->
+    {d,915,[<<0,0,0,0>>],[],70,72,1000,{},#{},0,1000} = run_script("hashlock", 1000),
+    {d, _, [<<1:32>>], _, _, 
+     _, _, _, _, 
+     _, _} = run_script("function", 1000),
+    run_script("variable", 1000).

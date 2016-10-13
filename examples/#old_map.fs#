@@ -1,0 +1,15 @@
+
+
+: square dup * ;
+: map2 nil== if drop r> drop else
+  print  print 
+       car print drop print
+       swap r@ call >r swap r> cons swap recurse call then ;
+: map >r nil swap map2 print call reverse ; ( List Function -- List )
+
+macro test
+      print print print 
+int 5 int 6 int 7 nil cons cons cons print 
+square map print call
+% int 25 int 36 int 49 nil cons cons cons ==
+;

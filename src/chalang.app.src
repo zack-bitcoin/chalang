@@ -1,0 +1,12 @@
+{application, chalang,
+ [
+  {description, ""},
+  {vsn, "1"},
+  {registered, []},
+  {applications, [
+                  kernel,
+                  stdlib
+                 ]},
+  {mod, { chalang_app, []}},
+  {env, []}
+ ]}.
