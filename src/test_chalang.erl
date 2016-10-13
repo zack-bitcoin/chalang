@@ -9,7 +9,6 @@ run_script(X, Gas) ->
     io:fwrite("\n"),
     io:fwrite("\n"),
     B = compiler_chalang:doit(<<A/binary, <<"\n test \n">>/binary>>),
-    %oGas, stack, alt, ram_current, ram_most, ram_limit, vars, funs, many_funs, fun_limit
     {d,_,[<<1:32>>],_,_,_,_,_,_,_,_} = chalang:test(B, Gas, Gas, Gas, Gas).
 run_scripts([], _) -> ok;
 run_scripts([H|T], Gas) ->

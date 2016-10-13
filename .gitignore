@@ -9,3 +9,7 @@ rel/example_project
 .concrete/DEV_MODE
 .rebar
 *~
+rebar
+rebar_source
+/deps/
+/ebin/
