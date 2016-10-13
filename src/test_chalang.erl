@@ -21,6 +21,7 @@ run_scripts([H|T], Gas) ->
 
 test() ->
     Scripts = ["hashlock", "function", "variable",
-	       "macro", "case", "recursion", "map"],
+	       "macro", "case", "recursion", "map",
+	       "merge"],
     run_scripts(Scripts, 10000).
     

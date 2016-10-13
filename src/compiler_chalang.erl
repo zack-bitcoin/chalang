@@ -64,7 +64,7 @@ remove_comments(<<40:8, B/binary >>, Out) -> % [40] == "(".
     C = remove_till(41, B), % [41] == ")".
     remove_comments(C, Out);
 remove_comments(<<37:8, B/binary >>, Out) -> % [37] == "%".
-    C = remove_till(10, B),
+    C = remove_till(10, B), %10 is '\n'
     remove_comments(C, Out);
 remove_comments(<<X:8, B/binary>>, Out) -> 
     remove_comments(B, <<Out/binary, X:8>>).
@@ -156,17 +156,6 @@ rad([<<":">>|[_|T]], Out) -> rad(T, [<<":">>|Out]);
 %rad([<<"macroSign">>|[_|[<<"binary">>|[_|[<<"binary">>|[_|T]]]]]], Out) -> rad(T, Out);
 %rad([<<"macroSign">>|[_|[<<"binary">>|[_|[_|T]]]]], Out) -> rad(T, Out);
 rad([X|T], Out) -> rad(T, [X|Out]).
-%apply_functions(Words, Functions) ->    
-%    rnf(Words, Functions, []).
-%rnf([], _, Out) -> flip(Out);
-%rnf([H|T], Functions, Out) -> 
-    %case dict:find(H, Functions) of
-	%error -> rnf(T, Functions, [H|Out]);
-	%{ok, Val} -> 
-	%    S = size(Val),
-	%    B = <<2, S:32, Val/binary>>, 
-	%    rnf(T, Functions, [B|Out])%HEHERHEREH
-    %end.
 to_opcodes([<<"int">>|[B|T]], F, Out, V) ->
     Num = list_to_integer(binary_to_list(B)),
     G = <<Num:?int_bits>>,
@@ -194,12 +183,6 @@ to_opcodes([Word|T], F, Out, Vars) ->
 	    end;
 	
 	Op ->
-	    io:fwrite("compile word "),
-	    io:fwrite(" "),
-	    io:fwrite(Word),
-	    io:fwrite(" "),
-	    io:fwrite(integer_to_list(Op)),
-	    io:fwrite("\n"),
 	    to_opcodes(T, F, [Op|Out], Vars)
     end;
 to_opcodes([], _, Out, Vars) ->
@@ -214,7 +197,6 @@ get_func(Name, F) -> %name should be like <<"square">>
 	error ->
 	    io:fwrite("error, that is not a defined function\n;"),
 	    {error, "undefined function"};
-	    %base64:decode(Name);
 	{ok, Val} ->
 	    Val
     end.
@@ -327,6 +309,9 @@ print_binary(<<A:8, B/binary>>) ->
     print_binary(B);
 print_binary(<<>>) -> ok.
 absorb_var(Variable, {D, Many}) ->
+    <<X:8, _/binary>> = Variable,
+    true = X > 64, %variables start with capitals
+    true = X < 90,
     case dict:find(Variable, D) of
 	error ->
 	    NewD = dict:store(Variable, Many, D),
