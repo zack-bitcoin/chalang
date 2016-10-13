@@ -8,5 +8,3 @@ int 5 int 6 int 7 nil cons cons cons
 square map call
 int 25 int 36 int 49 nil cons cons cons = 
 ;
-
-drop

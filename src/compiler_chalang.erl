@@ -4,7 +4,6 @@
 %-define(or_die, compile(<<" not if crash else then ">>)).
 %-define(plus_store, compile(<<" dup @ rot + swap ! ">>)).
 -define(int_bits, 32).
--define(fraction_bits, 64).
 
 doit(A) ->
     %Test to make sure : and ; are alternating the whole way, or give an intelligent error.
@@ -172,10 +171,6 @@ to_opcodes([<<"int">>|[B|T]], F, Out, V) ->
     Num = list_to_integer(binary_to_list(B)),
     G = <<Num:?int_bits>>,
     to_opcodes(T, F, [G|[0|Out]], V);
-to_opcodes([<<"fraction">>|[A|[B|T]]], F, Out, V) ->
-    Num = list_to_integer(binary_to_list(B)),
-    G = <<Num:?fraction_bits>>,
-    to_opcodes(T, F, [G|[A|[1|Out]]], V);
 to_opcodes([<<"binary">>|[M|[B|T]]], F, Out, V) ->
     io:fwrite("binary\n"),
     Bin = base64:decode(B),
@@ -232,7 +227,6 @@ make_binary([H|T], B) ->
     make_binary(T, <<B/binary, H/binary>>).
 
 w2o(<<"int">>) -> 0;
-w2o(<<"fraction">>) -> 1;
 w2o(<<"binary">>) -> 2;
 w2o(<<"print">>) -> 10;
 w2o(<<"crash">>) -> 11;
@@ -260,8 +254,6 @@ w2o(<<"^">>) -> 56;
 w2o(<<"rem">>) -> 57;
 w2o(<<"=">>) -> 58;
 w2o(<<"==">>) -> 58;
-w2o(<<"f2i">>) -> 59;
-w2o(<<"i2f">>) -> 60;
 w2o(<<"if">>) -> 70;
 w2o(<<"else">>) -> 71;
 w2o(<<"then">>) -> 72;

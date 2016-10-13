@@ -6,7 +6,6 @@
 	    funs = {}, many_funs = 0, fun_limit = 0
 	   }).
 -define(int, 0).
--define(fraction, 1).
 -define(binary, 2).
 -define(print, 10).
 -define(crash, 11).
@@ -26,8 +25,6 @@
 -define(add, 50).
 -define(remainder, 57).
 -define(eq, 58).
--define(f2i, 59).
--define(i2f, 60).
 -define(caseif, 70).
 -define(else, 71).
 -define(then, 72).
@@ -65,7 +62,6 @@
 -define(reverse, 136).
 
 -define(int_bits, 32).
--define(fraction_bits, 64).
 
 %op_gas limits our program in time.
 %ram_gas limits our program in space.
@@ -129,11 +125,6 @@ run2([<<?binary:8, H:32, Script/binary>>|Tail], D) ->
     run2([Script2|Tail], NewD);
 run2([<<?int:8, V:?int_bits, Script/binary>>|T], D) ->
     NewD = D#d{stack = [<<V:?int_bits>>|D#d.stack],
-	       ram_current = D#d.ram_current + 1,
-	       op_gas = D#d.op_gas - 1},
-    run2([Script|T], NewD);
-run2([<<?fraction:8, V:?fraction_bits, Script/binary>>|T], D) ->
-    NewD = D#d{stack = [<<V:?fraction_bits>>|D#d.stack],
 	       ram_current = D#d.ram_current + 1,
 	       op_gas = D#d.op_gas - 1},
     run2([Script|T], NewD);
@@ -288,16 +279,6 @@ run3(X, D) when (X >= ?add) and (X =< ?eq) ->
     D#d{stack = [arithmetic_chalang:doit(X, A, B)|C],
 	op_gas = D#d.op_gas - 1,
 	ram_current = D#d.ram_current - 2};
-run3(?f2i, D) ->
-    [A|C] = D#d.stack,
-    D#d{stack = [fractions:f2i(A)|C],
-	op_gas = D#d.op_gas - 1,
-	ram_current = D#d.ram_current - 1};
-run3(?i2f, D) ->
-    [A|C] = D#d.stack,
-    D#d{stack = [fractions:i2f(A)|C],
-	op_gas = D#d.op_gas - 1,
-	ram_current = D#d.ram_current + 1};
 run3(?bool_flip, D) ->
     [<<H:32>>|T] = D#d.stack,
     B = case H of
@@ -456,8 +437,6 @@ balanced_r(<<>>, 1) -> false;
 balanced_r(_, X) when X < 0 -> false;
 balanced_r(<<?int:8, _:?int_bits, Script/binary>>, X) ->
     balanced_r(Script, X);
-balanced_r(<<?fraction:8, _:?fraction_bits, Script/binary>>, X) ->
-    balanced_r(Script, X);
 balanced_r(<<?binary:8, H:32, Script/binary>>, D) ->
     X = H * 8,
     <<_:X, Script2/binary>> = Script,
@@ -479,8 +458,6 @@ balanced_f(<<?fun_end:8, Script/binary>>, 1) ->
 balanced_f(<<?fun_end:8, _/binary>>, 0) -> false;
 balanced_f(<<?int:8, _:?int_bits, Script/binary>>, X) ->
     balanced_f(Script, X);
-balanced_f(<<?fraction:8, _:?fraction_bits, Script/binary>>, X) ->
-    balanced_f(Script, X);
 balanced_f(<<?binary:8, H:8, Script/binary>>, D) ->
     X = H * 8,
     <<_:X, Script2/binary>> = Script,
@@ -490,8 +467,6 @@ balanced_f(<<_:8, Script/binary>>, X) ->
 none_of(<<>>, _) -> true;
 none_of(<<X:8, _/binary>>, X) -> false;
 none_of(<<?int:8, _:?int_bits, Script/binary>>, X) -> 
-    none_of(Script, X);
-none_of(<<?fraction:8, _:?fraction_bits, Script/binary>>, X) -> 
     none_of(Script, X);
 none_of(<<?binary:8, H:8, Script/binary>>, D) -> 
     X = H * 8,
@@ -512,8 +487,6 @@ replace(Old, New, Binary, Pointer) ->
 	    <<D:Pointer, New/binary, R/binary>>;
 	<<_:Pointer, ?int:8, _:?int_bits, _/binary>> ->
 	    replace(Old, New, Binary, Pointer+8+?int_bits);
-	<<_:Pointer, ?fraction:8, _:?fraction_bits, _/binary>> ->
-	    replace(Old, New, Binary, Pointer+8+?fraction_bits);
 	<<_:Pointer, ?binary:8, H:32, _/binary>> ->
 	    X = H * 8,
 	    replace(Old, New, Binary, Pointer+8+32+X);
@@ -526,7 +499,6 @@ split(X, B, N) ->
     <<_:N, Y:8, _/binary>> = B,
     case Y of
 	?int -> split(X, B, N+8+?int_bits);
-	?fraction -> split(X, B, N+8+?fraction_bits);
 	?binary ->
 	    <<_:N, Y:8, H:8, _/binary>> = B,
 	    %J = H*8,

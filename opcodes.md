@@ -6,8 +6,6 @@ opcode, symbol for compiled language, stack changes
 
 0 int % ( -- X ) % the next 32 bits = 4 bytes are put on the stack as a single binary.
 
-1 fraction ( -- F ) The next 64 bits = 8 bytes are put onto the stack as a single binary.
-
 2 binary % ( N -- L ) % the next N * 8 bits are put on the stack as a single binary.
 
 
@@ -57,9 +55,7 @@ opcode, symbol for compiled language, stack changes
 
 # arithmetic opcodes
 To do arithmetic:
-8-byte binaries are interpreted as fractions and return a 8-byte binaries.
-4-byte binaries are interpreted as an integer, and results in a 4-byte binary.
-Mixed input results in 8-byte fraction output.
+only works iwth 4-byte integers. Results are 4-byte integers. 32-bits.
 
 50 + ( X Y -- Z )
 
@@ -78,10 +74,6 @@ Mixed input results in 8-byte fraction output.
 57 rem (A B -- C) only works for integers.
 
 58 = ( X Y -- true/false )
-
-59 f2i ( F -- I ) fraction to integer
-
-60 i2f ( I -- F ) integer to fraction
 
 
 # conditions opcodes
@@ -179,12 +171,6 @@ These are compiler macros to make it easier to program.
 ( a open parenthesis starts a multi-line comment block.
 
 ) a closed parenthesis ends the comment. Make sure to put spaces between the parenthesis and the other words. 
-
-fraction ( X Y -- F ) makes a fraction from 2 integers. example: fraction 4 6
-
-integer ( X -- Y ) loads an integer. example: "integer 27"
-
-binary ( B -- A ) loads a binary encoded in base64
 
 or_die ( B -- ) if B is true, then does nothing. if B is false, then it crashes.
 
