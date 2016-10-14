@@ -56,7 +56,6 @@
 -define(cons, 130).
 -define(car, 131).
 -define(nil, 132).
--define(nileq, 133).
 -define(append, 134).
 -define(split, 135).
 -define(reverse, 136).
@@ -215,8 +214,8 @@ run3(?dup, D) ->
 	ram_current = D#d.ram_current + memory(H),
 	op_gas = D#d.op_gas - 1};
 run3(?tuck, D) ->
-    [A|[B|[C|D]]] = D#d.stack,
-    Stack2 = [B|[C|[A|D]]],
+    [A|[B|[C|E]]] = D#d.stack,
+    Stack2 = [B|[C|[A|E]]],
     D#d{stack = Stack2,
 	op_gas = D#d.op_gas - 1};
 run3(?rot, D) ->
@@ -274,11 +273,23 @@ run3(?verify_sig, D) ->
     B = sign:verify_sig(Data, Sig, Pub),
     D#d{stack = [B|T],
 	op_gas = D#d.op_gas - 20};
-run3(X, D) when (X >= ?add) and (X =< ?eq) ->
+run3(X, D) when (X >= ?add) and (X < ?eq) ->
     [A|[B|C]] = D#d.stack,
     D#d{stack = [arithmetic_chalang:doit(X, A, B)|C],
 	op_gas = D#d.op_gas - 1,
 	ram_current = D#d.ram_current - 2};
+run3(?eq, D) ->
+    ST = D#d.stack,
+    [A|[B|_]] = ST,
+    C = if
+	    A == B -> 1;
+	    true -> 0
+	end,
+    S = [<<C:?int_bits>>|ST],
+    D#d{stack = S, 
+	op_gas = D#d.op_gas - 1,
+	ram_current = D#d.ram_current + 1};
+
 run3(?bool_flip, D) ->
     [<<H:32>>|T] = D#d.stack,
     B = case H of
@@ -389,15 +400,6 @@ run3(?nil, D) ->
     D#d{op_gas = D#d.op_gas - 1,
 	stack = [[]|D#d.stack],
 	ram_current = D#d.ram_current + 1};
-run3(?nileq, D) ->
-    [A|T] = D#d.stack,
-    B = case A of
-	    [] -> 1;
-	    _ -> 0
-	end,
-    D#d{op_gas = D#d.op_gas - 1,
-	stack = [<<B:32>>|[A|T]],
-	ram_current = D#d.ram_current + 2};
 run3(?append, D) ->
     [A|[B|T]] = D#d.stack,
     C = if

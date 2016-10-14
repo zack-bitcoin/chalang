@@ -63,7 +63,7 @@ only works iwth 4-byte integers. Results are 4-byte integers. 32-bits.
 
 52 * ( X Y -- Z )
 
-53 / ( X Y -- Z ) %integers return integers. fractions return fractions. mixed returns fractions.
+53 / ( X Y -- Z )
 
 54 > ( X Y -- true/false )
 
@@ -155,8 +155,6 @@ only works iwth 4-byte integers. Results are 4-byte integers. 32-bits.
 131 car % ( [X|Y] -- X Y )
 
 132 nil % ( -- [] ) this is the root of a list.
-
-133 nil== % ( List -- List true/false ) %checks if the list is empty without duplicating the data in the list. Can be much faster than the equivalent ``` dup nil == ```
 
 134 ++ % ( X Y -- Z ) appends 2 lists or 2 binaries. Cannot append a list to a binary.
 

@@ -12,12 +12,8 @@ run_script(X, Gas) ->
     {d,_,[<<1:32>>],_,_,_,_,_,_,_,_} = chalang:test(B, Gas, Gas, Gas, Gas).
 run_scripts([], _) -> ok;
 run_scripts([H|T], Gas) ->
-    io:fwrite("running script "),
-    io:fwrite(H),
-    io:fwrite("============================\n"),
     {d, NewGas, [<<1:32>>],_,_,_,_,_,_,_,_} = run_script(H, Gas),
     run_scripts(T, NewGas).
-
 test() ->
     Scripts = ["hashlock", "function", "variable",
 	       "macro", "case", "recursion", "map",
