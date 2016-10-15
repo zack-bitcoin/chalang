@@ -59,7 +59,6 @@
 -define(append, 134).
 -define(split, 135).
 -define(reverse, 136).
-
 -define(int_bits, 32).
 
 %op_gas limits our program in time.
@@ -105,14 +104,8 @@ run2(_, D) when D#d.ram_current > D#d.ram_limit ->
     {error, "out of space"};
 run2(A, D) when D#d.ram_current > D#d.ram_most ->
     run2(A, D#d{ram_most = D#d.ram_current});
-run2([<<>>|T], D) ->
-    run2(T, D);
-run2([], D) ->
-    %[Amount|[Nonce|_]] = D#d.stack,
-    %ExtraGas = D#d.op_gas,
-    %ExtraRam = D#d.ram_limit - D#d.ram_most,
-    %{Amount, Nonce, ExtraGas, ExtraRam};
-    D;
+run2([<<>>|T], D) -> run2(T, D);
+run2([], D) -> D;
 run2([<<?binary:8, H:32, Script/binary>>|Tail], D) ->
     T = D#d.stack,
     X = H * 8,
@@ -166,7 +159,7 @@ run2([<<?define:8, Script/binary>>|T], D) ->
     io:fwrite("run2 define\n"),
     {Definition, Script2} = split(?fun_end, Script),
     %true = balanced_r(Definition, 0),
-    B = trie_hash:doit(Definition),
+    B = hash:doit(Definition),
     %replace "recursion" in the definition with a pointer to this.
     NewDefinition = replace(<<?recurse:8>>, <<2, 12:32, B/binary>>, Definition),
     io:fwrite("chalang define function "),
@@ -540,12 +533,3 @@ print_stack(_, <<F:32, G:32>>) ->
     io:fwrite(" " ++integer_to_list(F) ++"/"++
 		  integer_to_list(G) ++" ");
 print_stack(_, B) -> io:fwrite(binary_to_list(base64:encode(B)) ++ "\n").
-
-
-
-    
-    
-
-   
-
-
