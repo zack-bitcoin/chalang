@@ -1,5 +1,5 @@
 
-: square dup * ; 
+: square dup * ;
 : quad square call square call ;
 
 macro test

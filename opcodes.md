@@ -50,12 +50,12 @@ opcode, symbol for compiled language, stack changes
 
 41 verify_sig ( Sig Data Pub -- true/false )
 
-42 verify_account_sig ( Sig Data Pubs Address -- true/false ) an account is defined by a weighted list of pubkeys, and a minimum weight to make a signature. 
+42 pub2addr % ( Pub -- Addr ) This is difficult because we can't represent tuples. Maybe pinkcrypto:address needs to use lists instead
 
 
 # arithmetic opcodes
 To do arithmetic:
-only works iwth 4-byte integers. Results are 4-byte integers. 32-bits.
+only works with 4-byte integers. Results are 4-byte integers. 32-bits. The integers are encoded so that FFFFFFFF is the highest integer and 00000000 is the lowest.
 
 50 + ( X Y -- Z )
 
@@ -106,28 +106,34 @@ only works iwth 4-byte integers. Results are 4-byte integers. 32-bits.
 
 90 stack_size ( -- Size )
 
-91 id2balance % ( ID -- Balance )
+91 total_coins %( -- TotalCoins )
 
-92 pub2addr % ( Pub -- Addr )
+92 height %( -- Height )
 
-93 total_coins %( -- TotalCoins )
-
-94 height %( -- Height )
-
-95 slash %( -- true/false) %if this is part of a solo_stop transaction, then return 0.
+93 slash %( -- true/false) %if this is part of a solo_stop transaction, then return 0.
          %If it is part of a slash transaction, return 1
 
-96 gas % ( -- X )
+94 gas % ( -- X )
 
-97 ram ( -- X ) tells how much space is left in ram.
+95 ram ( -- X ) tells how much space is left in ram.
 
-98 id2addr % ( ID -- Addr )
+96 id2addr % ( ID -- Addr )
 
-99 oracle % ( ID -- Result ) % reads a result from one of the completed oracles
+97 many_vars ( -- R ) how many more variables are defined
 
-100 many_vars ( -- R )
+98 many_funs ( -- F ) how many functions are there defined
 
-101 many_funs ( -- F )
+99 oracle ( -- R ) the root of the oracle trie from the previous block.
+
+100 id_of_caller ( -- ID ) the ID of the person who published the code on-chain
+
+%%%%100 questions ( -- H ) the root of the questions trie from the previous block. Used for crowdfunding the asking of questions. %%%% We don't need this because the oracle trie can be used to crowdfund the asking of questions.
+
+101 accounts ( -- A ) the root of the accounts trie from the previous block.
+
+102 channels ( -- C ) the root of the channels trie from the previous block.
+
+103 verify_merkle ( Root Proof Value -- Value true/false )
 
 
 # function opcodes

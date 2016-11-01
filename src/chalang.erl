@@ -5,6 +5,12 @@
 	    vars = {},  
 	    funs = {}, many_funs = 0, fun_limit = 0
 	   }).
+-record(state, {total_coins, 
+		height, %how many blocks exist so far
+		slash = 0, %is this script being run as a solo_stop transaction, or a slash transaction?
+		oracle, %this is the root of the merkle trie that says the results from all the oracles.
+		accounts, 
+		channels}). %data from the previous block that the contract may use.
 -define(int, 0).
 -define(binary, 2).
 -define(print, 10).
@@ -36,7 +42,6 @@
 -define(bin_or, 85).
 -define(bin_xor, 86).
 -define(stack_size, 90).
--define(id2balance, 91).
 -define(pub2addr, 92).
 -define(total_coins, 93).
 -define(height, 94).
@@ -79,7 +84,7 @@ test(Script, OpGas, RamGas, Funs, Vars) ->
     io:fwrite("\n"),
     io:fwrite("oGas, stack, alt, ram_current, ram_most, ram_limit, vars, funs, many_funs, fun_limit\n"),
     X.
-run(ScriptSig, ScriptPubkey, OpGas, RamGas, Funs, Vars) ->
+run(ScriptSig, ScriptPubkey, OpGas, RamGas, Funs, Vars, State) ->
     true = balanced_f(ScriptSig, 0),
     true = balanced_f(ScriptPubkey, 0),
     true = none_of(ScriptSig, ?crash),
@@ -90,8 +95,8 @@ run(ScriptSig, ScriptPubkey, OpGas, RamGas, Funs, Vars) ->
 	      fun_limit = Funs,%how many functions can be defined.
 	      ram_current = size(ScriptSig) + size(ScriptPubkey) },
     io:fwrite("running script "),
-    Data2 = run2([ScriptSig], Data),
-    Data3 = run2([ScriptPubkey], Data2),
+    Data2 = run2([ScriptSig], Data, State),
+    Data3 = run2([ScriptPubkey], Data2, State),
     [Amount|[Nonce|_]] = Data3#d.stack,
     ExtraGas = Data3#d.op_gas,
     ExtraRam = Data3#d.ram_limit - Data3#d.ram_most,
@@ -206,6 +211,11 @@ run3(?dup, D) ->
     D#d{stack = [H|[H|T]],
 	ram_current = D#d.ram_current + memory(H),
 	op_gas = D#d.op_gas - 1};
+run3(?swap, D) ->
+    [A|[B|C]] = D#d.stack,
+    Stack2 = [B|[A|C]],
+    D#d{stack = Stack2,
+	op_gas = D#d.op_gas - 1};
 run3(?tuck, D) ->
     [A|[B|[C|E]]] = D#d.stack,
     Stack2 = [B|[C|[A|E]]],
@@ -222,11 +232,6 @@ run3(?ddup, D) ->
     D#d{stack = Stack2,
 	ram_current = D#d.ram_current +
 	    memory(A) + memory(B),
-	op_gas = D#d.op_gas - 1};
-run3(?swap, D) ->
-    [A|[B|C]] = D#d.stack,
-    Stack2 = [B|[A|C]],
-    D#d{stack = Stack2,
 	op_gas = D#d.op_gas - 1};
 run3(?tuckn, D) ->
     [N|[X|S]] = D#d.stack,
@@ -336,6 +341,17 @@ run3(?bin_and, D) ->
     D#d{op_gas = D#d.op_gas - E,
 	stack = [<<F:E>>|T],
 	ram_current = D#d.ram_current - min(B, D) - 1};
+run3(?bin_and, D) ->
+    [G|[H|T]] = D#d.stack,
+    B = 8 * size(G),
+    D = 8 * size(H),
+    <<A:B>> = G,
+    <<C:D>> = H,
+    E = max(B, D),
+    F = A bor C,
+    D#d{op_gas = D#d.op_gas - E,
+	stack = [<<F:E>>|T],
+	ram_current = D#d.ram_current - min(B, D) - 1};
 run3(?bin_xor, D) ->
     [G|[H|T]] = D#d.stack,
     B = 8 * size(G),
@@ -352,6 +368,16 @@ run3(?stack_size, D) ->
     D#d{op_gas = D#d.op_gas - 1,
 	ram_current = D#d.ram_current + 2,
 	stack = [length(S)|S]};
+run3(?total_coins, D, State) ->
+    S = D#d.stack,
+    D#d{op_gas = D#d.op_gas - 1,
+	ram_current = D#d.ram_current + 2,
+	stack = [<<State#state.total_coins:?int_bits>>|S]};
+run3(?height, D, State) ->
+    S = D#d.stack,
+    D#d{op_gas = D#d.op_gas - 1,
+	ram_current = D#d.ram_current + 2,
+	stack = [<<State#state.height:?int_bits>>|S]};
 run3(?gas, D) ->
     G = D#d.op_gas,
     D#d{op_gas = G - 1,
