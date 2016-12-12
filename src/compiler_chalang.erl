@@ -128,7 +128,7 @@ get_functions([<<":">>|[Name|R]], Functions, Variables) ->
     io:fwrite("in compiler function raw input \n"),
     io:fwrite(Code),
     io:fwrite("\n"),
-    Signature = trie_hash:doit(Opcodes),
+    Signature = hash:doit(Opcodes),
     io:fwrite("in compiler function name \n"),
     print_binary(Signature),
     case dict:find(Name, Functions) of

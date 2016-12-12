@@ -1,9 +1,10 @@
 -module(chalang).
--export([run/6, test/5, replace/3]).
+-export([run/7, test/5, replace/3]).
 -record(d, {op_gas = 0, stack = [], alt = [],
 	    ram_current = 0, ram_most = 0, ram_limit = 0, 
 	    vars = {},  
-	    funs = {}, many_funs = 0, fun_limit = 0
+	    funs = {}, many_funs = 0, fun_limit = 0,
+	    state = []
 	   }).
 -record(state, {total_coins, 
 		height, %how many blocks exist so far
@@ -93,10 +94,11 @@ run(ScriptSig, ScriptPubkey, OpGas, RamGas, Funs, Vars, State) ->
 	      vars = make_tuple(e, Vars),
 	      funs = #{},
 	      fun_limit = Funs,%how many functions can be defined.
-	      ram_current = size(ScriptSig) + size(ScriptPubkey) },
+	      ram_current = size(ScriptSig) + size(ScriptPubkey),
+	      state = State},
     io:fwrite("running script "),
-    Data2 = run2([ScriptSig], Data, State),
-    Data3 = run2([ScriptPubkey], Data2, State),
+    Data2 = run2([ScriptSig], Data),
+    Data3 = run2([ScriptPubkey], Data2),
     [Amount|[Nonce|_]] = Data3#d.stack,
     ExtraGas = Data3#d.op_gas,
     ExtraRam = Data3#d.ram_limit - Data3#d.ram_most,
@@ -264,7 +266,7 @@ run3(?r_fetch, D) ->
 	op_gas = D#d.op_gas - 1};
 run3(?hash, D) ->
     [H|T] = D#d.stack,
-    D#d{stack = [trie_hash:doit(H)|T],
+    D#d{stack = [hash:doit(H)|T],
 	op_gas = D#d.op_gas - 20};
 run3(?verify_sig, D) ->
     [Pub|[Data|[Sig|T]]] = D#d.stack,
@@ -341,7 +343,7 @@ run3(?bin_and, D) ->
     D#d{op_gas = D#d.op_gas - E,
 	stack = [<<F:E>>|T],
 	ram_current = D#d.ram_current - min(B, D) - 1};
-run3(?bin_and, D) ->
+run3(?bin_or, D) ->
     [G|[H|T]] = D#d.stack,
     B = 8 * size(G),
     D = 8 * size(H),
@@ -368,16 +370,18 @@ run3(?stack_size, D) ->
     D#d{op_gas = D#d.op_gas - 1,
 	ram_current = D#d.ram_current + 2,
 	stack = [length(S)|S]};
-run3(?total_coins, D, State) ->
+run3(?total_coins, D) ->
     S = D#d.stack,
+    TC = D#d.state#state.total_coins,
     D#d{op_gas = D#d.op_gas - 1,
 	ram_current = D#d.ram_current + 2,
-	stack = [<<State#state.total_coins:?int_bits>>|S]};
-run3(?height, D, State) ->
+	stack = [<<TC:?int_bits>>|S]};
+run3(?height, D) ->
     S = D#d.stack,
+    H = D#d.state#state.height,
     D#d{op_gas = D#d.op_gas - 1,
 	ram_current = D#d.ram_current + 2,
-	stack = [<<State#state.height:?int_bits>>|S]};
+	stack = [<<H:?int_bits>>|S]};
 run3(?gas, D) ->
     G = D#d.op_gas,
     D#d{op_gas = G - 1,
