@@ -16,7 +16,7 @@ doit(A) ->
     YWords = remove_macros(Words),
     ZWords = apply_macros(Macros, YWords),
     {Functions, Variables} = get_functions(ZWords),
-    io:fwrite("FINISHED GETTING FUNCTIONS"),
+    %io:fwrite("FINISHED GETTING FUNCTIONS"),
     BWords = remove_functions(ZWords),
     %BWords = apply_functions(AWords, Functions),
     reuse_name_check(Macros, Functions),

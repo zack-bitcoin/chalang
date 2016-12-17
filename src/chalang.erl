@@ -100,13 +100,13 @@ run(ScriptSig, ScriptPubkey, OpGas, RamGas, Funs, Vars, State) ->
 	      fun_limit = Funs,%how many functions can be defined.
 	      ram_current = size(ScriptSig) + size(ScriptPubkey),
 	      state = State},
-    io:fwrite("running script "),
+    %io:fwrite("running script "),
     Data2 = run2([ScriptSig], Data),
     Data3 = run2([ScriptPubkey], Data2),
     [<<Amount:32>>|[<<Nonce:32>>|_]] = Data3#d.stack,
     ExtraGas = Data3#d.op_gas,
     ExtraRam = Data3#d.ram_limit - Data3#d.ram_most,
-    io:fwrite("amount, nonce, spare_gas, spare_ram\n"),
+    %io:fwrite("amount, nonce, spare_gas, spare_ram\n"),
     {Amount, Nonce, ExtraGas, ExtraRam}.
     
 run2(_, D) when D#d.op_gas < 0 ->
