@@ -103,7 +103,7 @@ run(ScriptSig, ScriptPubkey, OpGas, RamGas, Funs, Vars, State) ->
     io:fwrite("running script "),
     Data2 = run2([ScriptSig], Data),
     Data3 = run2([ScriptPubkey], Data2),
-    [Amount|[Nonce|_]] = Data3#d.stack,
+    [<<Amount:32>>|[<<Nonce:32>>|_]] = Data3#d.stack,
     ExtraGas = Data3#d.op_gas,
     ExtraRam = Data3#d.ram_limit - Data3#d.ram_most,
     io:fwrite("amount, nonce, spare_gas, spare_ram\n"),
