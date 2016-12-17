@@ -1,5 +1,5 @@
 -module(chalang).
--export([run/7, test/5, replace/3]).
+-export([run/7, test/5, replace/3, new_state/6]).
 -record(d, {op_gas = 0, stack = [], alt = [],
 	    ram_current = 0, ram_most = 0, ram_limit = 0, 
 	    vars = {},  
@@ -12,6 +12,10 @@
 		oracle, %this is the root of the merkle trie that says the results from all the oracles.
 		accounts, 
 		channels}). %data from the previous block that the contract may use.
+new_state(TotalCoins, Height, Slash, Oracle, Accounts, Channels) ->
+    #state{total_coins = TotalCoins, height = Height,
+	   slash = Slash, oracle = Oracle,
+	   accounts = Accounts, channels = Channels}.
 -define(int, 0).
 -define(binary, 2).
 -define(print, 10).
@@ -457,21 +461,21 @@ memory(L) -> memory(L, 0).
 memory([], X) -> X+1;
 memory([H|T], X) -> memory(T, 1+memory(H, X));
 memory(B, X) -> X+size(B).
-balanced_r(<<>>, 0) -> true;
-balanced_r(<<>>, 1) -> false;
-balanced_r(_, X) when X < 0 -> false;
-balanced_r(<<?int:8, _:?int_bits, Script/binary>>, X) ->
-    balanced_r(Script, X);
-balanced_r(<<?binary:8, H:32, Script/binary>>, D) ->
-    X = H * 8,
-    <<_:X, Script2/binary>> = Script,
-    balanced_r(Script2, D);
-balanced_r(<<?to_r:8, Script/binary>>, X) ->
-    balanced_r(Script, X+1);
-balanced_r(<<?from_r:8, Script/binary>>, X) ->
-    balanced_r(Script, X-1);
-balanced_r(<<_:8, Script/binary>>, X) ->
-    balanced_r(Script, X).
+%balanced_r(<<>>, 0) -> true;
+%balanced_r(<<>>, 1) -> false;
+%balanced_r(_, X) when X < 0 -> false;
+%balanced_r(<<?int:8, _:?int_bits, Script/binary>>, X) ->
+%    balanced_r(Script, X);
+%balanced_r(<<?binary:8, H:32, Script/binary>>, D) ->
+%    X = H * 8,
+%    <<_:X, Script2/binary>> = Script,
+%    balanced_r(Script2, D);
+%balanced_r(<<?to_r:8, Script/binary>>, X) ->
+%    balanced_r(Script, X+1);
+%balanced_r(<<?from_r:8, Script/binary>>, X) ->
+%    balanced_r(Script, X-1);
+%balanced_r(<<_:8, Script/binary>>, X) ->
+%    balanced_r(Script, X).
 %balanced_f makes sure that every function we start finishes, and that there aren't functions inside of each other.
 balanced_f(<<>>, 0) -> true;
 balanced_f(<<>>, 1) -> false;
