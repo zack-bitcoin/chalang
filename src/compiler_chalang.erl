@@ -123,19 +123,19 @@ get_functions([<<":">>|[Name|R]], Functions, Variables) ->
     %Make sure Name isn't on the restricted list.
     {Code, T} = split(<<";">>, R),
     {Opcodes, Variables2} = to_opcodes(Code, Functions, [], Variables),
-    io:fwrite("in compiler function opcodes \n"),
-    print_binary(Opcodes),
-    io:fwrite("in compiler function raw input \n"),
-    io:fwrite(Code),
-    io:fwrite("\n"),
+    %io:fwrite("in compiler function opcodes \n"),
+    %print_binary(Opcodes),
+    %io:fwrite("in compiler function raw input \n"),
+    %io:fwrite(Code),
+    %io:fwrite("\n"),
     Signature = hash:doit(Opcodes),
-    io:fwrite("in compiler function name \n"),
-    print_binary(Signature),
+    %io:fwrite("in compiler function name \n"),
+    %print_binary(Signature),
     case dict:find(Name, Functions) of
 	error ->
-	    io:fwrite("get functions store dict key "),
-	    io:fwrite(Name),
-	    io:fwrite("\n"),
+	    %io:fwrite("get functions store dict key "),
+	    %io:fwrite(Name),
+	    %io:fwrite("\n"),
 	    NewFunctions = dict:store(Name, Signature, Functions),
 	    get_functions(T, NewFunctions, Variables2);
 	{X, _} ->
@@ -161,7 +161,7 @@ to_opcodes([<<"int">>|[B|T]], F, Out, V) ->
     G = <<Num:?int_bits>>,
     to_opcodes(T, F, [G|[0|Out]], V);
 to_opcodes([<<"binary">>|[M|[B|T]]], F, Out, V) ->
-    io:fwrite("binary\n"),
+    %io:fwrite("binary\n"),
     Bin = base64:decode(B),
     MM = list_to_integer(binary_to_list(M)),
     true = MM == size(Bin),
@@ -176,8 +176,8 @@ to_opcodes([Word|T], F, Out, Vars) ->
 		    to_opcodes(T, F, [Y|Out], Vars2);
 		Z -> 
 		    S = size(Z),
-		    io:fwrite("hash of function is "),
-		    print_binary(Z),
+		    %io:fwrite("hash of function is "),
+		    %print_binary(Z),
 		    Y = <<2, S:32, Z/binary>>,
 		    to_opcodes(T, F, [Y|Out], Vars)
 	    end;
@@ -189,13 +189,13 @@ to_opcodes([], _, Out, Vars) ->
     X = lists:reverse(Out),
     {make_binary(X), Vars}.
 get_func(Name, F) -> %name should be like <<"square">>
-    io:fwrite("get func named "),
-    io:fwrite(Name),
-    io:fwrite("\n"),
-    io:fwrite(dict:fetch_keys(F)),
+    %io:fwrite("get func named "),
+    %io:fwrite(Name),
+    %io:fwrite("\n"),
+    %io:fwrite(dict:fetch_keys(F)),
     case dict:find(Name, F) of
 	error ->
-	    io:fwrite("error, that is not a defined function\n;"),
+	    %io:fwrite("error, that is not a defined function\n;"),
 	    {error, "undefined function"};
 	{ok, Val} ->
 	    Val

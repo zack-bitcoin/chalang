@@ -5,7 +5,7 @@ macro ] swap cons reverse ;
 : square dup * ;
 
 : map2 car swap Func @ call rot cons swap
-print nil == if drop drop print reverse else drop recurse call then;
+( print ) nil == if drop drop ( print ) reverse else drop recurse call then;
 : map Func ! nil swap map2 call;
 
 macro test

@@ -86,8 +86,8 @@ test(Script, OpGas, RamGas, Funs, Vars) ->
 	   fun_limit = Funs,
 	   ram_current = size(Script)},
     X = run2([Script], D),
-    io:fwrite("\n"),
-    io:fwrite("oGas, stack, alt, ram_current, ram_most, ram_limit, vars, funs, many_funs, fun_limit\n"),
+    %io:fwrite("\n"),
+    %io:fwrite("oGas, stack, alt, ram_current, ram_most, ram_limit, vars, funs, many_funs, fun_limit\n"),
     X.
 run(ScriptSig, ScriptPubkey, OpGas, RamGas, Funs, Vars, State) ->
     true = balanced_f(ScriptSig, 0),
@@ -167,15 +167,15 @@ run2([<<?call:8, Script/binary>>|Tail], D) ->
 	       stack = T},
     run2([Definition|[<<?fun_end:8>>|[Script|Tail]]],NewD);
 run2([<<?define:8, Script/binary>>|T], D) ->
-    io:fwrite("run2 define\n"),
+    %io:fwrite("run2 define\n"),
     {Definition, Script2} = split(?fun_end, Script),
     %true = balanced_r(Definition, 0),
     B = hash:doit(Definition),
     %replace "recursion" in the definition with a pointer to this.
     NewDefinition = replace(<<?recurse:8>>, <<2, 12:32, B/binary>>, Definition),
-    io:fwrite("chalang define function "),
-    compiler_chalang:print_binary(NewDefinition),
-    io:fwrite("\n"),
+    %io:fwrite("chalang define function "),
+    %compiler_chalang:print_binary(NewDefinition),
+    %io:fwrite("\n"),
     M = maps:put(B, NewDefinition, D#d.funs),
     S = size(NewDefinition) + size(B),
     MF = D#d.many_funs + 1,
@@ -195,9 +195,9 @@ run2([<<Command:8, Script/binary>>|T], D) ->
     case run3(Command, D) of
 	{error, R} -> {error, R};
 	NewD -> 
-	    io:fwrite("run word "),
-	    io:fwrite(integer_to_list(Command)),
-	    io:fwrite("\n"),
+	    %io:fwrite("run word "),
+	    %io:fwrite(integer_to_list(Command)),
+	    %io:fwrite("\n"),
 	    run2([Script|T], NewD)
     end.
 
