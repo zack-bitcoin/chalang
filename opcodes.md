@@ -65,15 +65,15 @@ only works with 4-byte integers. Results are 4-byte integers. 32-bits. The integ
 
 53 / ( X Y -- Z )
 
-54 > ( X Y -- true/false )
+54 > ( X Y -- true/false X Y )
 
-55 < ( X Y -- true/false )
+55 < ( X Y -- true/false X Y )
 
 56 ^ ( X Y -- Z )
 
 57 rem (A B -- C) only works for integers.
 
-58 = ( X Y -- true/false )
+58 = ( X Y -- true/false X Y )
 
 
 # conditions opcodes

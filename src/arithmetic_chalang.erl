@@ -25,7 +25,8 @@ int_arithmetic(?gt, A, B) -> b2i(A < B);
 int_arithmetic(?lt, A, B) -> b2i(B < A);
 %int_arithmetic(?eq, A, B) -> b2i(A == B);
 int_arithmetic(?pow, A, B) -> round(math:pow(A, B)); 
-int_arithmetic(?remainder, A, B) -> A rem B.
+int_arithmetic(?remainder, A, B) -> 
+    A rem B.
 doit(?eq, A, B) ->
     C = if
 	    A == B -> 1;

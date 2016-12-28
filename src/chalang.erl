@@ -190,7 +190,7 @@ run2([<<?define:8, Script/binary>>|T], D) ->
 	    run2([Script2|T], NewD)
     end;
 run2([<<?crash:8, _/binary>>|_], D) ->
-    run2(<<>>, D);
+    run2([<<>>], D);
 run2([<<Command:8, Script/binary>>|T], D) ->
     case run3(Command, D) of
 	{error, R} -> {error, R};
@@ -321,21 +321,21 @@ run3(?bool_or, D) ->
     D#d{op_gas = D#d.op_gas - 1,
 	stack = [<<C:32>>|T],
 	ram_current = D#d.ram_current - 2};
-run3(?bool_xor, D) ->
-    [G|[H|T]] = D#d.stack,
+run3(?bool_xor, Data) ->
+    [G|[H|T]] = Data#d.stack,
     B = 8 * size(G),
     D = 8 * size(H),
     <<A:B>> = G,
     <<C:D>> = H,
-    C = case {A, B} of
+    J = case {A, C} of
 	    {0, 0} -> 0;
 	    {0, _} -> 1;
 	    {_, 0} -> 1;
 	    _ -> 0
 	end,
-    D#d{op_gas = D#d.op_gas - 1,
-	stack = [<<C:8>>|T],
-	ram_current = D#d.ram_current - 2};
+    Data#d{op_gas = Data#d.op_gas - 1,
+	stack = [<<J:32>>|T],
+	ram_current = Data#d.ram_current - 2};
 run3(?bin_and, D) ->
     [G|[H|T]] = D#d.stack,
     B = 8 * size(G),
@@ -358,17 +358,17 @@ run3(?bin_or, D) ->
     D#d{op_gas = D#d.op_gas - E,
 	stack = [<<F:E>>|T],
 	ram_current = D#d.ram_current - min(B, D) - 1};
-run3(?bin_xor, D) ->
-    [G|[H|T]] = D#d.stack,
+run3(?bin_xor, Data) ->
+    [G|[H|T]] = Data#d.stack,
     B = 8 * size(G),
     D = 8 * size(H),
     <<A:B>> = G,
     <<C:D>> = H,
     E = max(B, D),
     F = A bxor C,
-    D#d{op_gas = D#d.op_gas - E,
+    Data#d{op_gas = Data#d.op_gas - E,
 	stack = [<<F:E>>|T],
-	ram_current = D#d.ram_current - min(B, D) - 1};
+	ram_current = Data#d.ram_current - min(B, D) - 1};
 run3(?stack_size, D) ->
     S = D#d.stack,
     D#d{op_gas = D#d.op_gas - 1,

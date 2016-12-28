@@ -308,8 +308,17 @@ print_binary(<<A:8, B/binary>>) ->
 print_binary(<<>>) -> ok.
 absorb_var(Variable, {D, Many}) ->
     <<X:8, _/binary>> = Variable,
-    true = X > 64, %variables start with capitals
-    true = X < 90,
+    B = (X > 64) and (X < 90),
+    if 
+	B -> ok;
+	true ->
+	    io:fwrite("absorb var error "),
+	    io:fwrite([X]),
+	    io:fwrite("  \n"),
+	    X = 0
+    end,
+    %true = X > 64, %variables start with capitals
+    %true = X < 90,
     case dict:find(Variable, D) of
 	error ->
 	    NewD = dict:store(Variable, Many, D),
