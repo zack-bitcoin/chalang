@@ -89,7 +89,15 @@ test(Script, OpGas, RamGas, Funs, Vars) ->
     %io:fwrite("\n"),
     %io:fwrite("oGas, stack, alt, ram_current, ram_most, ram_limit, vars, funs, many_funs, fun_limit\n"),
     X.
-run(ScriptSig, ScriptPubkey, OpGas, RamGas, Funs, Vars, State) ->
+run(ScriptSig, SPK, OpGas, RamGas, Funs, Vars, State) ->
+    run(ScriptSig, SPK, OpGas, RamGas, Funs, Vars, State, 0, 0).
+run([],[], OpGas, RamGas, _, _, _, Amount, Nonce) ->
+    {Amount, Nonce, OpGas, RamGas};
+run([SS|ScriptSig], [SPK|ScriptPubkey], OpGas, RamGas, Funs, Vars, State, Amount, Nonce) ->
+    {A2, N2, EOpGas, ERamGas} = run3(SS, SPK, OpGas, RamGas, Funs, Vars, State),
+    run(ScriptSig, ScriptPubkey, EOpGas, ERamGas, Funs, Vars, State, A2, N2).
+
+run3(ScriptSig, ScriptPubkey, OpGas, RamGas, Funs, Vars, State) ->
     true = balanced_f(ScriptSig, 0),
     true = balanced_f(ScriptPubkey, 0),
     true = none_of(ScriptSig, ?crash),
