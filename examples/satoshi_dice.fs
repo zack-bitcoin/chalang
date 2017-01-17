@@ -1,59 +1,51 @@
+%Both participants make and reveal secrets, the winner is selected randomly by XORing the secrets.
 %if either user refuses to reveal, then they lose.
 
-% SS1 [0]
-%-both players refuse to reveal.
-%-the money is returned to the original owners. nonce=1.
-
-% SS2 [evidence, 1]
-%-only player 1 revealed. so player 2 loses. nonce=2
-
-% SS3 [evidence, 2]
-%-only player 2 revealed, so player 1 loses. nonce=2
-
-% SS4 [evidence, evidence2, 3]
-%-both players revealed, we calculate the winner by xoring the data they revealed. nonce=3
-
-macro Draw int 1 int 0 crash ;
+macro Draw int 1 int 0 int 0 crash ;
 
 : or_die not if Draw else then ;
 
 macro reveal ( Reveal Commit -- bool )
   swap dup tuck hash = or_die call drop drop ;
+% If a secret is improperly revealed, the contract defaults to case 0. a draw.
   
-%syntax for case statements.
-macro -> == if drop drop ;
-macro -- crash else then drop ;
 
-macro Amount int 1000 ;
 macro Secret1 int 1 hash ;
 macro Secret2 int 2 hash ;
 
-macro Win1 int 0 Amount ;
-macro Win2 int 1 Amount ;
+macro Amount int 1000 ;
+macro Win1 int 0 Amount ; 
+macro Win2 int 1 Amount ; 
 
-macro SS1 Secret1 reveal drop int 2 Win1 ;
-macro SS2 Secret2 reveal drop int 2 Win2 ;
-: SS3 Secret2 reveal swap
+macro player1revealed Secret1 reveal drop int 2 Win1 ;
+macro player2revealed Secret2 reveal drop int 2 Win2 ;
+: bothRevealed Secret2 reveal swap
           Secret1 reveal bxor int 2 rem
 	  int 3 swap
 	  if Win1 else Win2 then ;
 
-macro main
-  int 1 -> SS1 -- 
-  int 2 -> SS2 --
-  int 3 -> print SS3 print call print --
-  
-  drop Draw ;
+%syntax for case statements.
+macro -> == if drop drop ;
+macro -- crash else then drop ;
 
+macro main
+  int 1 -> player1revealed -- 
+  int 2 -> player2revealed --
+  int 3 -> bothRevealed call --
+  drop Draw ;
 
 macro test1
      int 0 main ;
+     (choose path 0, so neither player revealed. It is a tie. The nonce is 1.)
 
 macro test2
      int 1 int 1 main ;
+     (choose path 1, meaning only player 1 revealed their secret. So player 1 wins. The secret happens to be 1. The nonce is 2.)
 
 macro test3
      int 2 int 2 main ;
+     (choose path 2, meaning only player 1 revealed their secret. So player 2 wins. The secret happens to be 2. The nonce is 2)
 
 macro test4
-     int 1 int 2 int 3 main; 
+     int 1 int 2 int 3 main;
+     (choose path 3, so both revealed. the secrets are 1 and 2. The winner will be selected by XORing the secrets. The nonce is 3.)

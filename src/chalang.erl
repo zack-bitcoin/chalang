@@ -111,11 +111,17 @@ run3(ScriptSig, ScriptPubkey, OpGas, RamGas, Funs, Vars, State) ->
     %io:fwrite("running script "),
     Data2 = run2([ScriptSig], Data),
     Data3 = run2([ScriptPubkey], Data2),
-    [<<Amount:32>>|[<<Nonce:32>>|_]] = Data3#d.stack,
+    [<<Amount:32>>|
+     [<<Direction:32>>|
+      [<<Nonce:32>>|_]]] = Data3#d.stack,
     ExtraGas = Data3#d.op_gas,
     ExtraRam = Data3#d.ram_limit - Data3#d.ram_most,
     %io:fwrite("amount, nonce, spare_gas, spare_ram\n"),
-    {Amount, Nonce, ExtraGas, ExtraRam}.
+    D = case Direction of
+	    0 -> 1;
+	    _ -> -1
+	end,
+    {Amount * D, Nonce, ExtraGas, ExtraRam}.
     
 run2(_, D) when D#d.op_gas < 0 ->
     {error, "out of time"};

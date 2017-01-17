@@ -21,10 +21,12 @@ test(Loc) ->
 	       %"merge"],
     Gas = 10000,
     run_scripts(Scripts, Gas, Loc),
+
+
     {ok, A} = file:read_file(Loc ++ "satoshi_dice.fs"),
     B = compiler_chalang:doit(<<A/binary, <<"\n test1 \n">>/binary>>),
     {d, _, Stack, _,_,_,_,_,_,_,_,_} = chalang:test(B, Gas, Gas, Gas, Gas),
-    [<<0:32>>,<<1:32>>] = Stack,
+    [<<0:32>>,<<0:32>>,<<1:32>>] = Stack,
     C = compiler_chalang:doit(<<A/binary, <<"\n test2 \n">>/binary>>),
     {d, _, Stack2, _,_,_,_,_,_,_,_,_} = chalang:test(C, Gas, Gas, Gas, Gas),
     [<<1000:32>>,<<0:32>>,<<2:32>>] = Stack2,
