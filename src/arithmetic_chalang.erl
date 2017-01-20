@@ -13,8 +13,6 @@
 -define(int_bits, 32).
 -define(fraction_bits, 64).
 
-
-
 b2i(true) -> 1;
 b2i(false) -> 0.
 int_arithmetic(?add, A, B) -> A+B;
@@ -35,23 +33,23 @@ doit(?eq, A, B) ->
     <<C:?int_bits>>;
 doit(X, <<A:?int_bits>>, <<B:?int_bits>>) ->
     C = int_arithmetic(X, A, B),
-    <<C:?int_bits>>;
-doit(X, <<A:?int_bits>>, <<B:?int_bits, C:?int_bits>>) ->
-    {f, E, D} = frac_arithmetic(X, {f, A, 1}, {f, B, C}),
-    <<E:?int_bits, D:?int_bits>>;
-doit(X, <<A:?int_bits, B:?int_bits>>, <<C:?int_bits>>) ->
-    {f, E, D} = frac_arithmetic(X, {f, A, B}, {f, C, 1}),
-    <<E:?int_bits, D:?int_bits>>;
-doit(X, <<A:?int_bits, B:?int_bits>>, <<C:?int_bits, D:?int_bits>>) ->
-    {f, E, F} = frac_arithmetic(X, {f, A, B}, {f, C, D}),
-    <<E:?int_bits, F:?int_bits>>.
+    <<C:?int_bits>>.
+%doit(X, <<A:?int_bits>>, <<B:?int_bits, C:?int_bits>>) ->
+%    {f, E, D} = frac_arithmetic(X, {f, A, 1}, {f, B, C}),
+%    <<E:?int_bits, D:?int_bits>>;
+%doit(X, <<A:?int_bits, B:?int_bits>>, <<C:?int_bits>>) ->
+%    {f, E, D} = frac_arithmetic(X, {f, A, B}, {f, C, 1}),
+%    <<E:?int_bits, D:?int_bits>>;
+%doit(X, <<A:?int_bits, B:?int_bits>>, <<C:?int_bits, D:?int_bits>>) ->
+%    {f, E, F} = frac_arithmetic(X, {f, A, B}, {f, C, D}),
+%    <<E:?int_bits, F:?int_bits>>.
 
-frac_arithmetic(?add, A, B) -> fractions:add(A, B, ?int_bits);
-frac_arithmetic(?subtract, A, B) -> fractions:sub(A, B, ?int_bits);
-frac_arithmetic(?mul, A, B) -> fractions:mul(A, B, ?int_bits);
-frac_arithmetic(?divide, A, B) -> fractions:divide(A, B, ?int_bits);
-frac_arithmetic(?gt, A, B) -> fractions:gt(A, B);
-frac_arithmetic(?lt, A, B) -> fractions:lt(A, B);
-%frac_arithmetic(?eq, A, B) -> fractions:eq(A, B);
-frac_arithmetic(?pow, A, B) -> fractions:pow(A, B, ?int_bits).
+%frac_arithmetic(?add, A, B) -> fractions:add(A, B, ?int_bits);
+%frac_arithmetic(?subtract, A, B) -> fractions:sub(A, B, ?int_bits);
+%frac_arithmetic(?mul, A, B) -> fractions:mul(A, B, ?int_bits);
+%frac_arithmetic(?divide, A, B) -> fractions:divide(A, B, ?int_bits);
+%frac_arithmetic(?gt, A, B) -> fractions:gt(A, B);
+%frac_arithmetic(?lt, A, B) -> fractions:lt(A, B);
+%%frac_arithmetic(?eq, A, B) -> fractions:eq(A, B);
+%frac_arithmetic(?pow, A, B) -> fractions:pow(A, B, ?int_bits).
 
