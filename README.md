@@ -1,9 +1,14 @@
-This is a language make for state channels on a blockchain.
+It is built for blockchain smart contracts.
+
+This is a language make for state channels.
+
 It is deterministic, so that every node of the blockchain gets the same result.
-It is built for the Pink Fairy blockchain.
+
 Functions are tail call optimized.
+
 Has 2 types of gas, one for space, and one for time.
-Is forth-like.
+
+Instead of using goto for recursion, it uses function calls.
 
 [Example code is in this folder](/examples)
 

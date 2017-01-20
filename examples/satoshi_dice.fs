@@ -1,6 +1,8 @@
 %Both participants make and reveal secrets, the winner is selected randomly by XORing the secrets.
 %if either user refuses to reveal, then they lose.
 
+macro Amount int 1000 ;
+
 macro Draw int 1 int 0 int 0 crash ;
 
 : or_die not if Draw else then ;
@@ -13,7 +15,6 @@ macro reveal ( Reveal Commit -- bool )
 macro Secret1 int 1 hash ;
 macro Secret2 int 2 hash ;
 
-macro Amount int 1000 ;
 macro Win1 int 0 Amount ; 
 macro Win2 int 1 Amount ; 
 
