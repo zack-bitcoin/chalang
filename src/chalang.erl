@@ -89,6 +89,8 @@ test(Script, OpGas, RamGas, Funs, Vars) ->
     %io:fwrite("\n"),
     %io:fwrite("oGas, stack, alt, ram_current, ram_most, ram_limit, vars, funs, many_funs, fun_limit\n"),
     X.
+
+%run takes a list of bets and scriptpubkeys. Each bet is processed seperately by the VM, and the results of each bet is accumulated together to find the net result of all the bets.
 run(ScriptSig, SPK, OpGas, RamGas, Funs, Vars, State) ->
     run(ScriptSig, SPK, OpGas, RamGas, Funs, Vars, State, 0, 0).
 run([],[], OpGas, RamGas, _, _, _, Amount, Nonce) ->
@@ -97,6 +99,7 @@ run([SS|ScriptSig], [SPK|ScriptPubkey], OpGas, RamGas, Funs, Vars, State, Amount
     {A2, N2, EOpGas, ERamGas} = run3(SS, SPK, OpGas, RamGas, Funs, Vars, State),
     run(ScriptSig, ScriptPubkey, EOpGas, ERamGas, Funs, Vars, State, A2+Amount, N2+Nonce).
 
+%run3 takes a single bet and scriptpubkey, and calculates the result.
 run3(ScriptSig, ScriptPubkey, OpGas, RamGas, Funs, Vars, State) ->
     true = balanced_f(ScriptSig, 0),
     true = balanced_f(ScriptPubkey, 0),
@@ -122,7 +125,8 @@ run3(ScriptSig, ScriptPubkey, OpGas, RamGas, Funs, Vars, State) ->
 	    _ -> -1
 	end,
     {Amount * D, Nonce, ExtraGas, ExtraRam}.
-    
+   
+%run2 processes a single opcode of the script. in comparison to run3/2, run2 is able to edit more aspects of the VM's state. run2 is used to define functions and variables. run3/2 is for all the other opcodes. 
 run2(_, D) when D#d.op_gas < 0 ->
     {error, "out of time"};
 run2(_, D) when D#d.ram_current > D#d.ram_limit ->

@@ -59,7 +59,10 @@ simplify_lcd(F) ->
     L = lcd(F#f.top, F#f.bottom),
     #f{top = F#f.top div L, bottom = F#f.bottom div L}.
 simplify_size(F) ->
-    IC = 281474976710656,
+    IC = 4294967296,%this is higher than the highest value we can store in top or bottom.
+    
+    
+    %IC = 281474976710656,
     %X = F#f.bottom div IC,
     %Y = F#f.top div IC,
     Z = if 
