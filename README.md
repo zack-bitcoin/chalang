@@ -10,7 +10,7 @@ Has 2 types of gas, one for space, and one for time.
 
 Instead of using goto for recursion, it uses function calls.
 
-[Example code is in this folder](/examples)
+[Example code is in this folder](/examples) , hashlock has lots of documentation.
 
 
 to install:
@@ -27,4 +27,7 @@ sh start.sh
 to run tests on a node:
 
 1> test_chalang:test().
+
+
+
 
