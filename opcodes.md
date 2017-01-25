@@ -87,13 +87,13 @@ only works with 4-byte integers. Results are 4-byte integers. 32-bits. The integ
 
 # logic opcodes
 
-80 bool_flip %( true/false -- false/true )
+80 not %( true/false -- false/true )
 
-81 bool_and ( true/false true/false -- true/false ) %false is 0, true is any non-zero byte.
+81 and ( true/false true/false -- true/false ) %false is 0, true is any non-zero byte.
 
-82 bool_or %( true/false true/false -- true/false )
+82 or %( true/false true/false -- true/false )
 
-83 bool_xor %( true/false true/false -- true/false )
+83 xor %( true/false true/false -- true/false )
 
 84 band ( 4 12 -- 4 ) %if inputed binaries are different length, it returns a binary of the longer length
 
