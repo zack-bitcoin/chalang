@@ -1,11 +1,16 @@
-This is a language make for state channels on a blockchain.
-It is deterministic, so that every node of the blockchain gets the same result.
-It is built for the Pink Fairy blockchain.
-Functions are tail call optimized.
-Has 2 types of gas, one for space, and one for time.
-Is forth-like.
+It is built for blockchain smart contracts.
 
-[Example code is in this folder](/examples)
+This is a language make for state channels.
+
+It is deterministic, so that every node of the blockchain gets the same result.
+
+Functions are tail call optimized.
+
+Has 2 types of gas, one for space, and one for time.
+
+Instead of using goto for recursion, it uses function calls.
+
+[Example code is in this folder](/examples) , hashlock has lots of documentation.
 
 
 to install:
@@ -22,4 +27,7 @@ sh start.sh
 to run tests on a node:
 
 1> test_chalang:test().
+
+
+
 

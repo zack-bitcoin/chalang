@@ -1,9 +1,10 @@
 -module(chalang).
--export([run/6, test/5, replace/3]).
+-export([run/7, test/5, replace/3, new_state/6]).
 -record(d, {op_gas = 0, stack = [], alt = [],
 	    ram_current = 0, ram_most = 0, ram_limit = 0, 
 	    vars = {},  
-	    funs = {}, many_funs = 0, fun_limit = 0
+	    funs = {}, many_funs = 0, fun_limit = 0,
+	    state = []
 	   }).
 -record(state, {total_coins, 
 		height, %how many blocks exist so far
@@ -11,6 +12,10 @@
 		oracle, %this is the root of the merkle trie that says the results from all the oracles.
 		accounts, 
 		channels}). %data from the previous block that the contract may use.
+new_state(TotalCoins, Height, Slash, Oracle, Accounts, Channels) ->
+    #state{total_coins = TotalCoins, height = Height,
+	   slash = Slash, oracle = Oracle,
+	   accounts = Accounts, channels = Channels}.
 -define(int, 0).
 -define(binary, 2).
 -define(print, 10).
@@ -81,10 +86,21 @@ test(Script, OpGas, RamGas, Funs, Vars) ->
 	   fun_limit = Funs,
 	   ram_current = size(Script)},
     X = run2([Script], D),
-    io:fwrite("\n"),
-    io:fwrite("oGas, stack, alt, ram_current, ram_most, ram_limit, vars, funs, many_funs, fun_limit\n"),
+    %io:fwrite("\n"),
+    %io:fwrite("oGas, stack, alt, ram_current, ram_most, ram_limit, vars, funs, many_funs, fun_limit\n"),
     X.
-run(ScriptSig, ScriptPubkey, OpGas, RamGas, Funs, Vars, State) ->
+
+%run takes a list of bets and scriptpubkeys. Each bet is processed seperately by the VM, and the results of each bet is accumulated together to find the net result of all the bets.
+run(ScriptSig, SPK, OpGas, RamGas, Funs, Vars, State) ->
+    run(ScriptSig, SPK, OpGas, RamGas, Funs, Vars, State, 0, 0).
+run([],[], OpGas, RamGas, _, _, _, Amount, Nonce) ->
+    {Amount, Nonce, OpGas, RamGas};
+run([SS|ScriptSig], [SPK|ScriptPubkey], OpGas, RamGas, Funs, Vars, State, Amount, Nonce) ->
+    {A2, N2, EOpGas, ERamGas} = run3(SS, SPK, OpGas, RamGas, Funs, Vars, State),
+    run(ScriptSig, ScriptPubkey, EOpGas, ERamGas, Funs, Vars, State, A2+Amount, N2+Nonce).
+
+%run3 takes a single bet and scriptpubkey, and calculates the result.
+run3(ScriptSig, ScriptPubkey, OpGas, RamGas, Funs, Vars, State) ->
     true = balanced_f(ScriptSig, 0),
     true = balanced_f(ScriptPubkey, 0),
     true = none_of(ScriptSig, ?crash),
@@ -93,16 +109,24 @@ run(ScriptSig, ScriptPubkey, OpGas, RamGas, Funs, Vars, State) ->
 	      vars = make_tuple(e, Vars),
 	      funs = #{},
 	      fun_limit = Funs,%how many functions can be defined.
-	      ram_current = size(ScriptSig) + size(ScriptPubkey) },
-    io:fwrite("running script "),
-    Data2 = run2([ScriptSig], Data, State),
-    Data3 = run2([ScriptPubkey], Data2, State),
-    [Amount|[Nonce|_]] = Data3#d.stack,
+	      ram_current = size(ScriptSig) + size(ScriptPubkey),
+	      state = State},
+    %io:fwrite("running script "),
+    Data2 = run2([ScriptSig], Data),
+    Data3 = run2([ScriptPubkey], Data2),
+    [<<Amount:32>>|
+     [<<Direction:32>>|
+      [<<Nonce:32>>|_]]] = Data3#d.stack,
     ExtraGas = Data3#d.op_gas,
     ExtraRam = Data3#d.ram_limit - Data3#d.ram_most,
-    io:fwrite("amount, nonce, spare_gas, spare_ram\n"),
-    {Amount, Nonce, ExtraGas, ExtraRam}.
-    
+    %io:fwrite("amount, nonce, spare_gas, spare_ram\n"),
+    D = case Direction of
+	    0 -> 1;
+	    _ -> -1
+	end,
+    {Amount * D, Nonce, ExtraGas, ExtraRam}.
+   
+%run2 processes a single opcode of the script. in comparison to run3/2, run2 is able to edit more aspects of the VM's state. run2 is used to define functions and variables. run3/2 is for all the other opcodes. 
 run2(_, D) when D#d.op_gas < 0 ->
     {error, "out of time"};
 run2(_, D) when D#d.ram_current > D#d.ram_limit ->
@@ -161,15 +185,15 @@ run2([<<?call:8, Script/binary>>|Tail], D) ->
 	       stack = T},
     run2([Definition|[<<?fun_end:8>>|[Script|Tail]]],NewD);
 run2([<<?define:8, Script/binary>>|T], D) ->
-    io:fwrite("run2 define\n"),
+    %io:fwrite("run2 define\n"),
     {Definition, Script2} = split(?fun_end, Script),
     %true = balanced_r(Definition, 0),
     B = hash:doit(Definition),
     %replace "recursion" in the definition with a pointer to this.
     NewDefinition = replace(<<?recurse:8>>, <<2, 12:32, B/binary>>, Definition),
-    io:fwrite("chalang define function "),
-    compiler_chalang:print_binary(NewDefinition),
-    io:fwrite("\n"),
+    %io:fwrite("chalang define function "),
+    %compiler_chalang:print_binary(NewDefinition),
+    %io:fwrite("\n"),
     M = maps:put(B, NewDefinition, D#d.funs),
     S = size(NewDefinition) + size(B),
     MF = D#d.many_funs + 1,
@@ -184,14 +208,14 @@ run2([<<?define:8, Script/binary>>|T], D) ->
 	    run2([Script2|T], NewD)
     end;
 run2([<<?crash:8, _/binary>>|_], D) ->
-    run2(<<>>, D);
+    run2([<<>>], D);
 run2([<<Command:8, Script/binary>>|T], D) ->
     case run3(Command, D) of
 	{error, R} -> {error, R};
 	NewD -> 
-	    io:fwrite("run word "),
-	    io:fwrite(integer_to_list(Command)),
-	    io:fwrite("\n"),
+	    %io:fwrite("run word "),
+	    %io:fwrite(integer_to_list(Command)),
+	    %io:fwrite("\n"),
 	    run2([Script|T], NewD)
     end.
 
@@ -264,7 +288,7 @@ run3(?r_fetch, D) ->
 	op_gas = D#d.op_gas - 1};
 run3(?hash, D) ->
     [H|T] = D#d.stack,
-    D#d{stack = [trie_hash:doit(H)|T],
+    D#d{stack = [hash:doit(H)|T],
 	op_gas = D#d.op_gas - 20};
 run3(?verify_sig, D) ->
     [Pub|[Data|[Sig|T]]] = D#d.stack,
@@ -315,21 +339,21 @@ run3(?bool_or, D) ->
     D#d{op_gas = D#d.op_gas - 1,
 	stack = [<<C:32>>|T],
 	ram_current = D#d.ram_current - 2};
-run3(?bool_xor, D) ->
-    [G|[H|T]] = D#d.stack,
+run3(?bool_xor, Data) ->
+    [G|[H|T]] = Data#d.stack,
     B = 8 * size(G),
     D = 8 * size(H),
     <<A:B>> = G,
     <<C:D>> = H,
-    C = case {A, B} of
+    J = case {A, C} of
 	    {0, 0} -> 0;
 	    {0, _} -> 1;
 	    {_, 0} -> 1;
 	    _ -> 0
 	end,
-    D#d{op_gas = D#d.op_gas - 1,
-	stack = [<<C:8>>|T],
-	ram_current = D#d.ram_current - 2};
+    Data#d{op_gas = Data#d.op_gas - 1,
+	stack = [<<J:32>>|T],
+	ram_current = Data#d.ram_current - 2};
 run3(?bin_and, D) ->
     [G|[H|T]] = D#d.stack,
     B = 8 * size(G),
@@ -341,7 +365,7 @@ run3(?bin_and, D) ->
     D#d{op_gas = D#d.op_gas - E,
 	stack = [<<F:E>>|T],
 	ram_current = D#d.ram_current - min(B, D) - 1};
-run3(?bin_and, D) ->
+run3(?bin_or, D) ->
     [G|[H|T]] = D#d.stack,
     B = 8 * size(G),
     D = 8 * size(H),
@@ -352,32 +376,34 @@ run3(?bin_and, D) ->
     D#d{op_gas = D#d.op_gas - E,
 	stack = [<<F:E>>|T],
 	ram_current = D#d.ram_current - min(B, D) - 1};
-run3(?bin_xor, D) ->
-    [G|[H|T]] = D#d.stack,
+run3(?bin_xor, Data) ->
+    [G|[H|T]] = Data#d.stack,
     B = 8 * size(G),
     D = 8 * size(H),
     <<A:B>> = G,
     <<C:D>> = H,
     E = max(B, D),
     F = A bxor C,
-    D#d{op_gas = D#d.op_gas - E,
+    Data#d{op_gas = Data#d.op_gas - E,
 	stack = [<<F:E>>|T],
-	ram_current = D#d.ram_current - min(B, D) - 1};
+	ram_current = Data#d.ram_current - min(B, D) - 1};
 run3(?stack_size, D) ->
     S = D#d.stack,
     D#d{op_gas = D#d.op_gas - 1,
 	ram_current = D#d.ram_current + 2,
 	stack = [length(S)|S]};
-run3(?total_coins, D, State) ->
+run3(?total_coins, D) ->
     S = D#d.stack,
+    TC = D#d.state#state.total_coins,
     D#d{op_gas = D#d.op_gas - 1,
 	ram_current = D#d.ram_current + 2,
-	stack = [<<State#state.total_coins:?int_bits>>|S]};
-run3(?height, D, State) ->
+	stack = [<<TC:?int_bits>>|S]};
+run3(?height, D) ->
     S = D#d.stack,
+    H = D#d.state#state.height,
     D#d{op_gas = D#d.op_gas - 1,
 	ram_current = D#d.ram_current + 2,
-	stack = [<<State#state.height:?int_bits>>|S]};
+	stack = [<<H:?int_bits>>|S]};
 run3(?gas, D) ->
     G = D#d.op_gas,
     D#d{op_gas = G - 1,
@@ -453,21 +479,21 @@ memory(L) -> memory(L, 0).
 memory([], X) -> X+1;
 memory([H|T], X) -> memory(T, 1+memory(H, X));
 memory(B, X) -> X+size(B).
-balanced_r(<<>>, 0) -> true;
-balanced_r(<<>>, 1) -> false;
-balanced_r(_, X) when X < 0 -> false;
-balanced_r(<<?int:8, _:?int_bits, Script/binary>>, X) ->
-    balanced_r(Script, X);
-balanced_r(<<?binary:8, H:32, Script/binary>>, D) ->
-    X = H * 8,
-    <<_:X, Script2/binary>> = Script,
-    balanced_r(Script2, D);
-balanced_r(<<?to_r:8, Script/binary>>, X) ->
-    balanced_r(Script, X+1);
-balanced_r(<<?from_r:8, Script/binary>>, X) ->
-    balanced_r(Script, X-1);
-balanced_r(<<_:8, Script/binary>>, X) ->
-    balanced_r(Script, X).
+%balanced_r(<<>>, 0) -> true;
+%balanced_r(<<>>, 1) -> false;
+%balanced_r(_, X) when X < 0 -> false;
+%balanced_r(<<?int:8, _:?int_bits, Script/binary>>, X) ->
+%    balanced_r(Script, X);
+%balanced_r(<<?binary:8, H:32, Script/binary>>, D) ->
+%    X = H * 8,
+%    <<_:X, Script2/binary>> = Script,
+%    balanced_r(Script2, D);
+%balanced_r(<<?to_r:8, Script/binary>>, X) ->
+%    balanced_r(Script, X+1);
+%balanced_r(<<?from_r:8, Script/binary>>, X) ->
+%    balanced_r(Script, X-1);
+%balanced_r(<<_:8, Script/binary>>, X) ->
+%    balanced_r(Script, X).
 %balanced_f makes sure that every function we start finishes, and that there aren't functions inside of each other.
 balanced_f(<<>>, 0) -> true;
 balanced_f(<<>>, 1) -> false;
