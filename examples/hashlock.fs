@@ -4,8 +4,10 @@
 %The next number 32, tells binary how big the binary will be. Next is a base64 encoded binary.
 %"hash" replaces the the binary on the top of the stack with the hash of that binary.
 %Then we load a 12 byte binary.
-%Then we check if they are equal with the "==" operation.
-%Equals doesn't drop the 2 things it compares off the stack.
+%Then we check if they are equal with the "==" comparison operation.
+%comparison doesn't drop the 2 things it compares off the stack because duplication is expensive.
+%duplication has to be expensive because we are measuring gas, and using up memory is expensive
+%I don't want to have to duplicate things before every comparison to save them from getting deleted.
 %Here is how forth operations are documented:
 ( A B -- A B C )
 % This starts with 2 things on the stack, and adds a third on top.
