@@ -18,7 +18,7 @@ b2i(false) -> 0.
 int_arithmetic(?add, A, B) -> A+B;
 int_arithmetic(?subtract, A, B) -> B-A;
 int_arithmetic(?mul, A, B) -> A*B;
-int_arithmetic(?divide, A, B) -> A div B;
+int_arithmetic(?divide, A, B) -> B div A;
 int_arithmetic(?gt, A, B) -> b2i(A < B);
 int_arithmetic(?lt, A, B) -> b2i(B < A);
 %int_arithmetic(?eq, A, B) -> b2i(A == B);
