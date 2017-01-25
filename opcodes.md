@@ -179,5 +179,3 @@ These are compiler macros to make it easier to program.
 or_die ( B -- ) if B is true, then does nothing. if B is false, then it crashes.
 
 +! ( Number Name -- ) increments the variable Name by Number
-
-Lists are easy with these 3 words: "[", "," and, "]". You don't need spaces between them either. example: "[1,2,3,4]" 
