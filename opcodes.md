@@ -149,7 +149,7 @@ only works with 4-byte integers. Results are 4-byte integers. 32-bits. The integ
 
 # variables opcodes
 
-120 ! % ( X -- Y ) % only stores 32-bit integers
+120 ! % ( X Y -- ) % only stores 32-bit integers. stores the value X inside the variable Y.
 
 121 @ ( Y -- X )
 

@@ -13,7 +13,7 @@ macro ] swap cons reverse ;
 : map Func ! nil swap map2 call;
 
 macro test
-[int 5,int 6,int 7]
+[int 5,int 6,int 7] 
 square map call
 [int 25, int 36, int 49]
 == >r drop drop r>

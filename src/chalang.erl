@@ -1,5 +1,5 @@
 -module(chalang).
--export([run/7, test/5, replace/3, new_state/6]).
+-export([run/7, test/6, vm/6, replace/3, new_state/6]).
 -record(d, {op_gas = 0, stack = [], alt = [],
 	    ram_current = 0, ram_most = 0, ram_limit = 0, 
 	    vars = {},  
@@ -78,19 +78,23 @@ make_tuple(X, Size) ->
 make_list(_, 0, X) -> X;
 make_list(X, Size, L) -> 
     make_list(X, Size - 1, [X|L]).
-test(Script, OpGas, RamGas, Funs, Vars) ->
+vm(Script, OpGas, RamGas, Funs, Vars, State) ->
+    X = test(Script, OpGas, RamGas, Funs, Vars, State),
+    X#d.stack.
+test(Script, OpGas, RamGas, Funs, Vars, State) ->
     D = #d{op_gas = OpGas,
 	   ram_limit = RamGas,
 	   vars = make_tuple(e, Vars),
 	   funs = #{},
 	   fun_limit = Funs,
-	   ram_current = size(Script)},
-    X = run2([Script], D),
+	   ram_current = size(Script), 
+	   state = State},
+    X = run2([Script], D).
     %io:fwrite("\n"),
     %io:fwrite("oGas, stack, alt, ram_current, ram_most, ram_limit, vars, funs, many_funs, fun_limit\n"),
-    X.
+    %X#d.stack.
 
-%run takes a list of bets and scriptpubkeys. Each bet is processed seperately by the VM, and the results of each bet is accumulated together to find the net result of all the bets.
+%run takes a list of bets and scriptpubkeys. Each bet is processed seperately by the RUN2, and the results of each bet is accumulated together to find the net result of all the bets.
 run(ScriptSig, SPK, OpGas, RamGas, Funs, Vars, State) ->
     run(ScriptSig, SPK, OpGas, RamGas, Funs, Vars, State, 0, 0).
 run([],[], OpGas, RamGas, _, _, _, Amount, Nonce) ->
@@ -126,7 +130,7 @@ run3(ScriptSig, ScriptPubkey, OpGas, RamGas, Funs, Vars, State) ->
 	end,
     {Amount * D, Nonce, ExtraGas, ExtraRam}.
    
-%run2 processes a single opcode of the script. in comparison to run3/2, run2 is able to edit more aspects of the VM's state. run2 is used to define functions and variables. run3/2 is for all the other opcodes. 
+%run2 processes a single opcode of the script. in comparison to run3/2, run2 is able to edit more aspects of the RUN2's state. run2 is used to define functions and variables. run3/2 is for all the other opcodes. 
 run2(_, D) when D#d.op_gas < 0 ->
     {error, "out of time"};
 run2(_, D) when D#d.ram_current > D#d.ram_limit ->
@@ -168,7 +172,7 @@ run2([<<?caseif:8, Script/binary>>|Tail], D) ->
 run2([<<?call:8>>|[<<?fun_end:8>>|Tail]], D) ->
     %tail call optimization
     %should work if "call" is the last instruction of a function, 
-    %it should also work when "call" is the last instruction of a conditional branch, and the conditional branch's "then" is the last instruction.
+    %it should also work when "call" is the last instruction of a conditional branch, and the conditional branch's "then" is the last instruction of the function.
     [H|T] = D#d.stack,
     Definition = maps:get(H, D#d.funs),
     S = size(Definition),
