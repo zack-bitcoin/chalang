@@ -14,16 +14,20 @@ doit(A) ->
     %get macros
     %apply macros
     %check that each operator has the correct number of variables.
-    true = var_number_check(Tree),
+    var_number_check(Tree),
     Tree2 = rpn(Tree),
     Opcodes = to_opcodes(Tree2),
     %switch to reverse polish notation.
     %remove the parenthasis, and replace symbols with opcodes.
-    Opcodes.
+    Tree2.
 w2o(<<"+">>) ->
     {50, 2, 1};%{opcode, inputs, outputs}
 w2o(<<"*">>) ->
-    {52, 2, 1}.
+    {52, 2, 1};
+w2o(<<"int">>) ->%its an integer
+    {0, 1, 1};
+w2o(X) -> {X, 0, 1}.
+    
 to_lists(Words) ->
     case to_lists(Words, [], 0) of	
 	{ok, X} -> X;
@@ -73,7 +77,33 @@ add_spaces(<<41:8, B/binary>>, Out) -> % )
     add_spaces(B, <<Out/binary, 32:8, 41:8, 32:8>>);
 add_spaces(<<X:8, B/binary >>, Out) -> 
     add_spaces(B, <<Out/binary, X:8>>).
-var_number_check([]) -> true;
+var_number_check([]) -> 0;
 var_number_check([H|T]) -> 
-    {Op, In, Out} = w2o(H),
+    {_Op, In, Out} = w2o(H),
+    In = var_number_check2(T),
+    Out.
+var_number_check2([]) -> 0;
+var_number_check2([H|T]) when is_list(H) ->
+    var_number_check(H) + 
+	var_number_check2(T);
+var_number_check2([H|T]) ->
+    1+var_number_check2(T).
+rpn([]) ->  [];
+rpn([H|T]) -> 
+    rpn2(T) ++ [H].
+rpn2([]) -> [];
+rpn2([H|T]) when is_list(H) ->
+    [rpn(H)|rpn2(T)].
+to_opcodes(Tree) -> 
+    List = flatten(Tree),
+    to_ops(List).
+flatten([]) -> [];
+flatten([H|T]) -> 
+    flatten(H) ++ flatten(T);
+flatten(X) -> [X].
+to_ops([]) -> [];
+to_ops([H|T]) -> 
+    {Op, _, _} = w2o(H),
+    [Op|to_ops(T)].
+    
     
