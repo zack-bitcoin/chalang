@@ -284,12 +284,13 @@ print_binary(<<A:8, B/binary>>) ->
 print_binary(<<>>) -> ok.
 absorb_var(Variable, {D, Many}) ->
     <<X:8, _/binary>> = Variable,
-    B = (X > 64) and (X < 90),
+    B = ((X > 64) and (X < 90))
+	or ((X>96) and (X < 122)),
     if 
 	B -> ok;
 	true ->
 	    io:fwrite("absorb var error "),
-	    io:fwrite([X]),
+	    io:fwrite(Variable),
 	    io:fwrite("  \n"),
 	    X = 0
     end,
