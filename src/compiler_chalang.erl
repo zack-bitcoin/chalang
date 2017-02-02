@@ -104,38 +104,16 @@ get_macros([<<"macro">>|[Name|R]], Functions) ->
     end;
 get_macros([], Functions) -> Functions;
 get_macros([_|T], Functions) -> get_macros(T, Functions).
-%get_functions2(Foo, R, Priv, Name, Functions) ->
-%    io:fwrite("get functions 2"),
-%    Signature = sign:sign(Foo, base64:decode(Priv)),
-%    get_functions3(Signature, R, Name, Functions).
 
 get_functions(Words) -> get_functions(Words, dict:new(), {dict:new(), 1}). %this initializes variables on 1, because setelement starts at 1.
 
-%get_functions([<<"macroSign">>|[Name|[<<"binary">>|[Priv|[<<"binary">>|[Hash|R]]]]]], Functions) -> 
-    %Make sure Name isn't on the restricted list.
-   % Foo = base64:decode(Hash),
-    %get_functions2(Foo, R, Priv, Name, Functions);
-%get_functions([<<"macroSign">>|[Name|[<<"binary">>|[Priv|[Hash|R]]]]], Functions) ->
-    %Make sure Name isn't on the restricted list.
-    %Foo = hd(to_opcodes([Hash], Functions, [])),
-    %get_functions2(Foo, R, Priv, Name, Functions);
 get_functions([<<":">>|[Name|R]], Functions, Variables) ->
     %Make sure Name isn't on the restricted list.
     {Code, T} = split(<<";">>, R),
     {Opcodes, Variables2} = to_opcodes(Code, Functions, [], Variables),
-    %io:fwrite("in compiler function opcodes \n"),
-    %print_binary(Opcodes),
-    %io:fwrite("in compiler function raw input \n"),
-    %io:fwrite(Code),
-    %io:fwrite("\n"),
     Signature = hash:doit(Opcodes),
-    %io:fwrite("in compiler function name \n"),
-    %print_binary(Signature),
     case dict:find(Name, Functions) of
 	error ->
-	    %io:fwrite("get functions store dict key "),
-	    %io:fwrite(Name),
-	    %io:fwrite("\n"),
 	    NewFunctions = dict:store(Name, Signature, Functions),
 	    get_functions(T, NewFunctions, Variables2);
 	{X, _} ->
@@ -283,14 +261,12 @@ w2o(_) -> not_op.
 to_words(<<>>, <<>>, Out) -> flip(Out);
 to_words(<<>>, N, Out) -> flip([N|Out]);
 to_words(<<"\t", B/binary>>, X, Out) ->
-    to_words(B, X, Out);
+    to_words(<<" ", B/binary>>, X, Out);
+to_words(<<"\n", B/binary>>, X, Out) ->
+    to_words(<<" ", B/binary>>, X, Out);
 to_words(<<" ", B/binary>>, <<"">>, Out) ->
     to_words(B, <<>>, Out);
-to_words(<<"\n", B/binary>>, <<"">>, Out) ->
-    to_words(B, <<>>, Out);
 to_words(<<" ", B/binary>>, N, Out) ->
-    to_words(B, <<>>, [N|Out]);
-to_words(<<"\n", B/binary>>, N, Out) ->
     to_words(B, <<>>, [N|Out]);
 to_words(<<C:8, B/binary>>, N, Out) ->
     to_words(B, <<N/binary, C:8>>, Out).
