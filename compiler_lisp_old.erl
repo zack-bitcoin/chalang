@@ -2,6 +2,16 @@
 -export([doit/1, test/0]).
 -define(int_bits, 32).
 
+
+%(define (x y) (- (* x x) y))
+% define (x y) x x * y -
+% y x x * swap -
+% swap dup * swap -
+
+% (a b c d) (F c b (G a b c (E d a b) (F a a b)))
+% (a b c d) d ! c ! b ! a ! c b (a b c (d a b E) (a a b F) G) F
+% (a b c d) d ! c ! b ! a ! c @ b @ a @ b @ c @ d @ a @ b @ E call a @ a @ b @ F call G call F call
+
 test() ->
     {ok, Text} = file:read_file("examples/first.scm"),
     doit(Text).
@@ -11,17 +21,18 @@ doit(A) ->
     C = add_spaces(B),
     Words = to_words(C, <<>>, []),
     Tree = hd(to_lists(Words)),
+    
     %get macros
     %apply macros
-    %rename vars in functions. That way we have dynamic scope. Replace every first var with V1, second with V2, etc.
+    %rename vars in functions. That way we have dynamic scope. Replace every first var with FuncNameV1, second with FuncNameV2, etc.
     %get functions. load up a dictionary of the functions
-    Functions = get_functions(Tree),
+    %Functions = get_functions(Tree),
     %apply functions. replace the function's name with the hash of it's contents.
-    var_number_check(Tree, Functions),%checks that every function has the right number of inputs.
-    List = rpn(Tree),
-    List2 = remove_functions(List),%functions are named by the hash of their contents. So remove the names from the code.
+    %var_number_check(Tree, Functions),%checks that every function has the right number of inputs.
+    %List = rpn(Tree),
+    %List2 = remove_functions(List),%functions are named by the hash of their contents. So remove the names from the code.
     Opcodes = to_opcodes(List2, Functions, Variables),
-    {Words, Tree, Tree2, Opcodes}.
+    {Words, Tree, List}.
 remove_functions(_) ->
      ok.
     
