@@ -1,6 +1,14 @@
 We should have 2 types of functions.
 One for fast recursion, and the other for merkelizing the code.
 
-right now we allow for re-assignment of variables. So assignment has 2 inputs.
-Instead, we should have immutable variables. Assignment should have 1 input and 1 output.
-This will be useful for functions that call themselves recursively, and read their variables after the recursion.
+Lisp should have:
+list
+cons
+car
+append
+defmacro
+
+We should add syntax for define like this
+(define (newFunc A B) (+ (* A A) B))
+
+maybe we should add a "do" command, which executes all the things on a list, and returns the last thing.

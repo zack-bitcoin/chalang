@@ -20,6 +20,7 @@ new_state(TotalCoins, Height, Slash, Oracle, Accounts, Channels) ->
 -define(binary, 2).
 -define(print, 10).
 -define(crash, 11).
+-define(nop, 12).
 -define(drop, 20).
 -define(dup, 21).
 -define(swap, 22).
@@ -132,8 +133,10 @@ run3(ScriptSig, ScriptPubkey, OpGas, RamGas, Funs, Vars, State) ->
    
 %run2 processes a single opcode of the script. in comparison to run3/2, run2 is able to edit more aspects of the RUN2's state. run2 is used to define functions and variables. run3/2 is for all the other opcodes. 
 run2(_, D) when D#d.op_gas < 0 ->
+    io:fwrite("out of time"),
     {error, "out of time"};
 run2(_, D) when D#d.ram_current > D#d.ram_limit ->
+    io:fwrite("out of space"),
     {error, "out of space"};
 run2(A, D) when D#d.ram_current > D#d.ram_most ->
     run2(A, D#d{ram_most = D#d.ram_current});
@@ -155,8 +158,8 @@ run2([<<?int:8, V:?int_bits, Script/binary>>|T], D) ->
     run2([Script|T], NewD);
 run2([<<?caseif:8, Script/binary>>|Tail], D) ->
     [<<B:32>>|NewStack] = D#d.stack,
-    {Case1, Rest} = split(?else, Script),
-    {Case2, Rest2} = split(?then, Rest),
+    {Case1, Rest, _} = split_if(?else, Script),
+    {Case2, Rest2, _} = split_if(?then, Rest),
     Steps = size(Case1) + size(Case2),
     {Case, SkippedSize} = 
 	case B of
@@ -190,7 +193,7 @@ run2([<<?call:8, Script/binary>>|Tail], D) ->
     run2([Definition|[<<?fun_end:8>>|[Script|Tail]]],NewD);
 run2([<<?define:8, Script/binary>>|T], D) ->
     %io:fwrite("run2 define\n"),
-    {Definition, Script2} = split(?fun_end, Script),
+    {Definition, Script2, _} = split(?fun_end, Script),
     %true = balanced_r(Definition, 0),
     B = hash:doit(Definition),
     %replace "recursion" in the definition with a pointer to this.
@@ -476,7 +479,11 @@ run3(?split, D) ->
 run3(?reverse, D) ->
     [H|T] = D#d.stack,
     D#d{op_gas = D#d.op_gas - length(H),
-	stack = [lists:reverse(H)|T]}.
+	stack = [lists:reverse(H)|T]};
+run3(?nop, D) -> D.
+
+
+    
 
 
 memory(L) -> memory(L, 0).
@@ -547,7 +554,7 @@ replace(Old, New, Binary, Pointer) ->
 split(X, B) ->
     split(X, B, 0).
 split(X, B, N) ->
-    <<_:N, Y:8, _/binary>> = B,
+    <<_:N, Y:8, C/binary>> = B,
     case Y of
 	?int -> split(X, B, N+8+?int_bits);
 	?binary ->
@@ -557,8 +564,27 @@ split(X, B, N) ->
 	    split(X, B, N+16+(H*8));
 	X ->
 	    <<A:N, Y:8, T/binary>> = B,
-	    {<<A:N>>, T};
+	    {<<A:N>>, T, N};
 	_ -> split(X, B, N+8)
+    end.
+split_if(X, B) ->
+    split_if(X, B, 0).
+split_if(X, B, N) ->
+    <<_:N, Y:8, C/binary>> = B,
+    case Y of
+	?int -> split_if(X, B, N+8+?int_bits);
+	?binary ->
+	    <<_:N, Y:8, H:8, _/binary>> = B,
+	    %J = H*8,
+	    %<<_:N, Y:8, H:8, _:H, _/binary>> = B,
+	    split_if(X, B, N+16+(H*8));
+	?caseif ->
+	    {_, Rest, M} = split_if(?then, C),
+	    split_if(X, B, N+M+16);
+	X ->
+	    <<A:N, Y:8, T/binary>> = B,
+	    {<<A:N>>, T, N};
+	_ -> split_if(X, B, N+8)
     end.
 split_list(N, L) ->
     split_list(N, L, []).

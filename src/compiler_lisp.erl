@@ -3,7 +3,9 @@
 -define(int_bits, 32).
 test() ->
     %{ok, Text} = file:read_file("examples/first.scm"),
-    {ok, Text} = file:read_file("examples/lambda.scm"),
+    %{ok, Text} = file:read_file("examples/lambda.scm"),
+    %{ok, Text} = file:read_file("examples/cond.scm"),
+    {ok, Text} = file:read_file("examples/gcf.scm"),
     doit(Text).
 
 doit(A) ->
@@ -18,9 +20,10 @@ doit(A) ->
 
     {Tree3, FuncNames, _} = functions(Tree2, [], 0),%gets rid of "define", puts the bytes for : and ; to make a function. 
 
-
     %var_number_check(Tree, Functions),%checks that every function has the right number of inputs.
-    Tree35 = rpn(Tree3),%change to reverse polish notation.
+    Tree33 = conds(Tree3),
+    Tree34 = eqs(Tree33),
+    Tree35 = rpn(Tree34),%change to reverse polish notation.
     Tree4 = compile_functions(Tree35),
     %List2 = remove_functions(List),%functions are named by the hash of their contents. So remove the names from the code.
     %get functions. load up a dictionary of the functions
@@ -33,10 +36,28 @@ doit(A) ->
     List3 = remove_funcnames(List2),
     List4 = to_ops(List3, Funcs),
     
-    %chalang:vm(List4, 100000, 100000, 1000, 1000, []).
+    VM = chalang:vm(List4, 1000, 1000, 1000, 1000, []),
     %print_binary(List4),
-    {Words, Tree, Tree2, Tree3, Tree35, Tree4, List, List2, List3, List4}.
+    %Words, Tree, Tree2, Tree3, 
+    %{Tree35, Tree4, List, List2, List3, 
+     {Tree34, Tree35, VM}. %We want to store location of function in a variable, so we can use map and reduce.
     %List3.
+ %[<<"cond">>,
+%   [[<<"==">>,<<"1">>,<<"2">>],<<"4">>],
+%   [<<"0">>,<<"5">>],
+%   [<<"1">>,<<"6">>]],
+eqs([<<"=">>|T]) ->
+    [<<"nop">>] ++ T ++ [<<"===">>,<<"swap">>, <<"drop">>,<<"swap">>, <<"drop">>];
+eqs([H|T]) -> [eqs(H)|eqs(T)];
+eqs(X) -> X.
+conds([<<"cond">>, T]) -> conds2(T);
+conds([H|T]) -> [conds(H)|conds(T)];
+conds(X) -> X.
+conds2([[A,B]|T]) -> %It is a list of pairs. The first part of each pair should leave exactly 1 thing on the stack.
+    [<<"nop">>] ++ [A]++[<<"if">>] ++[B] ++ [<<"else">>] ++ conds2(T) ++ [<<"then">>];
+
+conds2([]) -> [].
+    
 lambdas([], N) -> {[], N};
 lambdas([[[<<"lambda">>, Vars, Code]|T]|T2], N) -> 
     X = list_to_binary("lambda" ++ integer_to_list(N)),
@@ -77,7 +98,7 @@ to_ops([], _) -> <<>>;
 to_ops([H|T], F) -> 
     {B, C} = is_op(H),
     A = if
-	    B -> <<C:8>>;
+	    B -> C;
 	    true ->
 		case dict:find(H, F) of
 		    error -> H;
@@ -112,12 +133,16 @@ compile_vars([]) -> [];
 compile_vars([H|T]) -> [H, <<"!">>] ++ compile_vars(T).
 compile_code([], _) -> [];
 compile_code([H|T], Vars) -> 
+    [compile_code(H, Vars)|
+     compile_code(T, Vars)];
+compile_code(H, Vars) -> 
     B = is_in(H, Vars),
-    A = if
+    A = if 
 	    B -> [H, <<"@">>];
 	    true -> [H]
 	end,
-    A ++ compile_code(T, Vars).
+    A.
+		
 is_in(H, [H|_]) -> true;
 is_in(_, []) ->  false;
 is_in(X, [_|T]) -> is_in(X, T).
@@ -150,14 +175,28 @@ variables([H|T], {Dict, Many}, FuncNames) ->
 		end
 	end,
     A ++ variables(T, D2, FuncNames).
-is_op(<<"*">>) -> {true, 52};
-is_op(<<"+">>) -> {true, 50};
-is_op(<<":">>) -> {true, 110};
-is_op(<<";">>) -> {true, 111};
-is_op(<<"@">>) -> {true, 121};
-is_op(<<"!">>) -> {true, 120};
-is_op(<<"int">>) -> {true, 0};
-is_op(<<"binary">>) -> {true, 2};
+is_op(<<"true">>) -> {true, <<0,1:32>>};
+is_op(<<"false">>) -> {true, <<0,0:32>>};
+is_op(<<"int">>) -> {true, <<0>>};
+is_op(<<"binary">>) -> {true, <<2>>};
+is_op(<<"print">>) -> {true, <<10>>};
+is_op(<<"nop">>) -> {true, <<>>};
+is_op(<<"drop">>) -> {true, <<20>>};
+is_op(<<"swap">>) -> {true, <<22>>};
+is_op(<<"+">>) -> {true, <<50>>};
+is_op(<<"*">>) -> {true, <<52>>};
+is_op(<<"/">>) -> {true, <<53>>};
+is_op(<<"rem">>) -> {true, <<57>>};
+is_op(<<"===">>) -> {true, <<58>>};
+is_op(<<":">>) -> {true, <<110>>};
+is_op(<<";">>) -> {true, <<111>>};
+is_op(<<"recurse">>) -> {true, <<112, 113>>};
+is_op(<<"call">>) -> {true, <<113>>};
+is_op(<<"@">>) -> {true, <<121>>};
+is_op(<<"!">>) -> {true, <<120>>};
+is_op(<<"if">>) -> {true, <<70>>};
+is_op(<<"else">>) -> {true, <<71>>};
+is_op(<<"then">>) -> {true, <<72>>};
 is_op(_) -> {false, not_an_op}.
 
 to_lists(Words) ->

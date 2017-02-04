@@ -13,6 +13,7 @@ opcode | symbol | stack changes | comment
 ---| ---   | --- | ---
 10 | print | ( Y -- X ) | prints the top element on stack
 11 | crash |    |code stops execution here. Whatever is on top of the stack is the final state.
+12 | nop | ( -- ) | does nothing.
 
 
 ## stack opcodes
@@ -83,7 +84,6 @@ opcode | symbol | stack changes | comment
 
 
 ## check state opcodes
-Opcode not used anymore:  questions. the root of the questions trie from the previous block. Used for crowdfunding the asking of questions. We don't need this because the oracle trie can be used to crowdfund the asking of questions.
 
 opcode | symbol | stack changes | comment
 --- | --- | --- | ---
@@ -166,6 +166,8 @@ opcode, symbol for compiled language, stack changes
 10 print % ( Y -- X )
 
 11 crash %code stops execution here. Whatever is on top of the stack is the final state.
+
+12 nop % does nothing
 
 
 # stack opcodes
