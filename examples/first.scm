@@ -1,5 +1,4 @@
 (define Square (x) (* x x))
 (define double (x) (+ x x))
-(Square (double 5))
+(= (Square (double 5)) 100)
 
-% ((lambda (x) (* x x)) 6)

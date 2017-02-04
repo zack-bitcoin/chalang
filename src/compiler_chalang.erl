@@ -25,6 +25,10 @@ doit(A) ->
     X.
 add_spaces(B) -> add_spaces(B, <<"">>).
 add_spaces(<<"">>, B) -> B;
+add_spaces(<<40:8, B/binary >>, Out) ->  % "("
+    add_spaces(B, <<Out/binary, 32:8, 40:8, 32:8>>);
+add_spaces(<<41:8, B/binary >>, Out) ->  % ")"
+    add_spaces(B, <<Out/binary, 32:8, 41:8, 32:8>>);
 add_spaces(<<91:8, B/binary >>, Out) ->  % "["
     add_spaces(B, <<Out/binary, 32:8, 91:8, 32:8>>);
 add_spaces(<<93:8, B/binary >>, Out) ->  % "]"
@@ -131,8 +135,6 @@ split(C, [D|B], Out) ->
 remove_functions(Words) -> rad(Words, []).
 rad([], Out) -> flip(Out);
 rad([<<":">>|[_|T]], Out) -> rad(T, [<<":">>|Out]);
-%rad([<<"macroSign">>|[_|[<<"binary">>|[_|[<<"binary">>|[_|T]]]]]], Out) -> rad(T, Out);
-%rad([<<"macroSign">>|[_|[<<"binary">>|[_|[_|T]]]]], Out) -> rad(T, Out);
 rad([X|T], Out) -> rad(T, [X|Out]).
 to_opcodes([<<"int">>|[B|T]], F, Out, V) ->
     Num = list_to_integer(binary_to_list(B)),
