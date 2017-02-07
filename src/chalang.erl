@@ -90,6 +90,9 @@ test(Script, OpGas, RamGas, Funs, Vars, State) ->
 	   fun_limit = Funs,
 	   ram_current = size(Script), 
 	   state = State},
+    %compiler_chalang:print_binary(Script),
+    io:fwrite("\nrunning a script =============\n"),
+    disassembler:doit(Script),
     X = run2([Script], D).
     %io:fwrite("\n"),
     %io:fwrite("oGas, stack, alt, ram_current, ram_most, ram_limit, vars, funs, many_funs, fun_limit\n"),

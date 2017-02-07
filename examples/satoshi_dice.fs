@@ -20,7 +20,7 @@ macro Win2 int 1 Amount ;
 
 macro player1revealed Secret1 reveal drop int 2 Win1 ;
 macro player2revealed Secret2 reveal drop int 2 Win2 ;
-: bothRevealed Secret2 reveal swap
+macro bothRevealed Secret2 reveal swap
           Secret1 reveal bxor int 2 rem
 	  int 3 swap
 	  if Win1 else Win2 then ;
@@ -32,7 +32,7 @@ macro -- crash else then drop ;
 macro main
   int 1 -> player1revealed -- 
   int 2 -> player2revealed --
-  int 3 -> bothRevealed call --
+  int 3 -> bothRevealed --
   drop Draw ;
 
 macro test1
