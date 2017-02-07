@@ -141,7 +141,9 @@ run2(_, D) when D#d.op_gas < 0 ->
     D = ok,
     {error, "out of time"};
 run2(_, D) when D#d.ram_current > D#d.ram_limit ->
-    io:fwrite("out of space"),
+    io:fwrite("Out of space. Limit was: "),
+    io:fwrite(integer_to_list(D#d.ram_limit)),
+    io:fwrite("\n"),
     D = ok,
     {error, "out of space"};
 run2(A, D) when D#d.ram_current > D#d.ram_most ->
