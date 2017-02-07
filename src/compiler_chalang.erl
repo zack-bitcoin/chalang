@@ -5,6 +5,8 @@
 %-define(plus_store, compile(<<" dup @ rot + swap ! ">>)).
 -define(int_bits, 32).
 
+doit(A) when is_list(A) ->
+    doit(list_to_binary(A));
 doit(A) ->
     %Test to make sure : and ; are alternating the whole way, or give an intelligent error.
     %Give error message if we define the same function twice.

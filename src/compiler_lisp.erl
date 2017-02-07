@@ -19,7 +19,8 @@ test2([H|T]) ->
 	X -> X
     end.
     %{ok, Text} = file:read_file("examples/error.scm"),
-
+doit(A) when is_list(A) ->
+    doit(list_to_binary(A));
 doit(A) ->
     B = remove_comments(A),
     C = add_spaces(B),
@@ -28,8 +29,6 @@ doit(A) ->
     %true = ins_outs(Tree),
     {Tree1, _} = macros(Tree, dict:new()),
     {Tree2, _} = lambdas(Tree1, 0),
-    %get macros
-    %apply macros
     %rename vars in functions. That way we have dynamic scope. Replace every first var with FuncNameV1, second with FuncNameV2, etc.
 
     {Tree3, FuncNames, _} = functions(Tree2, [], 0),%gets rid of "define", puts the bytes for : and ; to make a function. 
