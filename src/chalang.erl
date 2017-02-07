@@ -134,9 +134,11 @@ run3(ScriptSig, ScriptPubkey, OpGas, RamGas, Funs, Vars, State) ->
 %run2 processes a single opcode of the script. in comparison to run3/2, run2 is able to edit more aspects of the RUN2's state. run2 is used to define functions and variables. run3/2 is for all the other opcodes. 
 run2(_, D) when D#d.op_gas < 0 ->
     io:fwrite("out of time"),
+    D = ok,
     {error, "out of time"};
 run2(_, D) when D#d.ram_current > D#d.ram_limit ->
     io:fwrite("out of space"),
+    D = ok,
     {error, "out of space"};
 run2(A, D) when D#d.ram_current > D#d.ram_most ->
     run2(A, D#d{ram_most = D#d.ram_current});
