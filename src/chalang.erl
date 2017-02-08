@@ -95,7 +95,8 @@ test(Script, OpGas, RamGas, Funs, Vars, State) ->
     disassembler:doit(Script),
     X = run2([Script], D).
     %io:fwrite("\n"),
-    %io:fwrite("oGas, stack, alt, ram_current, ram_most, ram_limit, vars, funs, many_funs, fun_limit\n"),
+
+						%io:fwrite("oGas, stack, alt, ram_current, ram_most, ram_limit, vars, funs, many_funs, fun_limit\n"),
     %X#d.stack.
 
 %run takes a list of bets and scriptpubkeys. Each bet is processed seperately by the RUN2, and the results of each bet is accumulated together to find the net result of all the bets.
