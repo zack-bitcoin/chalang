@@ -100,6 +100,8 @@ test(Script, OpGas, RamGas, Funs, Vars, State) ->
 
 %run takes a list of bets and scriptpubkeys. Each bet is processed seperately by the RUN2, and the results of each bet is accumulated together to find the net result of all the bets.
 run(ScriptSig, SPK, OpGas, RamGas, Funs, Vars, State) ->
+    io:fwrite("\nrunning a script =============\n"),
+    disassembler:doit(Script),
     run(ScriptSig, SPK, OpGas, RamGas, Funs, Vars, State, 0, 0).
 run([],[], OpGas, RamGas, _, _, _, Amount, Nonce) ->
     {Amount, Nonce, OpGas, RamGas};
