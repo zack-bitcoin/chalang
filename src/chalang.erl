@@ -531,7 +531,7 @@ balanced_f(<<?fun_end:8, Script/binary>>, 1) ->
 balanced_f(<<?fun_end:8, _/binary>>, 0) -> false;
 balanced_f(<<?int:8, _:?int_bits, Script/binary>>, X) ->
     balanced_f(Script, X);
-balanced_f(<<?binary:8, H:8, Script/binary>>, D) ->
+balanced_f(<<?binary:8, H:32, Script/binary>>, D) ->
     X = H * 8,
     <<_:X, Script2/binary>> = Script,
     balanced_f(Script2, D);
@@ -541,7 +541,7 @@ none_of(<<>>, _) -> true;
 none_of(<<X:8, _/binary>>, X) -> false;
 none_of(<<?int:8, _:?int_bits, Script/binary>>, X) -> 
     none_of(Script, X);
-none_of(<<?binary:8, H:8, Script/binary>>, D) -> 
+none_of(<<?binary:8, H:32, Script/binary>>, D) -> 
     X = H * 8,
     <<_:X, Script2/binary>> = Script,
     none_of(Script2, D);
@@ -573,7 +573,7 @@ split(X, B, N) ->
     case Y of
 	?int -> split(X, B, N+8+?int_bits);
 	?binary ->
-	    <<_:N, Y:8, H:8, _/binary>> = B,
+	    <<_:N, Y:8, H:32, _/binary>> = B,
 	    %J = H*8,
 	    %<<_:N, Y:8, H:8, _:H, _/binary>> = B,
 	    split(X, B, N+16+(H*8));
