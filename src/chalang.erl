@@ -109,10 +109,10 @@ run([SS|ScriptSig], [SPK|ScriptPubkey], OpGas, RamGas, Funs, Vars, State, Amount
 
 %run3 takes a single bet and scriptpubkey, and calculates the result.
 run3(ScriptSig, ScriptPubkey, OpGas, RamGas, Funs, Vars, State) ->
-    io:fwrite("script sig is "),
-    compiler_chalang:print_binary(ScriptSig),
-    io:fwrite("spk is "),
-    compiler_chalang:print_binary(ScriptPubkey),
+    %io:fwrite("script sig is "),
+    %compiler_chalang:print_binary(ScriptSig),
+    %io:fwrite("spk is "),
+    %compiler_chalang:print_binary(ScriptPubkey),
     true = balanced_f(ScriptSig, 0),
     true = balanced_f(ScriptPubkey, 0),
     true = none_of(ScriptSig, ?crash),
