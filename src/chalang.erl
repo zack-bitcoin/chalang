@@ -589,10 +589,10 @@ split_if(X, B, N) ->
     case Y of
 	?int -> split_if(X, B, N+8+?int_bits);
 	?binary ->
-	    <<_:N, Y:8, H:8, _/binary>> = B,
+	    <<_:N, Y:8, H:32, _/binary>> = B,
 	    %J = H*8,
 	    %<<_:N, Y:8, H:8, _:H, _/binary>> = B,
-	    split_if(X, B, N+16+(H*8));
+	    split_if(X, B, N+40+(H*8));
 	?caseif ->
 	    {_, Rest, M} = split_if(?then, C),
 	    split_if(X, B, N+M+16);

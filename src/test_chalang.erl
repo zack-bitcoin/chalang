@@ -19,7 +19,8 @@ test() -> test(?loc).
 test(Loc) ->
     Scripts = ["function", "variable",
 	       "macro", "case", "recursion", "map",
-	       "math", "hashlock", "case2"],
+	       "math", "hashlock", "case2", 
+	       "case_binary"],
 	       %"merge"],
     Gas = 10000,
     run_scripts(Scripts, Gas, Loc),
