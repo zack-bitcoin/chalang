@@ -31,10 +31,11 @@ doit(?eq, A, B) ->
 	    true -> 0
 	end,
     <<C:?int_bits>>;
-doit(?remainder, <<A:?int_bits>>, B/binary) ->
+doit(?remainder, <<A:?int_bits>>, B) ->
     C = size(B)*8,
     <<D:C>> = B,
-    D rem A;
+    E = D rem A,
+    <<E:?int_bits>>;
 doit(X, <<A:?int_bits>>, <<B:?int_bits>>) ->
     C = int_arithmetic(X, A, B),
     <<C:?int_bits>>.
