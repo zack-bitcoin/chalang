@@ -105,10 +105,10 @@ run(ScriptSig, SPK, OpGas, RamGas, Funs, Vars, State) ->
 run([],[], OpGas, RamGas, _, _, _, Amount, Nonce) ->
     {Amount, Nonce, OpGas, RamGas};
 run([SS|ScriptSig], [SPK|ScriptPubkey], OpGas, RamGas, Funs, Vars, State, Amount, Nonce) ->
-    io:fwrite("\nScriptSig =============\n"),
-    disassembler:doit(SS),
-    io:fwrite("\nSPK =============\n"),
-    disassembler:doit(SPK),
+    %io:fwrite("\nScriptSig =============\n"),
+    %disassembler:doit(SS),
+    %io:fwrite("\nSPK =============\n"),
+    %disassembler:doit(SPK),
     {A2, N2, EOpGas, ERamGas} = run3(SS, SPK, OpGas, RamGas, Funs, Vars, State),
     run(ScriptSig, ScriptPubkey, EOpGas, ERamGas, Funs, Vars, State, A2+Amount, N2+Nonce).
 
