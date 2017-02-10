@@ -254,6 +254,7 @@ w2o(<<"nil">>) -> 132;
 w2o(<<"++">>) -> 134;
 w2o(<<"split">>) -> 135;
 w2o(<<"reverse">>) -> 136;
+w2o(<<"is_list">>) -> 137;
 w2o(_) -> not_op.
 %to_opcodes([<<"or_die">>|R], F, Out) ->
     %( bool -- )

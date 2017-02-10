@@ -127,7 +127,8 @@ opcode | symbol | stack changes | comment
 132 | nil |  -- []        | this is the root of a list.
 134 | ++  |  X Y -- Z     | appends 2 lists or 2 binaries. Cannot append a list to a binary. Also works on pairs of lists.
 135 | split |  N Binary -- BinaryA BinaryB  | Binary A has N*8 many bits. BinaryA appended to BinaryB makes Binary.
-    136 | reverse |   F -- G | only works on lists
+136 | reverse |  	 F -- G | only works on lists
+137 | is_list | L -- L B | checks if the thing on the top of the stack is a list or not. Does not drop it.
 
 
 The following are compiler macros that make it easier to program:

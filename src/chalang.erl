@@ -70,6 +70,7 @@ new_state(TotalCoins, Height, Slash, Oracle, Accounts, Channels) ->
 -define(append, 134).
 -define(split, 135).
 -define(reverse, 136).
+-define(is_list, 137).
 -define(int_bits, 32).
 
 %op_gas limits our program in time.
@@ -496,6 +497,15 @@ run3(?reverse, D) ->
     [H|T] = D#d.stack,
     D#d{op_gas = D#d.op_gas - length(H),
 	stack = [lists:reverse(H)|T]};
+run3(?is_list, D) ->
+    [H|T] = D#d.stack,
+    G = if
+	    is_list(H) -> <<1:?int_bits>>;
+	    true -> <<0:?int_bits>>
+	end,
+    D#d{op_gas = D#d.op_gas - 1,
+	stack = [G|[H|T]],
+	ram_current = D#d.ram_current - 1};
 run3(?nop, D) -> D.
 
 
