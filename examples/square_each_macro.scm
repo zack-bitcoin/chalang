@@ -1,6 +1,8 @@
+(import (eqs_lib.scm))
+
 (macro square (X) (* X X))
-(macro = (A B)
-       '(nop A B === swap drop swap drop))
+%(macro eqs (A B)
+%       '(nop A B === swap drop swap drop))
 
 
 (macro sqr (X)
@@ -17,7 +19,7 @@
 			  `(tree (cdr X)))))))
 
 (and
- (= (sqr (2 3))
+ (eqs (sqr (2 3))
     (cons 4 (cons 9 nil)))
- (= (tree (4 9))
+ (eqs (tree (4 9))
     (cons 4 (cons 9 nil))))

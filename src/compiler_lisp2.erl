@@ -10,7 +10,8 @@
 -define(int_bits, 32).
 test() ->
     Files = [
-	     "first_macro", "square_each_macro", "cond_macro"
+	     "first_macro", "square_each_macro", 
+	     "cond_macro", "primes"
 	    ],
     test2(Files).
 test2([]) -> success;
@@ -25,17 +26,21 @@ test2([H|T]) ->
 	X -> X
     end.
     %{ok, Text} = file:read_file("examples/error.scm"),
-doit(A) when is_list(A) ->
-    doit(list_to_binary(A));
-doit(A) ->
+doit_1(A, Done) ->
     B = remove_comments(<<A/binary, <<"\n">>/binary>>),
     B2 = quote_unquote(B),
     C = add_spaces(B2),
     Words = to_words(C, <<>>, []),
     Tree = to_lists(Words),
+    imports(Tree, Done).
+    
+doit(A) when is_list(A) ->
+    doit(list_to_binary(A));
+doit(A) ->
+    {Tree1, _} = doit_1(A, []),
     %Tree1 = quote_list(Tree),
     io:fwrite("Macros\n"),
-    Tree2 = integers(Tree),
+    Tree2 = integers(Tree1),
     {Tree3, _} = macros(Tree2, dict:new()),
     io:fwrite("rpn\n"),
     Tree35 = rpn(Tree3),%change to reverse polish notation.
@@ -48,7 +53,7 @@ doit(A) ->
     %print_binary(List4),
     %Words, Tree, Tree2, Tree3, 
     %{Tree35, Tree4, List, List2, List3, 
-     {{Tree, Tree2, Tree3, Tree35, List, List2, List4
+     {{Tree1, Tree2, Tree3, Tree35, List, List2, List4
       }, VM}. 
 quote_list([<<"macro">>|T]) ->
     [<<"macro">>|T];
@@ -63,6 +68,29 @@ quote_list2([A]) ->
 quote_list2([A|B]) ->
     [<<"cons">>, quote_list2(A), quote_list2(B)];
 quote_list2(X) -> X.
+
+imports([<<"import">>, []], Done) -> {[], Done};
+imports([<<"import">>, [H|T]], Done) ->
+    io:fwrite("importing "),
+    io:fwrite(H),
+    B = is_in(H, Done),
+    {Tree, Done2} = 
+	if
+	    B -> {[], Done};
+	    true ->		
+		{ok, File} = file:read_file("examples/" ++ binary_to_list(H)),
+		D2 = [H|Done],
+		{Tr, D3} = doit_1(File, D2),
+		{Tr, D3}
+	end,
+    {Tree2, Done3} = imports([<<"import">>, T], Done2),
+    {[Tree|Tree2], Done3};
+    
+imports([H|T], Done) -> 
+    {H2, Done2} = imports(H, Done),
+    {T2, Done3} = imports(T, Done2),
+    {[H2|T2], Done3};
+imports(Tree, Done) -> {Tree, Done}.
 
 
 integers([A|B]) ->
@@ -92,7 +120,7 @@ macros([H|T], D) ->
 	    {T2, D2} = macros(T, D),
 	    {[H|T2], D2};
 	{ok, {Vars, Code}} ->
-	    T2 = apply_macro(Code, Vars, T),
+	    T2 = apply_macro(Code, Vars, T, D),
 	    %io:fwrite("T2 macros "),
 	    %io:fwrite({0, T2}),
 	    macros(T2, D)
@@ -100,92 +128,104 @@ macros([H|T], D) ->
     end;
 macros(X, D) -> {X, D}.
    
-apply_macro(Code, [], []) ->
-    lisp(Code);
-apply_macro(Code, [V|Vars], [H|T]) ->
+apply_macro(Code, [], [], D) ->
+    lisp(Code, D);
+apply_macro(Code, [V|Vars], [H|T], D) ->%D is a dict of the defined macros.
     %V is the name given in the definition of the macro.
     %H is the name given when calling the macro in the code.
     Code2 = replace(Code, V, H),
-    apply_macro(Code2, Vars, T).
+    apply_macro(Code2, Vars, T, D).
 replace([], _, _) -> [];
 replace([H|T], A, B) ->
     [replace(H, A, B)|
      replace(T, A, B)];
 replace(A, A, B) -> B;
 replace(X, _, _) -> X.
-lisp_quote([[<<"unquote">>|T]|T2]) -> 
-    [lisp(T)|
-     lisp_quote(T2)];
-lisp_quote([H|T]) -> 
-    [lisp_quote(H)|
-     lisp_quote(T)];
-lisp_quote(X) -> X.
-lisp([<<"print">>|T]) -> 
+lisp_quote([[<<"unquote">>|T]|T2], D) -> 
+    [lisp(T, D)|
+     lisp_quote(T2, D)];
+lisp_quote([H|T], D) -> 
+    [lisp_quote(H, D)|
+     lisp_quote(T, D)];
+lisp_quote(X, _) -> X.
+lisp([<<"print">>|T], D) -> 
     io:fwrite("print statment\n"),
     io:fwrite(T),
     io:fwrite("\n"),
-    lisp(T);
-lisp([<<"quote">>|T]) -> lisp_quote(T);
-lisp([<<"cond">>, T]) -> lisp(lisp_cond(T));
-lisp([<<"=">>, A, B]) ->
-    C = lisp(A),
-    D = lisp(B),
-    C == D;
-lisp([<<">">>, A, B]) ->
-    C = lisp(A),
-    D = lisp(B),
+    lisp(T, D);
+lisp([<<"quote">>|T], D) -> lisp_quote(T, D);
+lisp([<<"cond">>, T], D) -> lisp(lisp_cond(T, D), D);
+lisp([<<"=">>, A, B], D) ->
+    C = lisp(A, D),
+    E = lisp(B, D),
+    C == E;
+lisp([<<">">>, A, B], F) ->
+    C = lisp(A, F),
+    D = lisp(B, F),
     C > D;
-lisp([<<"<">>, A, B]) ->
-    C = lisp(A),
-    D = lisp(B),
+lisp([<<"<">>, A, B], F) ->
+    C = lisp(A, F),
+    D = lisp(B, F),
     C < D;
-lisp([<<"is_list">>, A]) ->
-    B = lisp(A),
+lisp([<<"is_list">>, A], F) ->
+    B = lisp(A, F),
     is_list(B);
-lisp([<<"+">>, A, B]) ->
-    C = lisp(A),
-    D = lisp(B),
+lisp([<<"+">>, A, B], F) ->
+    C = lisp(A, F),
+    D = lisp(B, F),
     C + D;
-lisp([<<"-">>, A, B]) ->
-    C = lisp(A),
-    D = lisp(B),
+lisp([<<"-">>, A, B], F) ->
+    C = lisp(A, F),
+    D = lisp(B, F),
     C - D;
-lisp([<<"cons">>, A, B]) ->
-    C = lisp(A),
-    D = lisp(B),
+lisp([<<"+">>, A, B], F) ->
+    C = lisp(A, F),
+    D = lisp(B, F),
+    C + D;
+lisp([<<"*">>, A, B], F) ->
+    C = lisp(A, F),
+    D = lisp(B, F),
+    C * D;
+lisp([<<"rem">>, A, B], F) ->
+    C = lisp(A, F),
+    D = lisp(B, F),
+    C rem D;
+lisp([<<"reverse">>, A], F) ->
+    lists:reverse(lisp(A, F));
+lisp([<<"cons">>, A, B], F) ->
+    C = lisp(A, F),
+    D = lisp(B, F),
     [C|D];
-lisp([<<"car">>, A]) ->
-    C = lisp(A),
+lisp([<<"car">>, A], F) ->
+    C = lisp(A, F),
     hd(C);
-lisp([<<"cdr">>, A]) ->
-    C = lisp(A),
+lisp([<<"cdr">>, A], F) ->
+    C = lisp(A, F),
     tl(C);
-lisp([<<"or">>, A, B]) ->
-    lisp(A) or lisp(B);
-lisp([<<"and">>, A, B]) ->
-    lisp(A) and lisp(B);
-lisp([<<"not">>, A]) ->
-    not(lisp(A));
-lisp(X) -> X.
+lisp([<<"or">>, A, B], F) ->
+    lisp(A, F) or lisp(B, F);
+lisp([<<"and">>, A, B], F) ->
+    lisp(A, F) and lisp(B, F);
+lisp([<<"not">>, A], F) ->
+    not(lisp(A, F));
+lisp(X, _) -> X.
     
-lisp_cond([]) ->
+lisp_cond([], _) ->
     {error, no_true_cond};
-lisp_cond([[Bool, Code]|T]) ->
+lisp_cond([[Bool, Code]|T], D) ->
     %B = lisp(Bool),
-    case lisp(Bool) of
-	false -> lisp_cond(T);
-	<<"false">> -> lisp_cond(T);
-	[<<"false">>] -> lisp_cond(T);
+    {B2, _} = macros(Bool, D),
+    B3 = lisp(B2, D),
+    case B3 of
+	false -> lisp_cond(T, D);
+	<<"false">> -> lisp_cond(T, D);
+	[<<"false">>] -> lisp_cond(T, D);
 	<<"true">> -> Code;
 	[<<"true">>] -> Code;
 	true -> Code;
 	X -> 
 	    {error, bad_bool, X}
-    end.
-	    
-
-   
-    
+    end. 
 
 
 print_binary({error, R}) ->
@@ -272,6 +312,8 @@ is_op(<<"+">>) -> {true, <<50>>, 2, 1};
 is_op(<<"-">>) -> {true, <<51>>, 2, 1};
 is_op(<<"*">>) -> {true, <<52>>, 2, 1};
 is_op(<<"/">>) -> {true, <<53>>, 2, 1};
+is_op(<<">">>) -> {true, <<54>>, 2, 1};
+is_op(<<"<">>) -> {true, <<55>>, 2, 1};
 is_op(<<"rem">>) -> {true, <<57>>, 2, 1};
 is_op(<<"===">>) -> {true, <<58>>, 2, 3};
 is_op(<<"not">>) -> {true, <<80>>, 1, 1};
