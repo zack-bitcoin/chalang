@@ -1,5 +1,5 @@
 -module(chalang).
--export([run/7, test/6, vm/6, replace/3, new_state/6]).
+-export([run/7, test/6, vm/6, replace/3, new_state/6, split/2]).
 -record(d, {op_gas = 0, stack = [], alt = [],
 	    ram_current = 0, ram_most = 0, ram_limit = 0, 
 	    vars = {},  
@@ -452,6 +452,7 @@ run3(?set, D) ->
 run3(?fetch, D) ->
     [<<Key:32>>|T] = D#d.stack,
     Value = element(Key, D#d.vars),
+    false = (Value == e),
     D#d{op_gas = D#d.op_gas - 1,
 	stack = [Value|T],
 	ram_current = D#d.ram_current + memory(Value) + 1};

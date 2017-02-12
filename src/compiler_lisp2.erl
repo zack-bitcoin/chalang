@@ -10,8 +10,10 @@
 -define(int_bits, 32).
 test() ->
     Files = [
-	     "first_macro", "square_each_macro", 
-	     "cond_macro", "primes"
+	     %"first_macro", "square_each_macro", 
+	     %"cond_macro", "primes", 
+	     %"lists"
+	     "function"
 	    ],
     test2(Files).
 test2([]) -> success;
@@ -48,13 +50,15 @@ doit(A) ->
     List2 = variables(List, {dict:new(), 1}),
     Funcs = dict:new(),
     List4 = to_ops(List2, Funcs),
+    List5 = lambdas(List4),
+    disassembler:doit(List5),
     io:fwrite("VM\n"),
-    VM = chalang:vm(List4, 1000, 1000, 1000, 1000, []),
+    VM = chalang:vm(List5, 1000, 1000, 1000, 1000, []),
     %print_binary(List4),
     %Words, Tree, Tree2, Tree3, 
     %{Tree35, Tree4, List, List2, List3, 
-     {{Tree1, Tree2, Tree3, Tree35, List, List2, List4
-      }, VM}. 
+    {{Tree35, List, List4
+      }, VM}.%VM}. 
 quote_list([<<"macro">>|T]) ->
     [<<"macro">>|T];
 quote_list([<<"quote">>|T]) ->
@@ -120,10 +124,11 @@ macros([H|T], D) ->
 	    {T2, D2} = macros(T, D),
 	    {[H|T2], D2};
 	{ok, {Vars, Code}} ->
-	    T2 = apply_macro(Code, Vars, T, D),
+	    {T3, D2} = macros(T, D),
+	    T2 = apply_macro(Code, Vars, T3, D2),
 	    %io:fwrite("T2 macros "),
 	    %io:fwrite({0, T2}),
-	    macros(T2, D)
+	    macros(T2, D2)
 	    %{apply_macro(Code, Vars, T, D), D}
     end;
 macros(X, D) -> {X, D}.
@@ -134,7 +139,12 @@ apply_macro(Code, [V|Vars], [H|T], D) ->%D is a dict of the defined macros.
     %V is the name given in the definition of the macro.
     %H is the name given when calling the macro in the code.
     Code2 = replace(Code, V, H),
-    apply_macro(Code2, Vars, T, D).
+    apply_macro(Code2, Vars, T, D);
+apply_macro(C,_,_,_) ->
+    io:fwrite("wrong number of inputs to function "),
+    io:fwrite(C),
+    io:fwrite("\n"),
+    C = -1.
 replace([], _, _) -> [];
 replace([H|T], A, B) ->
     [replace(H, A, B)|
@@ -178,10 +188,10 @@ lisp([<<"-">>, A, B], F) ->
     C = lisp(A, F),
     D = lisp(B, F),
     C - D;
-lisp([<<"+">>, A, B], F) ->
+lisp([<<"/">>, A, B], F) ->
     C = lisp(A, F),
     D = lisp(B, F),
-    C + D;
+    C div D;
 lisp([<<"*">>, A, B], F) ->
     C = lisp(A, F),
     D = lisp(B, F),
@@ -241,18 +251,37 @@ split(C, B) -> split(C, B, []).
 split(C, [C|B], Out) -> {lists:reverse(Out), B};
 split(C, [D|B], Out) ->
     split(C, B, [D|Out]).
+lambdas(<<0, N:32, T/binary>>) -> 
+    T2 = lambdas(T),
+    <<0, N:32, T2/binary>>;
+lambdas(<<2, N:32, T/binary>>) ->
+    M = N * 8,
+    <<X:M, T2/binary>> = T,
+    T3 = lambdas(T2),
+    <<2, N:32, X:M, T3/binary>>;
+lambdas(<<110, T/binary>>) ->
+    {Func, T2, _} = chalang:split(111, T),
+    Hash = hash:doit(Func),
+    T3 = lambdas(T2),
+    <<110, Func/binary, 111, 2, 12:32, Hash/binary, T3/binary>>;
+lambdas(<<X, T/binary>>) -> 
+    T2 = lambdas(T),
+    <<X, T2/binary>>;
+lambdas(<<>>) -> <<>>.
+    
 to_ops([], _) -> <<>>;
 to_ops([H|T], F) -> 
     {B, C, _, _} = is_op(H),%is it a built-in word?
     A = if
 	    B -> C;%return it's compiled format.
 	    true ->%if it isn't built in
-		case dict:find(H, F) of %check if it is a function.
-		    error -> H; %if it isn't a function, then it is probably compiled already.
-		    {ok, Val} -> %It is a function.
-			S = size(Val),
-			<<2, S:32, Val/binary>>
-		end
+		H 
+		%case dict:find(H, F) of %check if it is a function.
+		%    error -> H; %if it isn't a function, then it is probably compiled already.
+		%    {ok, Val} -> %It is a function.
+		%	S = size(Val),
+		%	<<2, S:32, Val/binary>>
+		%end
     end,
     Y = to_ops(T, F),
     <<A/binary, Y/binary>>;
@@ -324,8 +353,8 @@ is_op(<<"band">>) -> {true, <<84>>, 2, 1};
 is_op(<<"bor">>) -> {true, <<85>>, 2, 1};
 is_op(<<"bxor">>) -> {true, <<86>>, 2, 1};
 is_op(<<"=">>) -> {true, <<10,10,10>>, 2, 1};
-is_op(<<":">>) -> {true, <<110>>, 3, 0};
-is_op(<<";">>) -> {true, <<111>>, 0, 0};
+is_op(<<"lambda">>) -> {true, <<110>>, 3, 0};
+is_op(<<"end_lambda">>) -> {true, <<111>>, 0, 0};
 is_op(<<"recurse">>) -> {true, <<112, 113>>, 0, 1};
 is_op(<<"call">>) -> {true, <<113>>, 1, 1};
 is_op(<<"@">>) -> {true, <<121>>, 1, 1};
