@@ -93,3 +93,5 @@ This version will be about 3-5 times more expensive than the original.
 Although it is more expensive, I feel like we should support this third version primarily.
 It is much easier to tell what it does from looking at it in comparison to the other two.
 Making the code easy to read is our main goal.
+
+Eventually we should also make custom types, and add static type checking to all the functions. This would give us lots of nice error messages to make programming easier.
