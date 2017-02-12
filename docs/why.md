@@ -64,7 +64,8 @@ Next I will show what this program looks like written in lisp. The lisp compiler
 		 ((== mode 2) (playerRevealed 1 Secret2))
 		 ((== mode 3) (bothRevealed Secret1 Secret2))
 		 (true (Draw)))))
-		 ```
+		 
+```
 
 Finally, I will show how this program will look in the final language I am aiming to create.
 
