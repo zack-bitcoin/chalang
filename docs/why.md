@@ -24,6 +24,7 @@ macro main
   drop Draw ;
 ```
 Here are the 4 ways this program can be run:
+```
      int 0 main ;
      (choose path 0, so neither player revealed. It is a tie. The nonce is 1.)
 
@@ -35,7 +36,7 @@ Here are the 4 ways this program can be run:
 
      int 1 int 2 int 3 main;
      (choose path 3, so both revealed. the secrets are 1 and 2. The winner will be selected by XORing the secrets. The nonce is 3.)
-
+```
 
 Next I will show what this program looks like written in lisp. The lisp compiler is mostly functioning now.
 
