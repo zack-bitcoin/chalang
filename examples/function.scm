@@ -43,7 +43,7 @@
 	 ((is_list (car Code))
 	  (cons (function_codes_2 Many (car Code))
 		(function_codes_2 Many (cdr Code))))
-	 ((= (car Code) apply)
+	 ((= (car Code) call)
 	   '(nop (+ `(Fdepth) Many) !
 		 `(cdr Code) call
 		 (- `(Fdepth) Many) ! ))
@@ -52,8 +52,8 @@
 (macro function_codes_1 (Many Code)
        (cond
 	(((= Code ()) ())
-	 ((= (car Code) apply)
-	  (cons apply (function_codes_2 Many (cdr Code))))
+	 ((= (car Code) call)
+	  (cons call (function_codes_2 Many (cdr Code))))
 	 ((= (car Code) cond)
 	  (function_codes_cond Many (cdr Code)))
 	 (true (cons (car Code)
