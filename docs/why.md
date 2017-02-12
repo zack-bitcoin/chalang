@@ -1,6 +1,6 @@
-I will show an example. I will show Satoshi Dice written in 3 different styles. The first is a forth compiler. It is very close to the VM. It is the most efficient of the 3, but hardest to write.
+I will show an example. I will show Satoshi Dice written in 3 different styles. The first is a forth compiler. It is very close to the VM. It is the most efficient of the 3, but hardest to read and write.
 
-
+```
 macro Amount int 1000 ;
 macro Draw int 1 int 0 int 0 crash ;
 : or_die not if Draw else then ;
@@ -22,7 +22,7 @@ macro main
   int 2 -> player2revealed --
   int 3 -> bothRevealed --
   drop Draw ;
-
+```
 Here are the 4 ways this program can be run:
      int 0 main ;
      (choose path 0, so neither player revealed. It is a tie. The nonce is 1.)
@@ -39,6 +39,7 @@ Here are the 4 ways this program can be run:
 
 Next I will show what this program looks like written in lisp. The lisp compiler is mostly functioning now.
 
+```
 (set amount 1000)
 (macro Draw () (end 1 0 0))
 (define or_die (B)
@@ -62,23 +63,26 @@ Next I will show what this program looks like written in lisp. The lisp compiler
 		 ((== mode 2) (playerRevealed 1 Secret2))
 		 ((== mode 3) (bothRevealed Secret1 Secret2))
 		 (true (Draw)))))
+		 ```
 
 Finally, I will show how this program will look in the final language I am aiming to create.
 
+```
 amount = 1000.
-one_reveal(A, B):
+one_reveal(A, B) ->
      N = or(0, 1),
      Commit(N) = hash(A),
      end(2, N, amount).
-both_reveal(A, B):
+both_reveal(A, B) ->
      Commit(0) = hash(A),
      Commit(1) = hash(B),
      C = (rem, (bxor, A, B), 2),
      end(3, C, amount).
-main(Secret1, Secret2):
+main(Secret1, Secret2) ->
      or(both_reveal(Secret1, Secret2),
      	one_reveal(Secret1, Secret2),
 	end(1, 0, 0)).
+```
 
 This final one is a prolog-like language with backtracking.
 the "or" function does the backtracking. If an "=" sign doesn't match equality, then it triggers a backtracking event.
