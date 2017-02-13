@@ -18,7 +18,6 @@ test2([H|T]) ->
 	    test2(T);
 	X -> X
     end.
-    %{ok, Text} = file:read_file("examples/error.scm"),
 doit(A) when is_list(A) ->
     doit(list_to_binary(A));
 doit(A) ->

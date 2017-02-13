@@ -86,6 +86,6 @@ doit2(X) ->
     io:fwrite("\n"),
     X=135.
 test() ->
-    {ok, A} = file:read_file("examples/cond.scm"),
+    {ok, A} = file:read_file("src/lisp/cond.scm"),
     {_, _, X} = compiler_lisp:doit(A),
     doit(X).

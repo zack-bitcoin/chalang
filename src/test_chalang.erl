@@ -1,7 +1,7 @@
 -module(test_chalang).
 -export([test/0, test/1, run_script/3]).
 
--define(loc, "examples/").
+-define(loc, "src/forth/").
 run_script(X, Gas, Loc) ->
     {ok, A} = file:read_file(Loc ++ X ++ ".fs"),
     io:fwrite("run script "),

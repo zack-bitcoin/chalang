@@ -26,7 +26,6 @@ test2([H|T]) ->
 	    test2(T);
 	X -> X
     end.
-    %{ok, Text} = file:read_file("examples/error.scm"),
 doit_1(A, Done) ->
     B = remove_comments(<<A/binary, <<"\n">>/binary>>),
     B2 = quote_unquote(B),
