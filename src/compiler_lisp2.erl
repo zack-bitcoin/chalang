@@ -20,7 +20,7 @@ test2([H|T]) ->
     io:fwrite("test "),
     io:fwrite(H),
     io:fwrite("\n"),
-    {ok, Text} = file:read_file("examples/" ++ H ++ ".scm"),
+    {ok, Text} = file:read_file("src/lisp2/" ++ H ++ ".scm"),
     case doit(Text) of
 	{_, [<<1:32>>]} ->
 	    test2(T);
@@ -81,7 +81,7 @@ imports([<<"import">>, [H|T]], Done) ->
 	if
 	    B -> {[], Done};
 	    true ->		
-		{ok, File} = file:read_file("examples/" ++ binary_to_list(H)),
+		{ok, File} = file:read_file("src/lisp2/" ++ binary_to_list(H)),
 		D2 = [H|Done],
 		{Tr, D3} = doit_1(File, D2),
 		{Tr, D3}

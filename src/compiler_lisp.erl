@@ -12,7 +12,7 @@ test2([H|T]) ->
     io:fwrite("test "),
     io:fwrite(H),
     io:fwrite("\n"),
-    {ok, Text} = file:read_file("examples/" ++ H ++ ".scm"),
+    {ok, Text} = file:read_file("src/lisp/" ++ H ++ ".scm"),
     case doit(Text) of
 	{_, [<<1:32>>]} ->
 	    test2(T);
