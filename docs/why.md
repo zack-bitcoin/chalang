@@ -70,20 +70,20 @@ Next I will show what this program looks like written in lisp. The lisp compiler
 Finally, I will show how this program will look in the final language I am aiming to create.
 
 ```
-amount = 1000.
-one_reveal(A, B) ->
+-define(amount, 1000).
+one_reveal(Secret) ->
      N = or(0, 1),
-     Commit(N) = hash(A),
-     end(2, N, amount).
-both_reveal(A, B) ->
-     Commit(0) = hash(A),
-     Commit(1) = hash(B),
-     C = (rem, (bxor, A, B), 2),
-     end(3, C, amount).
-main(Secret1, Secret2) ->
-     or(both_reveal(Secret1, Secret2),
-     	one_reveal(Secret1, Secret2),
-	end(1, 0, 0)).
+     Commit(N) = hash(Secret),
+     end(2, N, ?amount).
+both_reveal(Secret1, Secret2) ->
+     Commit(0) = hash(Secret1),
+     Commit(1) = hash(Secret2),
+     C = rem(bxor(Secret1, Secret2) 2),
+     end(3, C, ?amount).
+doit() ->
+     or(both_reveal(),
+        one_reveal(),
+        end(1, 0, 0)).
 ```
 
 This final one is a prolog-like language with backtracking.
