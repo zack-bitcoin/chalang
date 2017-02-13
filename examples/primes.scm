@@ -7,16 +7,23 @@
        (cond (((= () L) true)
 	      ((= 0 (rem N (car L))) false)
 	      (true (prime_p N (cdr L))))))
-       
-(macro prime2 (Limit N L)
-       (cond (((> N Limit) (car (reverse L)))
+(macro square (x) (* x x))       
+(macro prime2 (Limit N L B)
+       (cond (((> N (- (square Limit) 2)) B)
+	      ((and (< N Limit)
+		    (prime_p N L))
+	       (prime2 Limit
+		       (+ N 1)
+		       (reverse (cons N (reverse L)))
+		        N))
 	      ((prime_p N L)
 	       (prime2 Limit
 		       (+ N 1)
-		       (reverse (cons N (reverse L)))))
-	      (true (prime2 Limit (+ N 1) L)))))
+		       L
+		       N))
+	      (true (prime2 Limit (+ N 1) L B)))))
 
 (macro prime (N)
-       (prime2 N 3 (2)))
+       (prime2 N 3 (2) 0))
 
-(eqs 97 (prime 100))
+(eqs (prime 20) 397)

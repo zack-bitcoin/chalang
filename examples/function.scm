@@ -96,10 +96,17 @@
 %(function_codes_1 1 '(function_gets (x) '(+ x 5) 0))
 %5 (nop lambda (function_vars (x) 0) (function_codes_1 1 '(function_gets (x) '(+ x 5) 0)) end_lambda)
 
-(import (eqs_lib.scm))
+(macro apply (F V)
+       (cons call (reverse (cons F (reverse V)))))
 
-(eqs 14
-     (call 2 3 4
-	   (define (x y z)
-	     '(* x (+ y z)))))
-
+(import (eqs_lib.scm let_lib.scm))
+(and 
+ (eqs 6 
+      (apply (define (x) '(+ x x))
+	     '(3)))
+ (eqs 22
+      (let '((Square (define (x) '(* x x)))
+	     (DoubleAdd (define (x y) '(* 2 (+ x y )))))
+	(apply DoubleAdd '(((apply Square '(3)))
+			   2)))))
+  

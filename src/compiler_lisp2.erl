@@ -10,10 +10,9 @@
 -define(int_bits, 32).
 test() ->
     Files = [
-	     %"first_macro", "square_each_macro", 
-	     %"cond_macro", "primes", 
-	     %"lists"
-	     "function"
+	     "first_macro", "square_each_macro", 
+	     "cond_macro", "primes", 
+	     "function", "let"
 	    ],
     test2(Files).
 test2([]) -> success;
@@ -213,12 +212,21 @@ lisp([<<"cdr">>, A], F) ->
     C = lisp(A, F),
     tl(C);
 lisp([<<"or">>, A, B], F) ->
-    lisp(A, F) or lisp(B, F);
+    bih(A, F) or bih(B, F);
 lisp([<<"and">>, A, B], F) ->
-    lisp(A, F) and lisp(B, F);
+    bih(A, F) and bih(B, F);
 lisp([<<"not">>, A], F) ->
-    not(lisp(A, F));
+    not(bih(A, F));
 lisp(X, _) -> X.
+bih(A, F) -> bool_interpret(lisp(A, F)).
+bool_interpret(<<"false">>) -> false;
+bool_interpret([<<"false">>]) -> false;
+bool_interpret(false) -> false;
+bool_interpret(<<"true">>) -> true;
+bool_interpret([<<"true">>]) -> true;
+bool_interpret(true) -> true;
+bool_interpret(X) -> {error, bad_bool, X}.
+
     
 lisp_cond([], _) ->
     {error, no_true_cond};
@@ -226,16 +234,12 @@ lisp_cond([[Bool, Code]|T], D) ->
     %B = lisp(Bool),
     {B2, _} = macros(Bool, D),
     B3 = lisp(B2, D),
-    case B3 of
-	false -> lisp_cond(T, D);
-	<<"false">> -> lisp_cond(T, D);
-	[<<"false">>] -> lisp_cond(T, D);
-	<<"true">> -> Code;
-	[<<"true">>] -> Code;
+    A = bool_interpret(B3),
+    case A of
 	true -> Code;
-	X -> 
-	    {error, bad_bool, X}
-    end. 
+	false -> lisp_cond(T, D);
+	X -> X
+    end.
 
 
 print_binary({error, R}) ->

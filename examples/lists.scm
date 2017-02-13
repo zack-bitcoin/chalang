@@ -10,5 +10,4 @@
        (cond (((= X ()) ())
 	      (true (cons (car X)
 			  (test3 (cdr X)))))))
-
 (test3 (test3 (1 2 3)))
