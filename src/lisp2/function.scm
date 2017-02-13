@@ -107,6 +107,6 @@
  (eqs 22
       (let '((Square (define (x) '(* x x)))
 	     (DoubleAdd (define (x y) '(* 2 (+ x y )))))
-	(apply DoubleAdd '(((apply Square '(3)))
+	(apply DoubleAdd '((apply Square '(3))
 			   2)))))
   

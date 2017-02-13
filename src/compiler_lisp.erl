@@ -50,8 +50,8 @@ doit(A) ->
     %print_binary(List4),
     %Words, Tree, Tree2, Tree3, 
     %{Tree35, Tree4, List, List2, List3, 
-     {{FuncNames, Tree, Tree2, Tree34, Tree345, Tree37, List, List2
-      }, VM, List4}. 
+     {{FuncNames, Tree, Tree2, Tree34, Tree345, Tree37, List, List2, List4
+      }, VM}. 
 macros([<<"define-syntax">>|[Name|[Vars|[Code]]]], D) ->
     io:fwrite("macro name "),
     io:fwrite(Name),

@@ -26,4 +26,4 @@
 (macro prime (N)
        (prime2 N 3 (2) 0))
 
-(eqs (prime 20) 397)
+(eqs (prime 10) 97)

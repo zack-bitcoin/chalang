@@ -39,4 +39,7 @@ test(Loc) ->
     E = compiler_chalang:doit(<<A/binary, <<"\n test4 \n">>/binary>>),
     {d, _, Stack4, _,_,_,_,_,_,_,_,_} = chalang:test(E, Gas, Gas, Gas, Gas, []),
     [<<1000:32>>,<<0:32>>,<<3:32>>] = Stack4,
+    S = success,
+    S = compiler_lisp:test(),
+    S = compiler_lisp2:test(),
     success.
