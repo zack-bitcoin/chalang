@@ -12,7 +12,8 @@ test() ->
     Files = [
 	     "first_macro", "square_each_macro", 
 	     "cond_macro", "primes", 
-	     "function", "let"
+	     "function", "let", "gcf",
+	     "fun_test", "merge"
 	    ],
     test2(Files).
 test2([]) -> success;
@@ -48,10 +49,11 @@ doit(A) ->
     List2 = variables(List, {dict:new(), 1}),
     Funcs = dict:new(),
     List4 = to_ops(List2, Funcs),
-    List5 = lambdas(List4),
+    {List5, _} = lambdas(List4, []),
     disassembler:doit(List5),
     io:fwrite("VM\n"),
-    VM = chalang:vm(List5, 1000, 1000, 1000, 1000, []),
+    Gas = 10000,
+    VM = chalang:vm(List5, Gas, Gas, Gas, Gas, []),
     %print_binary(List4),
     %Words, Tree, Tree2, Tree3, 
     %{Tree35, Tree4, List, List2, List3, 
@@ -139,7 +141,7 @@ apply_macro(Code, [V|Vars], [H|T], D) ->%D is a dict of the defined macros.
     Code2 = replace(Code, V, H),
     apply_macro(Code2, Vars, T, D);
 apply_macro(C,_,_,_) ->
-    io:fwrite("wrong number of inputs to function "),
+    io:fwrite("\nwrong number of inputs to function "),
     io:fwrite(C),
     io:fwrite("\n"),
     C = -1.
@@ -254,23 +256,32 @@ split(C, B) -> split(C, B, []).
 split(C, [C|B], Out) -> {lists:reverse(Out), B};
 split(C, [D|B], Out) ->
     split(C, B, [D|Out]).
-lambdas(<<0, N:32, T/binary>>) -> 
-    T2 = lambdas(T),
-    <<0, N:32, T2/binary>>;
-lambdas(<<2, N:32, T/binary>>) ->
+lambdas(<<0, N:32, T/binary>>, Done) -> 
+    {T2, Done2} = lambdas(T, Done),
+    {<<0, N:32, T2/binary>>, Done2};
+lambdas(<<2, N:32, T/binary>>, Done) ->
     M = N * 8,
     <<X:M, T2/binary>> = T,
-    T3 = lambdas(T2),
-    <<2, N:32, X:M, T3/binary>>;
-lambdas(<<110, T/binary>>) ->
+    {T3, Done2} = lambdas(T2, Done),
+    {<<2, N:32, X:M, T3/binary>>, Done2};
+lambdas(<<110, T/binary>>, Done) ->
     {Func, T2, _} = chalang:split(111, T),
     Hash = hash:doit(Func),
-    T3 = lambdas(T2),
-    <<110, Func/binary, 111, 2, 12:32, Hash/binary, T3/binary>>;
-lambdas(<<X, T/binary>>) -> 
-    T2 = lambdas(T),
-    <<X, T2/binary>>;
-lambdas(<<>>) -> <<>>.
+    Bool = is_in(Hash, Done),
+    {Bin, Done2} = 
+	if 
+	    Bool -> 
+		{<<>>, Done};
+	    true -> 
+		{<<110, Func/binary, 111>>, [Hash|Done]}
+	end,
+    {T3, Done3} = lambdas(T2, Done2),
+    {<<Bin/binary, 2, 12:32, Hash/binary, T3/binary>>, Done3};
+    %<<110, Func/binary, 111, 2, 12:32, Hash/binary, T3/binary>>;
+lambdas(<<X, T/binary>>, Done) -> 
+    {T2, Done2} = lambdas(T, Done),
+    {<<X, T2/binary>>, Done2};
+lambdas(<<>>, D) -> {<<>>, D}.
     
 to_ops([], _) -> <<>>;
 to_ops([H|T], F) -> 

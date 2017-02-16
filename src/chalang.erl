@@ -451,8 +451,10 @@ run3(?set, D) ->
 	vars = Vars};
 run3(?fetch, D) ->
     [<<Key:32>>|T] = D#d.stack,
-    Value = element(Key, D#d.vars),
-    false = (Value == e),
+    Value = case element(Key, D#d.vars) of
+		e -> [];
+		V -> V
+	    end,
     D#d{op_gas = D#d.op_gas - 1,
 	stack = [Value|T],
 	ram_current = D#d.ram_current + memory(Value) + 1};
@@ -569,7 +571,8 @@ replace(Old, New, Binary, Pointer) ->
     <<AB:N>> = Old,
     case Binary of
 	<<D:Pointer, AB:N, R/binary>> ->
-	    <<D:Pointer, New/binary, R/binary>>;
+	    R2 = replace(Old, New, R),
+	    <<D:Pointer, New/binary, R2/binary>>;
 	<<_:Pointer, ?int:8, _:?int_bits, _/binary>> ->
 	    replace(Old, New, Binary, Pointer+8+?int_bits);
 	<<_:Pointer, ?binary:8, H:32, _/binary>> ->
