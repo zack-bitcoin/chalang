@@ -1,3 +1,10 @@
+(macro test (X)
+       (cond
+	(((= () X) ())
+	 (true (cons (car '(X)) (test (cdr '(X))))))))
+%(test (+ 1 0))
+
+
 (macro Fname () 900)
 (macro Fdepth () '(@ `(Fname)))
 (! 1 (Fname))
@@ -5,15 +12,16 @@
        '(+ (Fdepth) X))
 (macro function_vars (V N)
        (cond (((= V ()) ())
-	      (true '(nop (function_v N) ! (function_vars `(cdr V) `(+ N 1)))))))
+	      (true '(nop (function_v N) !
+			  (function_vars `(cdr V) `(+ N 1)))))))
 (macro function_get (Var Code N)
        %We need to replace each Var in Code with (@ (function_v N)) where Var is the Nth variable in Vars.
-       (cond (((= Code ()) ())
+       (cond (((= Code ()) '())
 	      ((is_list (car Code))
 	       (cons (function_get Var (car Code) N)
 		      (function_get Var (cdr Code) N)))
 	      ((= (car Code) Var)
-	       (cons '(@ (function_v N))
+	       (cons (@ (function_v N))
 		     (function_get Var (cdr Code) N)))
 	      (true (cons
 		      (car Code)
@@ -22,7 +30,7 @@
        (cond (((= Vars ()) Code)
 	      (true (function_gets
 		     (cdr Vars)
-		     '(function_get (car Vars) Code N)
+		     (function_get (car Vars) Code N)
 		     (+ N 1))))))
 (macro function_codes_cond (Many Code)
        (cond
@@ -33,7 +41,7 @@
 			   (cons (function_codes_1
 				  Many
 				  (car (cdr (car Code))))
-				 ()))
+				 nil))
 		     (function_codes_cond Many
 					  (cdr Code)))))))
 (macro function_codes_2 (Many Code)
@@ -43,16 +51,16 @@
 	  (cons (function_codes_2 Many (car Code))
 		(function_codes_2 Many (cdr Code))))
 	 ((= (car Code) call)
-	   '(nop (+ `(Fdepth) Many) !
-		 `(cdr Code) call
-		 (- `(Fdepth) Many) ! ))
+	   '(nop `(cdr Code) (+ `(Fdepth) Many) `(Fname) !
+		 call
+		 (- `(Fdepth) Many) `(Fname) !))
 	 (true (cons (car Code)
 		     (function_codes_2 Many (cdr Code)))))))
 (macro function_codes_1 (Many Code)
        (cond
 	(((= Code ()) ())
-	 ((= (car Code) call)
-	  (cons call (function_codes_2 Many (cdr Code))))
+	 %((= (car Code) call)
+	 % (cons call (function_codes_2 Many (cdr Code))))
 	 ((= (car Code) cond)
 	  (function_codes_cond Many (cdr Code)))
 	 (true (cons (car Code)
@@ -64,19 +72,19 @@
        (cond (((= () X) ())
 	      (true (cons (* 2 (car X))
 			  (doubles (cdr X)))))))
-(macro tree (X)
-       (cond (((= () X) ())
-	      ((is_list (car X)) (cons (tree (car X))
-				       (tree (cdr X))))
-	      (true (cons (car X)
-			  (tree (cdr X)))))))
+%(macro tree (X)
+%       (cond (((= () X) ())
+%	      ((is_list (car X)) (cons (tree (car X))
+%				       (tree (cdr X))))
+%	      (true (cons (car X)
+%			  (tree (cdr X)))))))
 (macro define (Vars Code)
-       (nop 
+       '(nop 
 	     lambda
 	     (function_vars Vars 0)
 	     %`(nop print)
-	     (function_codes_1 (length Vars)
-		    '(function_gets (reverse Vars) Code 0))
+	     (function_codes_2 `(length Vars)
+		    '(function_gets `(reverse Vars) '(Code) 0))
 	     end_lambda))
 %(length (1 1 5))
 %'(doubles '(doubles '(1 2 3 4)))

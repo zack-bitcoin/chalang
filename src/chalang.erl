@@ -1,5 +1,5 @@
 -module(chalang).
--export([run/7, test/6, vm/6, replace/3, new_state/6, split/2]).
+-export([run/7, test/6, vm/6, replace/3, new_state/6, split/2, split_def/2]).
 -record(d, {op_gas = 0, stack = [], alt = [],
 	    ram_current = 0, ram_most = 0, ram_limit = 0, 
 	    vars = {},  
@@ -486,15 +486,10 @@ run3(?append, D) ->
 run3(?split, D) ->
     [N|[L|T]] = D#d.stack,
     M = N * 8,
-    {G, H} = if
-	    is_binary(L) -> 
-		<<A:M, B/binary>> = L,
-		{<<A:M>>, B};
-	    is_list(L) ->
-		split_list(N, L)
-	end,
+    true = is_binary(L),
+    <<A:M, B/binary>> = L,
     D#d{op_gas = D#d.op_gas - 1,
-	stack = [G|[H|T]],
+	stack = [<<A:M>>|[B|T]],
 	ram_current = D#d.ram_current - 1};
 run3(?reverse, D) ->
     [H|T] = D#d.stack,
@@ -596,6 +591,28 @@ split(X, B, N) ->
 	    <<A:N, Y:8, T/binary>> = B,
 	    {<<A:N>>, T, N};
 	_ -> split(X, B, N+8)
+    end.
+split_def(X, B) ->
+    split_def(X, B, 0).
+split_def(X, B, N) ->
+    <<Prev:N, Y:8, C/binary>> = B,
+    case Y of
+	?int -> split_def(X, B, N+8+?int_bits);
+	?binary ->
+	    <<_:N, Y:8, H:32, _/binary>> = B,
+	    %J = H*8,
+	    %<<_:N, Y:8, H:8, _:H, _/binary>> = B,
+	    split_def(X, B, N+40+(H*8));
+	?define ->
+	    <<_:N, D/binary>> = C,
+	    {Func, T, P} = split_def(?fun_end, C),
+	    Hash = hash:doit(Func),
+	    B2 = <<Prev:N, 2, 12:32, Hash/binary, T/binary>>,
+	    split_def(X, B2, N+40+(12*8));
+	X ->
+	    <<A:N, Y:8, T/binary>> = B,
+	    {<<A:N>>, T, N};
+	_ -> split_def(X, B, N+8)
     end.
 split_if(X, B) ->
     split_if(X, B, 0).

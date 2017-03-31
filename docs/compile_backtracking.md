@@ -1,6 +1,5 @@
 
 
-
 (logic_or '((both_reveal) (one_reveal) (end 1 0 0)))
 
 (logic_define both_reveal (Secret1 Secret2)
@@ -16,9 +15,6 @@
     (X (commit N))
     (X (hash Secret)))
    (end 2 N (amount)))
-
-
-
 
 
 (macro (logic_or L)

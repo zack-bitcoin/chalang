@@ -1,4 +1,4 @@
-%Writing the first lisp, I realized that macros are very powerful, I can write most of the compiler in macros.
+
 %If the compiler is in macros, it is easier to understand. 
 %you can look at the source without having to learn erlang. you only have to understand lisp.
 %dog-fooding the macro system results in a better macro system.
@@ -13,7 +13,8 @@ test() ->
 	     "first_macro", "square_each_macro", 
 	     "cond_macro", "primes", 
 	     "function", "let", "gcf",
-	     "fun_test", "merge"
+	     "fun_test", "map", %"merge",
+	     "prolog"
 	    ],
     test2(Files).
 test2([]) -> success;
@@ -53,7 +54,7 @@ doit(A) ->
     disassembler:doit(List5),
     io:fwrite("VM\n"),
     Gas = 10000,
-    VM = chalang:vm(List5, Gas, Gas, Gas, Gas, []),
+    VM = chalang:vm(List5, Gas*100, Gas*10, Gas, Gas, []),
     %print_binary(List4),
     %Words, Tree, Tree2, Tree3, 
     %{Tree35, Tree4, List, List2, List3, 
@@ -111,9 +112,9 @@ macros([<<"macro">>, Name, Vars, Code], D) ->
     D2 = dict:store(Name, {Vars, Code}, D),
     {[], D2};
 macros([<<"macro">>|[Name|_]], _) ->
-    io:fwrite("error, macro named "),
+    io:fwrite("\n\nerror, macro named "),
     io:fwrite(Name),
-    io:fwrite(" has the wrong number of inputs\n");
+    io:fwrite(" has the wrong number of inputs\n\n");
 macros([H|T], D) when is_list(H) ->
     {T2, D2} = macros(H, D),
     {T3, D3} = macros(T, D2),
@@ -265,7 +266,7 @@ lambdas(<<2, N:32, T/binary>>, Done) ->
     {T3, Done2} = lambdas(T2, Done),
     {<<2, N:32, X:M, T3/binary>>, Done2};
 lambdas(<<110, T/binary>>, Done) ->
-    {Func, T2, _} = chalang:split(111, T),
+    {Func, T2, _} = chalang:split_def(111, T),
     Hash = hash:doit(Func),
     Bool = is_in(Hash, Done),
     {Bin, Done2} = 
