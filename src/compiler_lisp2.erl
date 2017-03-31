@@ -13,8 +13,8 @@ test() ->
 	     "first_macro", "square_each_macro", 
 	     "cond_macro", "primes", 
 	     "function", "let", "gcf",
-	     "fun_test", "map", %"merge",
-	     "prolog"
+	     "fun_test", "map"%, %"merge",
+	     %"prolog"
 	    ],
     test2(Files).
 test2([]) -> success;

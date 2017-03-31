@@ -579,7 +579,7 @@ replace(Old, New, Binary, Pointer) ->
 split(X, B) ->
     split(X, B, 0).
 split(X, B, N) ->
-    <<_:N, Y:8, C/binary>> = B,
+    <<_:N, Y:8, _C/binary>> = B,
     case Y of
 	?int -> split(X, B, N+8+?int_bits);
 	?binary ->
@@ -604,8 +604,8 @@ split_def(X, B, N) ->
 	    %<<_:N, Y:8, H:8, _:H, _/binary>> = B,
 	    split_def(X, B, N+40+(H*8));
 	?define ->
-	    <<_:N, D/binary>> = C,
-	    {Func, T, P} = split_def(?fun_end, C),
+	    <<_:N, _D/binary>> = C,
+	    {Func, T, _P} = split_def(?fun_end, C),
 	    Hash = hash:doit(Func),
 	    B2 = <<Prev:N, 2, 12:32, Hash/binary, T/binary>>,
 	    split_def(X, B2, N+40+(12*8));
@@ -626,19 +626,19 @@ split_if(X, B, N) ->
 	    %<<_:N, Y:8, H:8, _:H, _/binary>> = B,
 	    split_if(X, B, N+40+(H*8));
 	?caseif ->
-	    {_, Rest, M} = split_if(?then, C),
+	    {_, _Rest, M} = split_if(?then, C),
 	    split_if(X, B, N+M+16);
 	X ->
 	    <<A:N, Y:8, T/binary>> = B,
 	    {<<A:N>>, T, N};
 	_ -> split_if(X, B, N+8)
     end.
-split_list(N, L) ->
-    split_list(N, L, []).
-split_list(0, A, B) ->
-    {lists:reverse(B), A};
-split_list(N, [H|T], B) ->
-    split_list(N-1, T, [H|B]).
+%split_list(N, L) ->
+%    split_list(N, L, []).
+%split_list(0, A, B) ->
+%    {lists:reverse(B), A};
+%split_list(N, [H|T], B) ->
+%    split_list(N-1, T, [H|B]).
 print_stack(X) ->
     print_stack(7, X),
     io:fwrite("\n").
