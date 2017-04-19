@@ -103,15 +103,13 @@ test(Script, OpGas, RamGas, Funs, Vars, State) ->
 %run takes a list of bets and scriptpubkeys. Each bet is processed seperately by the RUN2, and the results of each bet is accumulated together to find the net result of all the bets.
 run(ScriptSig, SPK, OpGas, RamGas, Funs, Vars, State) ->
     run(ScriptSig, SPK, OpGas, RamGas, Funs, Vars, State, 0, 0).
-run([],[], OpGas, RamGas, _, _, _, Amount, Nonce) ->
-    {Amount, Nonce, OpGas, RamGas};
-run([SS|ScriptSig], [SPK|ScriptPubkey], OpGas, RamGas, Funs, Vars, State, Amount, Nonce) ->
+run([SS], [SPK], OpGas, RamGas, Funs, Vars, State, Amount, Nonce) ->
     %io:fwrite("\nScriptSig =============\n"),
     %disassembler:doit(SS),
     %io:fwrite("\nSPK =============\n"),
     %disassembler:doit(SPK),
-    {A2, N2, EOpGas, ERamGas} = run3(SS, SPK, OpGas, RamGas, Funs, Vars, State),
-    run(ScriptSig, ScriptPubkey, EOpGas, ERamGas, Funs, Vars, State, A2+Amount, N2+Nonce).
+    {A2, N2, ShareRoot, EOpGas, ERamGas} = run3(SS, SPK, OpGas, RamGas, Funs, Vars, State),
+    {A2+Amount, N2+Nonce, ShareRoot, EOpGas, ERamGas}.
 
 %run3 takes a single bet and scriptpubkey, and calculates the result.
 run3(ScriptSig, ScriptPubkey, OpGas, RamGas, Funs, Vars, State) ->
@@ -236,7 +234,7 @@ run2([<<?define:8, Script/binary>>|T], D) ->
 run2([<<?crash:8, _/binary>>|_], D) ->
     run2([<<>>], D);
 run2([<<Command:8, Script/binary>>|T], D) ->
-    case run3(Command, D) of
+    case run4(Command, D) of
 	{error, R} -> {error, R};
 	NewD -> 
 	    %io:fwrite("run word "),
@@ -245,10 +243,10 @@ run2([<<Command:8, Script/binary>>|T], D) ->
 	    run2([Script|T], NewD)
     end.
 
-run3(?print, D) ->
+run4(?print, D) ->
     print_stack(D#d.stack),
     D;
-run3(?drop, D) ->
+run4(?drop, D) ->
     case D#d.stack of 
 	[H|T] ->
 	    D#d{stack = T,
@@ -256,77 +254,77 @@ run3(?drop, D) ->
 		op_gas = D#d.op_gas - 1};
 	_ -> {error, "stack underflow"}
     end;
-run3(?dup, D) ->
+run4(?dup, D) ->
     [H|T] = D#d.stack,
     D#d{stack = [H|[H|T]],
 	ram_current = D#d.ram_current + memory(H),
 	op_gas = D#d.op_gas - 1};
-run3(?swap, D) ->
+run4(?swap, D) ->
     [A|[B|C]] = D#d.stack,
     Stack2 = [B|[A|C]],
     D#d{stack = Stack2,
 	op_gas = D#d.op_gas - 1};
-run3(?tuck, D) ->
+run4(?tuck, D) ->
     [A|[B|[C|E]]] = D#d.stack,
     Stack2 = [B|[C|[A|E]]],
     D#d{stack = Stack2,
 	op_gas = D#d.op_gas - 1};
-run3(?rot, D) ->
+run4(?rot, D) ->
     [A|[B|[C|E]]] = D#d.stack,
     Stack2 = [C|[A|[B|E]]],
     D#d{stack = Stack2,
 	op_gas = D#d.op_gas - 1};
-run3(?ddup, D) ->
+run4(?ddup, D) ->
     [A|[B|C]] = D#d.stack,
     Stack2 = [A|[B|[A|[B|C]]]],
     D#d{stack = Stack2,
 	ram_current = D#d.ram_current +
 	    memory(A) + memory(B),
 	op_gas = D#d.op_gas - 1};
-run3(?tuckn, D) ->
+run4(?tuckn, D) ->
     [N|[X|S]] = D#d.stack,
     H = lists:sublist(S, 1, N),
     T = lists:sublist(S, N+1, 100000000000000000),
     Stack2 = H ++ [X|T],
     D#d{stack = Stack2,
 	op_gas = D#d.op_gas - 1};
-run3(?pickn, D) ->
+run4(?pickn, D) ->
     [N|S] = D#d.stack,
     H = lists:sublist(S, 1, N - 1),
     [X|T] = lists:sublist(S, N, 100000000000000000),
     Stack2 = [X|(H ++ T)],
     D#d{stack = Stack2,
 	op_gas = D#d.op_gas - 1};
-run3(?to_r, D) ->
+run4(?to_r, D) ->
     [H|T] = D#d.stack,
     D#d{stack = T,
 	op_gas = D#d.op_gas - 1,
 	alt = [H|D#d.alt]};
-run3(?from_r, D) ->
+run4(?from_r, D) ->
     [H|T] = D#d.alt,
     D#d{stack = [H|D#d.stack],
 	alt = T,
 	op_gas = D#d.op_gas - 1};
-run3(?r_fetch, D) ->
+run4(?r_fetch, D) ->
     [H|T] = D#d.stack,
     D#d{stack = [H|D#d.stack],
 	alt = [H|T],
 	op_gas = D#d.op_gas - 1};
-run3(?hash, D) ->
+run4(?hash, D) ->
     [H|T] = D#d.stack,
     D#d{stack = [hash:doit(H)|T],
 	op_gas = D#d.op_gas - 20};
-run3(?verify_sig, D) ->
+run4(?verify_sig, D) ->
     [Pub|[Data|[Sig|T]]] = D#d.stack,
     B = sign:verify_sig(Data, Sig, Pub),
     D#d{stack = [B|T],
 	op_gas = D#d.op_gas - 20};
-run3(X, D) when (X >= ?add) and (X < ?eq) ->
+run4(X, D) when (X >= ?add) and (X < ?eq) ->
     [A|[B|C]] = D#d.stack,
     D#d{stack = [arithmetic_chalang:doit(X, A, B)|C],
 	op_gas = D#d.op_gas - 1,
 	ram_current = D#d.ram_current - 2};
-run3(?eq, D) ->
+run4(?eq, D) ->
     ST = D#d.stack,
     [A|[B|_]] = ST,
     C = if
@@ -338,7 +336,7 @@ run3(?eq, D) ->
 	op_gas = D#d.op_gas - 1,
 	ram_current = D#d.ram_current + 1};
 
-run3(?bool_flip, D) ->
+run4(?bool_flip, D) ->
     [<<H:32>>|T] = D#d.stack,
     B = case H of
 	    0 -> 1;
@@ -346,7 +344,7 @@ run3(?bool_flip, D) ->
 	end,
     D#d{op_gas = D#d.op_gas - 1,
 	stack = [<<B:32>>|T]};
-run3(?bool_and, D) ->
+run4(?bool_and, D) ->
     [<<A:32>>|[<<B:32>>|T]] = D#d.stack,
     C = case {A, B} of
 	    {0, _} -> 0;
@@ -356,7 +354,7 @@ run3(?bool_and, D) ->
     D#d{op_gas = D#d.op_gas - 1,
 	stack = [<<C:32>>|T],
 	ram_current = D#d.ram_current - 2};
-run3(?bool_or, D) ->
+run4(?bool_or, D) ->
     [<<A:32>>|[<<B:32>>|T]] = D#d.stack,
     C = case {A, B} of
 	    {0, 0} -> 0;
@@ -365,7 +363,7 @@ run3(?bool_or, D) ->
     D#d{op_gas = D#d.op_gas - 1,
 	stack = [<<C:32>>|T],
 	ram_current = D#d.ram_current - 2};
-run3(?bool_xor, Data) ->
+run4(?bool_xor, Data) ->
     [G|[H|T]] = Data#d.stack,
     B = 8 * size(G),
     D = 8 * size(H),
@@ -380,7 +378,7 @@ run3(?bool_xor, Data) ->
     Data#d{op_gas = Data#d.op_gas - 1,
 	stack = [<<J:32>>|T],
 	ram_current = Data#d.ram_current - 2};
-run3(?bin_and, D) ->
+run4(?bin_and, D) ->
     [G|[H|T]] = D#d.stack,
     B = 8 * size(G),
     D = 8 * size(H),
@@ -391,7 +389,7 @@ run3(?bin_and, D) ->
     D#d{op_gas = D#d.op_gas - E,
 	stack = [<<F:E>>|T],
 	ram_current = D#d.ram_current - min(B, D) - 1};
-run3(?bin_or, D) ->
+run4(?bin_or, D) ->
     [G|[H|T]] = D#d.stack,
     B = 8 * size(G),
     D = 8 * size(H),
@@ -402,7 +400,7 @@ run3(?bin_or, D) ->
     D#d{op_gas = D#d.op_gas - E,
 	stack = [<<F:E>>|T],
 	ram_current = D#d.ram_current - min(B, D) - 1};
-run3(?bin_xor, Data) ->
+run4(?bin_xor, Data) ->
     [G|[H|T]] = Data#d.stack,
     B = 8 * size(G),
     D = 8 * size(H),
@@ -413,45 +411,45 @@ run3(?bin_xor, Data) ->
     Data#d{op_gas = Data#d.op_gas - E,
 	stack = [<<F:E>>|T],
 	ram_current = Data#d.ram_current - min(B, D) - 1};
-run3(?stack_size, D) ->
+run4(?stack_size, D) ->
     S = D#d.stack,
     D#d{op_gas = D#d.op_gas - 1,
 	ram_current = D#d.ram_current + 2,
 	stack = [length(S)|S]};
-run3(?total_coins, D) ->
+run4(?total_coins, D) ->
     S = D#d.stack,
     TC = D#d.state#state.total_coins,
     D#d{op_gas = D#d.op_gas - 1,
 	ram_current = D#d.ram_current + 2,
 	stack = [<<TC:?int_bits>>|S]};
-run3(?height, D) ->
+run4(?height, D) ->
     S = D#d.stack,
     H = D#d.state#state.height,
     D#d{op_gas = D#d.op_gas - 1,
 	ram_current = D#d.ram_current + 2,
 	stack = [<<H:?int_bits>>|S]};
-run3(?gas, D) ->
+run4(?gas, D) ->
     G = D#d.op_gas,
     D#d{op_gas = G - 1,
 	stack = [G|D#d.stack],
 	ram_current = D#d.ram_current + 2};
-run3(?many_vars, D) ->
+run4(?many_vars, D) ->
     D#d{op_gas = D#d.op_gas - 1,
 	stack = [size(D#d.vars)|D#d.stack],
 	ram_current = D#d.ram_current + 2};
-run3(?many_funs, D) ->
+run4(?many_funs, D) ->
     D#d{op_gas = D#d.op_gas - 1,
 	stack = [D#d.many_funs|D#d.stack],
 	ram_current = D#d.ram_current + 2};
-run3(?fun_end, D) ->
+run4(?fun_end, D) ->
     D#d{op_gas = D#d.op_gas - 1};
-run3(?set, D) ->
+run4(?set, D) ->
     [<<Key:32>>|[Value|T]] = D#d.stack,
     Vars = setelement(Key, D#d.vars, Value),
     D#d{op_gas = D#d.op_gas - 1,
 	stack = T,
 	vars = Vars};
-run3(?fetch, D) ->
+run4(?fetch, D) ->
     [<<Key:32>>|T] = D#d.stack,
     Value = case element(Key, D#d.vars) of
 		e -> [];
@@ -460,21 +458,21 @@ run3(?fetch, D) ->
     D#d{op_gas = D#d.op_gas - 1,
 	stack = [Value|T],
 	ram_current = D#d.ram_current + memory(Value) + 1};
-run3(?cons, D) -> % ( A [B] -- [A, B] )
+run4(?cons, D) -> % ( A [B] -- [A, B] )
     [A|[B|T]] = D#d.stack,
     D#d{op_gas = D#d.op_gas - 1,
 	stack = [[B|A]|T],
 	ram_current = D#d.ram_current + 1};
-run3(?car, D) -> % ( [A, B] -- A [B] )
+run4(?car, D) -> % ( [A, B] -- A [B] )
     [[B|A]|T] = D#d.stack,
     D#d{op_gas = D#d.op_gas - 1,
 	stack = [A|[B|T]],
 	ram_current = D#d.ram_current - 1};
-run3(?nil, D) ->
+run4(?nil, D) ->
     D#d{op_gas = D#d.op_gas - 1,
 	stack = [[]|D#d.stack],
 	ram_current = D#d.ram_current + 1};
-run3(?append, D) ->
+run4(?append, D) ->
     [A|[B|T]] = D#d.stack,
     C = if
 	    is_binary(A) and is_binary(B) ->
@@ -485,7 +483,7 @@ run3(?append, D) ->
     D#d{op_gas = D#d.op_gas - 1,
 	stack = [C|T],
 	ram_current = D#d.ram_current + 1};
-run3(?split, D) ->
+run4(?split, D) ->
     [N|[L|T]] = D#d.stack,
     M = N * 8,
     true = is_binary(L),
@@ -493,11 +491,11 @@ run3(?split, D) ->
     D#d{op_gas = D#d.op_gas - 1,
 	stack = [<<A:M>>|[B|T]],
 	ram_current = D#d.ram_current - 1};
-run3(?reverse, D) ->
+run4(?reverse, D) ->
     [H|T] = D#d.stack,
     D#d{op_gas = D#d.op_gas - length(H),
 	stack = [lists:reverse(H)|T]};
-run3(?is_list, D) ->
+run4(?is_list, D) ->
     [H|T] = D#d.stack,
     G = if
 	    is_list(H) -> <<1:?int_bits>>;
@@ -506,7 +504,7 @@ run3(?is_list, D) ->
     D#d{op_gas = D#d.op_gas - 1,
 	stack = [G|[H|T]],
 	ram_current = D#d.ram_current - 1};
-run3(?nop, D) -> D.
+run4(?nop, D) -> D.
 
 
     
