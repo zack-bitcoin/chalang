@@ -130,9 +130,9 @@ run3(ScriptSig, ScriptPubkey, OpGas, RamGas, Funs, Vars, State) ->
     %io:fwrite("running script "),
     Data2 = run2([ScriptSig], Data),
     Data3 = run2([ScriptPubkey], Data2),
-    [<<Amount:32>>|
-     [<<Direction:32>>|
-      [ShareRoot|
+    [ShareRoot|
+     [<<Amount:32>>|
+      [<<Direction:32>>|
        [<<Nonce:32>>|_]]]] = Data3#d.stack,
     true = is_binary(ShareRoot),
     ExtraGas = Data3#d.op_gas,
