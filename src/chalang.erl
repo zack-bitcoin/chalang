@@ -132,8 +132,8 @@ run3(ScriptSig, ScriptPubkey, OpGas, RamGas, Funs, Vars, State) ->
     Data3 = run2([ScriptPubkey], Data2),
     [<<Amount:32>>|
      [<<Direction:32>>|
-      [<<Nonce:32>>|
-       [ShareRoot|_]]]] = Data3#d.stack,
+      [ShareRoot|
+       [<<Nonce:32>>|_]]]] = Data3#d.stack,
     true = is_binary(ShareRoot),
     ExtraGas = Data3#d.op_gas,
     ExtraRam = Data3#d.ram_limit - Data3#d.ram_most,
