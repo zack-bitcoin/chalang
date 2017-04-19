@@ -134,7 +134,9 @@ run3(ScriptSig, ScriptPubkey, OpGas, RamGas, Funs, Vars, State) ->
     Data3 = run2([ScriptPubkey], Data2),
     [<<Amount:32>>|
      [<<Direction:32>>|
-      [<<Nonce:32>>|_]]] = Data3#d.stack,
+      [<<Nonce:32>>|
+       [ShareRoot|_]]]] = Data3#d.stack,
+    true = is_binary(ShareRoot),
     ExtraGas = Data3#d.op_gas,
     ExtraRam = Data3#d.ram_limit - Data3#d.ram_most,
     %io:fwrite("amount, nonce, spare_gas, spare_ram\n"),
@@ -142,7 +144,7 @@ run3(ScriptSig, ScriptPubkey, OpGas, RamGas, Funs, Vars, State) ->
 	    0 -> 1;
 	    _ -> -1
 	end,
-    {Amount * D, Nonce, ExtraGas, ExtraRam}.
+    {Amount * D, Nonce, ShareRoot, ExtraGas, ExtraRam}.
    
 %run2 processes a single opcode of the script. in comparison to run3/2, run2 is able to edit more aspects of the RUN2's state. run2 is used to define functions and variables. run3/2 is for all the other opcodes. 
 run2(_, D) when D#d.op_gas < 0 ->
