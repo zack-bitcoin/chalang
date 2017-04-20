@@ -134,7 +134,6 @@ run3(ScriptSig, ScriptPubkey, OpGas, RamGas, Funs, Vars, State) ->
      [<<Amount:32>>|
       [<<Direction:32>>|
        [<<Nonce:32>>|_]]]] = Data3#d.stack,
-    true = is_binary(ShareRoot),
     ExtraGas = Data3#d.op_gas,
     ExtraRam = Data3#d.ram_limit - Data3#d.ram_most,
     %io:fwrite("amount, nonce, spare_gas, spare_ram\n"),
