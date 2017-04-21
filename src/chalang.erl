@@ -94,7 +94,7 @@ test(Script, OpGas, RamGas, Funs, Vars, State) ->
     %compiler_chalang:print_binary(Script),
     %io:fwrite("\nrunning a script =============\n"),
     %disassembler:doit(Script),
-    X = run2([Script], D).
+    run2([Script], D).
     %io:fwrite("\n"),
 
 						%io:fwrite("oGas, stack, alt, ram_current, ram_most, ram_limit, vars, funs, many_funs, fun_limit\n"),
@@ -103,13 +103,18 @@ test(Script, OpGas, RamGas, Funs, Vars, State) ->
 %run takes a list of bets and scriptpubkeys. Each bet is processed seperately by the RUN2, and the results of each bet is accumulated together to find the net result of all the bets.
 run(ScriptSig, SPK, OpGas, RamGas, Funs, Vars, State) ->
     run(ScriptSig, SPK, OpGas, RamGas, Funs, Vars, State, 0, 0).
+
 run([SS], [SPK], OpGas, RamGas, Funs, Vars, State, Amount, Nonce) ->
     %io:fwrite("\nScriptSig =============\n"),
     %disassembler:doit(SS),
     %io:fwrite("\nSPK =============\n"),
     %disassembler:doit(SPK),
     {A2, N2, ShareRoot, EOpGas, ERamGas} = run3(SS, SPK, OpGas, RamGas, Funs, Vars, State),
-    {A2+Amount, N2+Nonce, ShareRoot, EOpGas, ERamGas}.
+    {A2+Amount, N2+Nonce, ShareRoot, EOpGas, ERamGas};
+run([SS|SST], [SPK|SPKT], OpGas, RamGas, Funs, Vars, State, Amount, Nonce) ->
+    {A2, N2, _ShareRoot, EOpGas, ERamGas} = run3(SS, SPK, OpGas, RamGas, Funs, Vars, State),
+    run(SST, SPKT, EOpGas, ERamGas, Funs, Vars, State, A2+Amount, N2+Nonce).
+    %{A2+Amount, N2+Nonce, ShareRoot, EOpGas, ERamGas}.
 
 %run3 takes a single bet and scriptpubkey, and calculates the result.
 run3(ScriptSig, ScriptPubkey, OpGas, RamGas, Funs, Vars, State) ->
