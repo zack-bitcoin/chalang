@@ -1,21 +1,18 @@
 -module(chalang).
--export([run/7, test/6, vm/6, replace/3, new_state/6, split/2, split_def/2]).
+-export([run/7, test/6, vm/6, replace/3, new_state/3, split/2, split_def/2]).
 -record(d, {op_gas = 0, stack = [], alt = [],
 	    ram_current = 0, ram_most = 0, ram_limit = 0, 
 	    vars = {},  
 	    funs = {}, many_funs = 0, fun_limit = 0,
 	    state = []
 	   }).
--record(state, {total_coins, 
-		height, %how many blocks exist so far
-		slash = 0, %is this script being run as a solo_stop transaction, or a slash transaction?
-		oracle, %this is the root of the merkle trie that says the results from all the oracles.
-		accounts, 
-		channels}). %data from the previous block that the contract may use.
-new_state(TotalCoins, Height, Slash, Oracle, Accounts, Channels) ->
-    #state{total_coins = TotalCoins, height = Height,
-	   slash = Slash, oracle = Oracle,
-	   accounts = Accounts, channels = Channels}.
+-record(state, {
+	  height, %how many blocks exist so far
+	  slash = 0, %is this script being run as a solo_stop transaction, or a slash transaction?
+	  trees}).
+new_state(Height, Slash, Trees) ->
+    #state{height = Height, trees = Trees,
+	   slash = Slash}.
 -define(int, 0).
 -define(binary, 2).
 -define(print, 10).
@@ -49,13 +46,12 @@ new_state(TotalCoins, Height, Slash, Oracle, Accounts, Channels) ->
 -define(bin_xor, 86).
 -define(stack_size, 90).
 -define(pub2addr, 92).
--define(total_coins, 93).
+-define(merkel_root, 93).
 -define(height, 94).
 -define(slash, 95).
 -define(gas, 96).
 -define(ram, 97).
 -define(id2pub, 98).
--define(oracle, 99).
 -define(many_vars, 100).
 -define(many_funs, 101).
 -define(define, 110).
@@ -420,12 +416,14 @@ run4(?stack_size, D) ->
     D#d{op_gas = D#d.op_gas - 1,
 	ram_current = D#d.ram_current + 2,
 	stack = [length(S)|S]};
-run4(?total_coins, D) ->
-    S = D#d.stack,
-    TC = D#d.state#state.total_coins,
+run4(?merkel_root, D) ->
+    %starting on 1
+    % accounts, channels, existence, burn, oracles, governance
+    Trees = D#d.state#state.trees,
+    [<<Which:32>>|T] = D#d.stack,
+    Root = element(Which, Trees),
     D#d{op_gas = D#d.op_gas - 1,
-	ram_current = D#d.ram_current + 2,
-	stack = [<<TC:?int_bits>>|S]};
+	stack = [Root|T]};
 run4(?height, D) ->
     S = D#d.stack,
     H = D#d.state#state.height,
