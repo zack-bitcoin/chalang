@@ -162,7 +162,7 @@ hash_functions([], D) -> D;
 hash_functions([<<":">>|[Name|T]], D1) -> 
     {Code1, T2} = split(<<";">>, T),
     Code2 = to_ops(Code1, D1),
-    D2 = dict:store(Name, hash:doit(Code2), D1),
+    D2 = dict:store(Name, hash:doit(Code2, chalang_constants:hash_size()), D1),
     hash_functions(T2, D2);
 hash_functions([_|T], D) ->
     hash_functions(T, D).

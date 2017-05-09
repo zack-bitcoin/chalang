@@ -267,7 +267,7 @@ lambdas(<<2, N:32, T/binary>>, Done) ->
     {<<2, N:32, X:M, T3/binary>>, Done2};
 lambdas(<<110, T/binary>>, Done) ->
     {Func, T2, _} = chalang:split_def(111, T),
-    Hash = hash:doit(Func),
+    Hash = hash:doit(Func, chalang_constants:hash_size()),
     Bool = is_in(Hash, Done),
     {Bin, Done2} = 
 	if 
@@ -277,7 +277,8 @@ lambdas(<<110, T/binary>>, Done) ->
 		{<<110, Func/binary, 111>>, [Hash|Done]}
 	end,
     {T3, Done3} = lambdas(T2, Done2),
-    {<<Bin/binary, 2, 12:32, Hash/binary, T3/binary>>, Done3};
+    DSize = chalang_constants:hash_size(),
+    {<<Bin/binary, 2, DSize:32, Hash/binary, T3/binary>>, Done3};
     %<<110, Func/binary, 111, 2, 12:32, Hash/binary, T3/binary>>;
 lambdas(<<X, T/binary>>, Done) -> 
     {T2, Done2} = lambdas(T, Done),

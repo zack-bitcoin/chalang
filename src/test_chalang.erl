@@ -7,6 +7,7 @@ run_script(X, Gas, Loc) ->
     io:fwrite("run script "),
     io:fwrite(X),
     io:fwrite("\n"),
+    io:fwrite(A),
     io:fwrite("\n"),
     B = compiler_chalang:doit(<<A/binary, <<"\n test \n">>/binary>>),
     chalang:test(B, Gas, Gas, Gas, Gas, []).

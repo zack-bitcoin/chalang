@@ -22,8 +22,9 @@ doit(A) ->
     BWords = remove_functions(ZWords),
     %BWords = apply_functions(AWords, Functions),
     reuse_name_check(Macros, Functions),
+    io:fwrite(BWords),
     {X, _} = to_opcodes(BWords, Functions, [], Variables),
-    %print_binary(X),
+    print_binary(X),
     X.
 add_spaces(B) -> add_spaces(B, <<"">>).
 add_spaces(<<"">>, B) -> B;
@@ -117,7 +118,7 @@ get_functions([<<":">>|[Name|R]], Functions, Variables) ->
     %Make sure Name isn't on the restricted list.
     {Code, T} = split(<<";">>, R),
     {Opcodes, Variables2} = to_opcodes(Code, Functions, [], Variables),
-    Signature = hash:doit(Opcodes),
+    Signature = hash:doit(Opcodes, chalang_constants:hash_size()),
     case dict:find(Name, Functions) of
 	error ->
 	    NewFunctions = dict:store(Name, Signature, Functions),

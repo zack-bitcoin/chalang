@@ -100,6 +100,8 @@ test(Script, OpGas, RamGas, Funs, Vars, State) ->
 run(ScriptSig, SPK, OpGas, RamGas, Funs, Vars, State) ->
     run(ScriptSig, SPK, OpGas, RamGas, Funs, Vars, State, 0, 0).
 
+run([], [], OpGas, RamGas, Funs, Vars, State, Amount, Nonce) ->
+    {Amount, Nonce, [], OpGas, RamGas};
 run([SS], [SPK], OpGas, RamGas, Funs, Vars, State, Amount, Nonce) ->
     %io:fwrite("\nScriptSig =============\n"),
     %disassembler:doit(SS),
@@ -212,9 +214,10 @@ run2([<<?define:8, Script/binary>>|T], D) ->
     %io:fwrite("run2 define\n"),
     {Definition, Script2, _} = split(?fun_end, Script),
     %true = balanced_r(Definition, 0),
-    B = hash:doit(Definition),
+    B = hash:doit(Definition, chalang_constants:hash_size()),
     %replace "recursion" in the definition with a pointer to this.
-    NewDefinition = replace(<<?recurse:8>>, <<2, 12:32, B/binary>>, Definition),
+    DSize = chalang_constants:hash_size(),
+    NewDefinition = replace(<<?recurse:8>>, <<2, DSize:32, B/binary>>, Definition),
     %io:fwrite("chalang define function "),
     %compiler_chalang:print_binary(NewDefinition),
     %io:fwrite("\n"),
@@ -312,7 +315,7 @@ run4(?r_fetch, D) ->
 	op_gas = D#d.op_gas - 1};
 run4(?hash, D) ->
     [H|T] = D#d.stack,
-    D#d{stack = [hash:doit(H)|T],
+    D#d{stack = [hash:doit(H, chalang_constants:hash_size())|T],
 	op_gas = D#d.op_gas - 20};
 run4(?verify_sig, D) ->
     [Pub|[Data|[Sig|T]]] = D#d.stack,
@@ -608,9 +611,10 @@ split_def(X, B, N) ->
 	?define ->
 	    <<_:N, _D/binary>> = C,
 	    {Func, T, _P} = split_def(?fun_end, C),
-	    Hash = hash:doit(Func),
-	    B2 = <<Prev:N, 2, 12:32, Hash/binary, T/binary>>,
-	    split_def(X, B2, N+40+(12*8));
+	    Hash = hash:doit(Func, chalang_constants:hash_size()),
+	    DSize = chalang_constants:hash_size(),
+	    B2 = <<Prev:N, 2, DSize:32, Hash/binary, T/binary>>,
+	    split_def(X, B2, N+40+(DSize*8));
 	X ->
 	    <<A:N, Y:8, T/binary>> = B,
 	    {<<A:N>>, T, N};
