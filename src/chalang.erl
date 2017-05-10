@@ -1,5 +1,5 @@
 -module(chalang).
--export([run/7, test/6, vm/6, replace/3, new_state/3, split/2, split_def/2]).
+-export([run/7, test/6, vm/6, replace/3, new_state/3, new_state/2, split/2, split_def/2]).
 -record(d, {op_gas = 0, stack = [], alt = [],
 	    ram_current = 0, ram_most = 0, ram_limit = 0, 
 	    vars = {},  
@@ -8,10 +8,12 @@
 	   }).
 -record(state, {
 	  height, %how many blocks exist so far
-	  slash = 0, %is this script being run as a solo_stop transaction, or a slash transaction?
-	  trees}).
-new_state(Height, Slash, Trees) ->
-    #state{height = Height, trees = Trees,
+	  slash = 0 %is this script being run as a solo_stop transaction, or a slash transaction?
+	 }).
+new_state(Height, Slash, _) ->
+    new_state(Height, Slash).
+new_state(Height, Slash) ->
+    #state{height = Height, 
 	   slash = Slash}.
 -define(int, 0).
 -define(binary, 2).
@@ -419,14 +421,6 @@ run4(?stack_size, D) ->
     D#d{op_gas = D#d.op_gas - 1,
 	ram_current = D#d.ram_current + 2,
 	stack = [length(S)|S]};
-run4(?merkel_root, D) ->
-    %starting on 1
-    % accounts, channels, existence, burn, oracles, governance
-    Trees = D#d.state#state.trees,
-    [<<Which:32>>|T] = D#d.stack,
-    Root = element(Which, Trees),
-    D#d{op_gas = D#d.op_gas - 1,
-	stack = [Root|T]};
 run4(?height, D) ->
     S = D#d.stack,
     H = D#d.state#state.height,

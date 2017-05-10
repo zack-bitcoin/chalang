@@ -24,7 +24,7 @@ doit(A) ->
     reuse_name_check(Macros, Functions),
     io:fwrite(BWords),
     {X, _} = to_opcodes(BWords, Functions, [], Variables),
-    print_binary(X),
+    %print_binary(X),
     X.
 add_spaces(B) -> add_spaces(B, <<"">>).
 add_spaces(<<"">>, B) -> B;
