@@ -1,5 +1,5 @@
 -module(chalang).
--export([run5/2, data_maker/7, test/6, vm/6, replace/3, new_state/3, new_state/2, split/2, split_def/2, none_of/1, stack/1, time_gas/1, space_gas/1]).
+-export([run5/2, data_maker/7, test/6, vm/6, replace/3, new_state/3, new_state/2, split/2, split_def/2, none_of/1, stack/1, time_gas/1]).
 -record(d, {op_gas = 0, stack = [], alt = [],
 	    ram_current = 0, ram_most = 0, ram_limit = 0, 
 	    vars = {},  
