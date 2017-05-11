@@ -1,5 +1,5 @@
 -module(chalang).
--export([run5/2, data_maker/7, test/6, vm/6, replace/3, new_state/3, new_state/2, split/2, split_def/2, none_of/2]).
+-export([run5/2, data_maker/7, test/6, vm/6, replace/3, new_state/3, new_state/2, split/2, split_def/2, none_of/1]).
 -record(d, {op_gas = 0, stack = [], alt = [],
 	    ram_current = 0, ram_most = 0, ram_limit = 0, 
 	    vars = {},  
@@ -488,6 +488,7 @@ balanced_f(<<?binary:8, H:32, Script/binary>>, D) ->
     balanced_f(Script2, D);
 balanced_f(<<_:8, Script/binary>>, X) ->
     balanced_f(Script, X).
+none_of(X) -> none_of(X, ?crash).
 none_of(<<>>, _) -> true;
 none_of(<<X:8, _/binary>>, X) -> false;
 none_of(<<?int:8, _:?int_bits, Script/binary>>, X) -> 
