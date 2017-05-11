@@ -1,5 +1,5 @@
 -module(chalang).
--export([run/7, test/6, vm/6, replace/3, new_state/3, new_state/2, split/2, split_def/2]).
+-export([run5/2, data_maker/7, test/6, vm/6, replace/3, new_state/3, new_state/2, split/2, split_def/2, none_of/2]).
 -record(d, {op_gas = 0, stack = [], alt = [],
 	    ram_current = 0, ram_most = 0, ram_limit = 0, 
 	    vars = {},  
@@ -99,56 +99,19 @@ test(Script, OpGas, RamGas, Funs, Vars, State) ->
     %X#d.stack.
 
 %run takes a list of bets and scriptpubkeys. Each bet is processed seperately by the RUN2, and the results of each bet is accumulated together to find the net result of all the bets.
-run(ScriptSig, SPK, OpGas, RamGas, Funs, Vars, State) ->
-    run(ScriptSig, SPK, OpGas, RamGas, Funs, Vars, State, 0, 0).
-
-run([], [], OpGas, RamGas, Funs, Vars, State, Amount, Nonce) ->
-    {Amount, Nonce, [], OpGas, RamGas};
-run([SS], [SPK], OpGas, RamGas, Funs, Vars, State, Amount, Nonce) ->
-    %io:fwrite("\nScriptSig =============\n"),
-    %disassembler:doit(SS),
-    %io:fwrite("\nSPK =============\n"),
-    %disassembler:doit(SPK),
-    {A2, N2, ShareRoot, EOpGas, ERamGas} = run3(SS, SPK, OpGas, RamGas, Funs, Vars, State),
-    {A2+Amount, N2+Nonce, ShareRoot, EOpGas, ERamGas};
-run([SS|SST], [SPK|SPKT], OpGas, RamGas, Funs, Vars, State, Amount, Nonce) ->
-    {A2, N2, _ShareRoot, EOpGas, ERamGas} = run3(SS, SPK, OpGas, RamGas, Funs, Vars, State),
-    run(SST, SPKT, EOpGas, ERamGas, Funs, Vars, State, A2+Amount, N2+Nonce).
-    %{A2+Amount, N2+Nonce, ShareRoot, EOpGas, ERamGas}.
-
-%run3 takes a single bet and scriptpubkey, and calculates the result.
-run3(ScriptSig, ScriptPubkey, OpGas, RamGas, Funs, Vars, State) ->
-    %io:fwrite("script sig is "),
-    %compiler_chalang:print_binary(ScriptSig),
-    %io:fwrite("spk is "),
-    %compiler_chalang:print_binary(ScriptPubkey),
-    true = balanced_f(ScriptSig, 0),
-    true = balanced_f(ScriptPubkey, 0),
-    true = none_of(ScriptSig, ?crash),
-    Data = #d{op_gas = OpGas, 
-	      ram_limit = RamGas, 
-	      vars = make_tuple(e, Vars),
-	      funs = #{},
-	      fun_limit = Funs,%how many functions can be defined.
-	      ram_current = size(ScriptSig) + size(ScriptPubkey),
-	      state = State},
-    %io:fwrite("running script "),
-    Data2 = run2([ScriptSig], Data),
-    Data3 = run2([ScriptPubkey], Data2),
-    [ShareRoot|
-     [<<Amount:32>>|
-      [<<Direction:32>>|
-       [<<Nonce:32>>|_]]]] = Data3#d.stack,
-    ExtraGas = Data3#d.op_gas,
-    ExtraRam = Data3#d.ram_limit - Data3#d.ram_most,
-    %io:fwrite("amount, nonce, spare_gas, spare_ram\n"),
-    D = case Direction of
-	    0 -> 1;
-	    _ -> -1
-	end,
-    {Amount * D, Nonce, ShareRoot, ExtraGas, ExtraRam}.
-   
+data_maker(OpGas, RamGas, Vars, Funs, ScriptSig, ScriptPubkey, State) ->
+    #d{op_gas = OpGas, 
+       ram_limit = RamGas, 
+       vars = make_tuple(e, Vars),
+       funs = #{},
+       fun_limit = Funs,%how many functions can be defined.
+       ram_current = size(ScriptSig) + size(ScriptPubkey),
+       state = State}.
+    
 %run2 processes a single opcode of the script. in comparison to run3/2, run2 is able to edit more aspects of the RUN2's state. run2 is used to define functions and variables. run3/2 is for all the other opcodes. 
+run5([A], D) ->
+    true = balanced_f(A, 0),
+    run2([A], D).
 run2(_, D) when D#d.op_gas < 0 ->
     io:fwrite("out of time"),
     D = ok,
@@ -505,30 +468,10 @@ run4(?is_list, D) ->
 	ram_current = D#d.ram_current - 1};
 run4(?nop, D) -> D.
 
-
-    
-
-
 memory(L) -> memory(L, 0).
 memory([], X) -> X+1;
 memory([H|T], X) -> memory(T, 1+memory(H, X));
 memory(B, X) -> X+size(B).
-%balanced_r(<<>>, 0) -> true;
-%balanced_r(<<>>, 1) -> false;
-%balanced_r(_, X) when X < 0 -> false;
-%balanced_r(<<?int:8, _:?int_bits, Script/binary>>, X) ->
-%    balanced_r(Script, X);
-%balanced_r(<<?binary:8, H:32, Script/binary>>, D) ->
-%    X = H * 8,
-%    <<_:X, Script2/binary>> = Script,
-%    balanced_r(Script2, D);
-%balanced_r(<<?to_r:8, Script/binary>>, X) ->
-%    balanced_r(Script, X+1);
-%balanced_r(<<?from_r:8, Script/binary>>, X) ->
-%    balanced_r(Script, X-1);
-%balanced_r(<<_:8, Script/binary>>, X) ->
-%    balanced_r(Script, X).
-%balanced_f makes sure that every function we start finishes, and that there aren't functions inside of each other.
 balanced_f(<<>>, 0) -> true;
 balanced_f(<<>>, 1) -> false;
 balanced_f(<<?define:8, Script/binary>>, 0) ->
