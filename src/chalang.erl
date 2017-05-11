@@ -1,5 +1,5 @@
 -module(chalang).
--export([run5/2, data_maker/7, test/6, vm/6, replace/3, new_state/3, new_state/2, split/2, split_def/2, none_of/1]).
+-export([run5/2, data_maker/7, test/6, vm/6, replace/3, new_state/3, new_state/2, split/2, split_def/2, none_of/1, stack/1]).
 -record(d, {op_gas = 0, stack = [], alt = [],
 	    ram_current = 0, ram_most = 0, ram_limit = 0, 
 	    vars = {},  
@@ -10,6 +10,8 @@
 	  height, %how many blocks exist so far
 	  slash = 0 %is this script being run as a solo_stop transaction, or a slash transaction?
 	 }).
+stack(D) ->
+    D#d.stack.
 new_state(Height, Slash, _) ->
     new_state(Height, Slash).
 new_state(Height, Slash) ->
