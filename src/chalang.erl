@@ -12,7 +12,7 @@
 	 }).
 stack(D) -> D#d.stack.
 time_gas(D) -> D#d.op_gas.
-space_gas(D) -> D#d.ram_current.
+%space_gas(D) -> D#d.ram_current.
 new_state(Height, Slash, _) ->
     new_state(Height, Slash).
 new_state(Height, Slash) ->
@@ -386,7 +386,7 @@ run4(?stack_size, D) ->
     S = D#d.stack,
     D#d{op_gas = D#d.op_gas - 1,
 	ram_current = D#d.ram_current + 2,
-	stack = [length(S)|S]};
+	stack = [<<(length(S)):?int_bits>>|S]};
 run4(?height, D) ->
     S = D#d.stack,
     H = D#d.state#state.height,
@@ -396,15 +396,15 @@ run4(?height, D) ->
 run4(?gas, D) ->
     G = D#d.op_gas,
     D#d{op_gas = G - 1,
-	stack = [G|D#d.stack],
+	stack = [<<G:?int_bits>>|D#d.stack],
 	ram_current = D#d.ram_current + 2};
 run4(?many_vars, D) ->
     D#d{op_gas = D#d.op_gas - 1,
-	stack = [size(D#d.vars)|D#d.stack],
+	stack = [<<(size(D#d.vars)):?int_bits>>|D#d.stack],
 	ram_current = D#d.ram_current + 2};
 run4(?many_funs, D) ->
     D#d{op_gas = D#d.op_gas - 1,
-	stack = [D#d.many_funs|D#d.stack],
+	stack = [<<(D#d.many_funs):?int_bits>>|D#d.stack],
 	ram_current = D#d.ram_current + 2};
 run4(?fun_end, D) ->
     D#d{op_gas = D#d.op_gas - 1};
