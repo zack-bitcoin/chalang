@@ -449,7 +449,7 @@ run4(?append, D) ->
 	stack = [C|T],
 	ram_current = D#d.ram_current + 1};
 run4(?split, D) ->
-    [N|[L|T]] = D#d.stack,
+    [<<N:?int>>|[L|T]] = D#d.stack,
     M = N * 8,
     true = is_binary(L),
     <<A:M, B/binary>> = L,
