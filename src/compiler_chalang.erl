@@ -22,7 +22,7 @@ doit(A) ->
     BWords = remove_functions(ZWords),
     %BWords = apply_functions(AWords, Functions),
     reuse_name_check(Macros, Functions),
-    io:fwrite(BWords),
+    %io:fwrite(BWords),
     {X, _} = to_opcodes(BWords, Functions, [], Variables),
     %print_binary(X),
     X.
