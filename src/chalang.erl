@@ -23,6 +23,7 @@ new_state(Height, Slash) ->
 -define(print, 10).
 -define(crash, 11).
 -define(nop, 12).
+-define(fail, 13).
 -define(drop, 20).
 -define(dup, 21).
 -define(swap, 22).
@@ -469,7 +470,11 @@ run4(?is_list, D) ->
     D#d{op_gas = D#d.op_gas - 1,
 	stack = [G|[H|T]],
 	ram_current = D#d.ram_current - 1};
-run4(?nop, D) -> D.
+run4(?nop, D) -> D;
+run4(?fail, D) -> 
+    %fail opcode was reached.
+    %error thrown.
+    1=2.
 
 memory(L) -> memory(L, 0).
 memory([], X) -> X+1;
