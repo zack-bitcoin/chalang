@@ -596,7 +596,7 @@ split_if(X, B, N) ->
 %split_list(N, [H|T], B) ->
 %    split_list(N-1, T, [H|B]).
 print_stack(X) ->
-    print_stack(7, X),
+    print_stack(12, X),
     io:fwrite("\n").
 print_stack(_, []) -> io:fwrite("[]");
 print_stack(0, _) -> io:fwrite("\n");
