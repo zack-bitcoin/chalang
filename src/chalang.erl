@@ -289,7 +289,11 @@ run4(?hash, D) ->
 run4(?verify_sig, D) ->
     [Pub|[Data|[Sig|T]]] = D#d.stack,
     B = sign:verify_sig(Data, base64:encode(Sig), base64:encode(Pub)),
-    D#d{stack = [B|T],
+    B2 = case B of
+	     true -> <<1:(?int_bits)>>;
+	     false -> <<0:(?int_bits)>>
+			  end,
+    D#d{stack = [B2|T],
 	op_gas = D#d.op_gas - 20};
 run4(X, D) when (X >= ?add) and (X < ?eq) ->
     [A|[B|C]] = D#d.stack,
