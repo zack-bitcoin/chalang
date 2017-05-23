@@ -288,7 +288,7 @@ run4(?hash, D) ->
 	op_gas = D#d.op_gas - 20};
 run4(?verify_sig, D) ->
     [Pub|[Data|[Sig|T]]] = D#d.stack,
-    B = sign:verify_sig(Data, Sig, Pub),
+    B = sign:verify_sig(Data, base64:encode(Sig), base64:encode(Pub)),
     D#d{stack = [B|T],
 	op_gas = D#d.op_gas - 20};
 run4(X, D) when (X >= ?add) and (X < ?eq) ->
@@ -610,7 +610,7 @@ print_stack(_, <<X:8>>) ->
     io:fwrite("c"++integer_to_list(X) ++" ");
 print_stack(_, <<N:32>>) ->
     io:fwrite("i"++integer_to_list(N) ++" ");
-print_stack(_, <<F:32, G:32>>) ->
-    io:fwrite(" " ++integer_to_list(F) ++"/"++
-		  integer_to_list(G) ++" ");
+%print_stack(_, <<F:32, G:32>>) ->
+%    io:fwrite(" " ++integer_to_list(F) ++"/"++
+%		  integer_to_list(G) ++" ");
 print_stack(_, B) -> io:fwrite(binary_to_list(base64:encode(B)) ++ "\n").

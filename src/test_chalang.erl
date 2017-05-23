@@ -21,7 +21,7 @@ test(Loc) ->
     Scripts = ["function", "variable",
 	       "macro", "case", "recursion", "map",
 	       "math", "hashlock", "case2", 
-	       "case_binary"],
+	       "case_binary", "sign"],
 	       %"merge"],
     Gas = 10000,
     run_scripts(Scripts, Gas, Loc),
