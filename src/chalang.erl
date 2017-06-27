@@ -1,10 +1,10 @@
 -module(chalang).
--export([run5/2, data_maker/7, test/6, vm/6, replace/3, new_state/3, new_state/2, split/2, split_def/2, none_of/1, stack/1, time_gas/1]).
+-export([run5/2, data_maker/8, test/6, vm/6, replace/3, new_state/3, new_state/2, split/2, split_def/2, none_of/1, stack/1, time_gas/1]).
 -record(d, {op_gas = 0, stack = [], alt = [],
 	    ram_current = 0, ram_most = 0, ram_limit = 0, 
 	    vars = {},  
 	    funs = {}, many_funs = 0, fun_limit = 0,
-	    state = []
+	    state = [], hash_size
 	   }).
 -record(state, {
 	  height, %how many blocks exist so far
@@ -103,14 +103,15 @@ test(Script, OpGas, RamGas, Funs, Vars, State) ->
     %X#d.stack.
 
 %run takes a list of bets and scriptpubkeys. Each bet is processed seperately by the RUN2, and the results of each bet is accumulated together to find the net result of all the bets.
-data_maker(OpGas, RamGas, Vars, Funs, ScriptSig, ScriptPubkey, State) ->
+data_maker(OpGas, RamGas, Vars, Funs, ScriptSig, ScriptPubkey, State, HashSize) ->
     #d{op_gas = OpGas, 
        ram_limit = RamGas, 
        vars = make_tuple(e, Vars),
        funs = #{},
        fun_limit = Funs,%how many functions can be defined.
        ram_current = size(ScriptSig) + size(ScriptPubkey),
-       state = State}.
+       state = State, 
+       hash_size = HashSize}.
     
 %run2 processes a single opcode of the script. in comparison to run3/2, run2 is able to edit more aspects of the RUN2's state. run2 is used to define functions and variables. run3/2 is for all the other opcodes. 
 run5([A], D) ->
