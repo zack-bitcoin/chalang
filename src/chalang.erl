@@ -285,7 +285,7 @@ run4(?r_fetch, D) ->
 	op_gas = D#d.op_gas - 1};
 run4(?hash, D) ->
     [H|T] = D#d.stack,
-    D#d{stack = [hash:doit(H, chalang_constants:hash_size())|T],
+    D#d{stack = [hash:doit(H, D#d.hash_size)|T],
 	op_gas = D#d.op_gas - 20};
 run4(?verify_sig, D) ->
     [Pub|[Data|[Sig|T]]] = D#d.stack,
