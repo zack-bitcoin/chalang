@@ -2,17 +2,16 @@
 if [ -e "rebar" ]
 then
     echo "rebar already installed"
-elif [ "$(uname -s)" == "Linux" ]; then
-    wget https://raw.githubusercontent.com/wiki/rebar/rebar/rebar && chmod u+x rebar
-elif [ "$(uname -s)" == "Darwin" ]; then
-    curl https://raw.githubusercontent.com/wiki/rebar/rebar/rebar -o rebar
-    chmod u+x rebar
-
 else
-    echo "the install script is only for linux and OSX"
+    uname=$(uname);
+    case "$uname" in
+	(*Linux*) wget https://raw.githubusercontent.com/wiki/rebar/rebar/rebar && chmod u+x rebar; ;;
+	(*Darwin*) curl https://raw.githubusercontent.com/wiki/rebar/rebar/rebar -o rebar ;  chmod u+x rebar; ;;
+	(*) echo 'error: unsupported platform.'; exit 2; ;;
+    esac;
+    #$openCmd ;
 fi
 
-#use rebar to install other dependencies, explained in rebar.config
 ./rebar get
 ./rebar compile
 

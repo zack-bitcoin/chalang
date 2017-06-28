@@ -14,7 +14,9 @@ run_script(X, Gas, Loc) ->
 run_scripts([], _, _) -> ok;
 run_scripts([H|T], Gas, Loc) ->
     X = run_script(H, Gas, Loc),
-    {d, NewGas, [<<1:32>>],_,_,_,_,_,_,_,_,_} = X,
+    %{d, NewGas, [<<1:32>>],_,_,_,_,_,_,_,_,_} = X,
+    NewGas = chalang:time_gas(X),
+    [<<1:32>>] = chalang:stack(X),
     run_scripts(T, NewGas, Loc).
 test() -> test(?loc).
 test(Loc) ->
@@ -29,17 +31,17 @@ test(Loc) ->
 
     {ok, A} = file:read_file(Loc ++ "satoshi_dice.fs"),
     B = compiler_chalang:doit(<<A/binary, <<"\n test1 \n">>/binary>>),
-    {d, _, Stack, _,_,_,_,_,_,_,_,_} = chalang:test(B, Gas, Gas, Gas, Gas, []),
-    [<<0:32>>,<<0:32>>,<<1:32>>] = Stack,
+    D1 = chalang:test(B, Gas, Gas, Gas, Gas, []),
+    [<<0:32>>,<<0:32>>,<<1:32>>] = chalang:stack(D1),
     C = compiler_chalang:doit(<<A/binary, <<"\n test2 \n">>/binary>>),
-    {d, _, Stack2, _,_,_,_,_,_,_,_,_} = chalang:test(C, Gas, Gas, Gas, Gas, []),
-    [<<1000:32>>,<<0:32>>,<<2:32>>] = Stack2,
+    D2 = chalang:test(C, Gas, Gas, Gas, Gas, []),
+    [<<1000:32>>,<<0:32>>,<<2:32>>] = chalang:stack(D2),
     D = compiler_chalang:doit(<<A/binary, <<"\n test3 \n">>/binary>>),
-    {d, _, Stack3, _,_,_,_,_,_,_,_,_} = chalang:test(D, Gas, Gas, Gas, Gas, []),
-    [<<1000:32>>,<<1:32>>,<<2:32>>] = Stack3,
+    D3 = chalang:test(D, Gas, Gas, Gas, Gas, []),
+    [<<1000:32>>,<<1:32>>,<<2:32>>] = chalang:stack(D3),
     E = compiler_chalang:doit(<<A/binary, <<"\n test4 \n">>/binary>>),
-    {d, _, Stack4, _,_,_,_,_,_,_,_,_} = chalang:test(E, Gas, Gas, Gas, Gas, []),
-    [<<1000:32>>,<<0:32>>,<<3:32>>] = Stack4,
+    D4 = chalang:test(E, Gas, Gas, Gas, Gas, []),
+    [<<1000:32>>,<<0:32>>,<<3:32>>] = chalang:stack(D4),
     S = success,
     S = compiler_lisp:test(),
     S = compiler_lisp2:test(),
