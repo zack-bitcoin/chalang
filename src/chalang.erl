@@ -477,9 +477,7 @@ run4(?is_list, D) ->
 	ram_current = D#d.ram_current - 1};
 run4(?nop, D) -> D;
 run4(?fail, D) -> 
-    %fail opcode was reached.
-    %error thrown.
-    1=2.
+    {error, fail}.
 
 memory(L) -> memory(L, 0).
 memory([], X) -> X+1;
