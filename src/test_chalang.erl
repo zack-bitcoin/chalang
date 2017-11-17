@@ -13,6 +13,9 @@ run_script(X, Gas, Loc) ->
     chalang:test(B, Gas, Gas, Gas, Gas, []).
 run_scripts([], _, _) -> ok;
 run_scripts([H|T], Gas, Loc) ->
+    io:fwrite("run script "),
+    io:fwrite(H),
+    io:fwrite("\n"),
     X = run_script(H, Gas, Loc),
     %{d, NewGas, [<<1:32>>],_,_,_,_,_,_,_,_,_} = X,
     NewGas = chalang:time_gas(X),

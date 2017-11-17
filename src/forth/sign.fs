@@ -1,9 +1,11 @@
 
- macro sig binary 71 MEUCIQDzooyiDEDmO8UO0MeGA88VLZD51A6rEoHsSUgrIz4aJgIgZJsk3n5f0izpQVaEm8zzbpkwZoULEVTjS62+T3ZTr6c= ;
+% macro sig binary 71 MEUCIHCGy7R8pqP3XtLTZf2dxm2lZObVwRbsUvC7oaOPrvxNAiEA/KAqTJ3aRWASNQlWW9/CVwSneXB1Z4viJYX8KfcriXY= ;
 
- macro pub binary 65 BMs9FJOY3/h4Ip+lah0Rc4lZDEBbV3wHDZXtqUsWS1kz88bnBr18Q52HnuzdS7IzRuQCU1HVp/AWOnQM6LVcWWw= ;
+macro sig binary 96 TUVVQ0lIQ0d5N1I4cHFQM1h0TFRaZjJkeG0ybFpPYlZ3UmJzVXZDN29hT1BydnhOQWlFQS9LQXFUSjNhUldBU05RbFdXOS9DVndTbmVYQjFaNHZpSllYOEtmY3JpWFk9 ;
 
-macro data binary 4 emFjaw== ;
+ macro pub binary 65 BIVZhs16gtoQ/uUMujl5aSutpImC4va8MewgCveh6MEuDjoDvtQqYZ5FeYcUhY/QLjpCBrXjqvTtFiN4li0Nhjo= ;
+
+macro data binary 3 AQID ;
 
 macro test
 sig data pub print verify_sig ;
