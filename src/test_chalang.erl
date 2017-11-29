@@ -4,9 +4,6 @@
 -define(loc, "src/forth/").
 run_script(X, Gas, Loc) ->
     {ok, A} = file:read_file(Loc ++ X ++ ".fs"),
-    io:fwrite("run script "),
-    io:fwrite(X),
-    io:fwrite("\n"),
     io:fwrite(A),
     io:fwrite("\n"),
     B = compiler_chalang:doit(<<A/binary, <<"\n test \n">>/binary>>),

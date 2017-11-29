@@ -51,13 +51,13 @@ new_state(Height, Slash) ->
 -define(bin_or, 85).
 -define(bin_xor, 86).
 -define(stack_size, 90).
--define(pub2addr, 92).
--define(merkel_root, 93).
+%-define(pub2addr, 92).
+%-define(merkel_root, 93).
 -define(height, 94).
--define(slash, 95).
+%-define(slash, 95).
 -define(gas, 96).
 -define(ram, 97).
--define(id2pub, 98).
+%-define(id2pub, 98).
 -define(many_vars, 100).
 -define(many_funs, 101).
 -define(define, 110).
@@ -73,7 +73,9 @@ new_state(Height, Slash) ->
 -define(split, 135).
 -define(reverse, 136).
 -define(is_list, 137).
--define(int_bits, 32).
+
+
+-define(int_bits, 32). %this isn't an opcode, it is for writing this same page. chalang.erl
 
 %op_gas limits our program in time.
 %ram_gas limits our program in space.
