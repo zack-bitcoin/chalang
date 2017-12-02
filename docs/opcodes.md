@@ -43,7 +43,6 @@ opcode | symbol | stack changes | comment
 --- | --- | --- | ---
 40 | hash | X -- <<Bytes:256>>  |
 41 | verify_sig | Sig Data Pub -- true/false |
-42 | pub2addr |  Pub -- Addr  | This is difficult because we can't represent tuples. Maybe pinkcrypto:address needs to use lists instead
 
 
 ## arithmetic opcodes
@@ -89,19 +88,11 @@ opcode | symbol | stack changes | comment
 opcode | symbol | stack changes | comment
 --- | --- | --- | ---
 90 | stack_size | -- Size |
-91 | total_coins | -- TotalCoins |
-92 | height | -- Height |
-93 | slash | -- true/false | if this is part of a solo_stop transaction, then return 0. If it is part of a slash transaction, return 1
-94 | gas | -- X |
-95 | ram | -- X | tells how much space is left in ram.
-96 | id2addr | ID -- Addr |
-97 | many_vars | -- R | how many more variables are defined
-98 | many_funs | -- F | how many functions are there defined
-99 | oracle | -- R | the root of the oracle trie from the previous block.
-100 | id_of_caller | -- ID | the ID of the person who published the code on-chain
-101 | accounts | -- A | the root of the accounts trie from the previous block.
-102 | channels | -- C | the root of the channels trie from the previous block.
-103 | verify_merkle | Root Proof Value -- Value true/false |
+94 | height | -- Height |
+96 | gas | -- X |
+97 | ram | -- X | tells how much space is left in ram.
+100 | many_vars | -- R | how many more variables are defined
+101 | many_funs | -- F | how many functions are there defined
 
 
 ## function opcodes
@@ -136,7 +127,9 @@ The following are compiler macros that make it easier to program:
 
 * ( a open parenthesis starts a multi-line comment block.
 
-* ) a closed parenthesis ends the comment. 
+* ) a closed parenthesis ends the comment.
+
+* % a percent symbol comments out the rest of that line.
 
 
 
