@@ -299,7 +299,7 @@ run4(?verify_sig, D) ->
     io:fwrite(packer:pack({verify, Data, Sig, Pub})),
     io:fwrite("\n"),
     %B = sign:verify_sig(Data, base64:encode(Sig), base64:encode(Pub)),
-    B = sign:verify_sig(Data, base64:encode(Sig), Pub),
+    B = sign:verify_sig(Data, Sig, Pub),
     B2 = case B of
 	     true -> <<1:(?int_bits)>>;
 	     false -> <<0:(?int_bits)>>
