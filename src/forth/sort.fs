@@ -29,6 +29,6 @@ then then then;
 
 
 macro test 
-[integer 10, integer 2, integer 13, integer 4, integer 5] doit call 
-[integer 2, integer 4, integer 5, integer 10, integer 13] ==
+[ integer 10, integer 2, integer 13, integer 4, integer 5 ] doit call 
+[ integer 2, integer 4, integer 5, integer 10, integer 13 ] ==
 ;

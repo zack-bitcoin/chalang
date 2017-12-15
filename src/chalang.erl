@@ -1,5 +1,5 @@
 -module(chalang).
--export([run5/2, data_maker/8, test/6, vm/6, replace/3, new_state/3, new_state/2, split/2, split_def/2, none_of/1, stack/1, time_gas/1]).
+-export([run5/2, data_maker/8, test/6, vm/6, replace/3, new_state/3, new_state/2, split/2, none_of/1, stack/1, time_gas/1]).
 -record(d, {op_gas = 0, stack = [], alt = [],
 	    ram_current = 0, ram_most = 0, ram_limit = 0, 
 	    vars = {},  
@@ -51,13 +51,9 @@ new_state(Height, Slash) ->
 -define(bin_or, 85).
 -define(bin_xor, 86).
 -define(stack_size, 90).
-%-define(pub2addr, 92).
-%-define(merkel_root, 93).
 -define(height, 94).
-%-define(slash, 95).
 -define(gas, 96).
 -define(ram, 97).
-%-define(id2pub, 98).
 -define(many_vars, 100).
 -define(many_funs, 101).
 -define(define, 110).
@@ -163,6 +159,15 @@ run2([<<?caseif:8, Script/binary>>|Tail], D) ->
 		ram_current = D#d.ram_current - SkippedSize - 1, % +1 for new list link in Script. -2 for the else and then that are deleted.
 	       op_gas = D#d.op_gas - Steps},
     run2([Case|[Rest2|Tail]], NewD);
+run2([<<?call:8, ?fun_end:8, Script/binary>>|Tail], D) ->
+    %tail call optimization
+    [H|T] = D#d.stack,
+    Definition = maps:get(H, D#d.funs),
+    S = size(Definition),
+    NewD = D#d{op_gas = D#d.op_gas - S - 10,
+	       ram_current = D#d.ram_current + S - 1,%-1 is for the call that is removed
+	       stack = T},
+    run2([Definition|[<<?fun_end:8>>|[Script|Tail]]], NewD);
 run2([<<?call:8>>|[<<?fun_end:8>>|Tail]], D) ->
     %tail call optimization
     %should work if "call" is the last instruction of a function, 
@@ -281,9 +286,8 @@ run4(?from_r, D) ->
 	alt = T,
 	op_gas = D#d.op_gas - 1};
 run4(?r_fetch, D) ->
-    [H|T] = D#d.stack,
+    [H|T] = D#d.alt,
     D#d{stack = [H|D#d.stack],
-	alt = [H|T],
 	op_gas = D#d.op_gas - 1};
 run4(?hash, D) ->
     [H|T] = D#d.stack,
@@ -546,34 +550,12 @@ split(X, B, N) ->
 	    <<_:N, Y:8, H:32, _/binary>> = B,
 	    %J = H*8,
 	    %<<_:N, Y:8, H:8, _:H, _/binary>> = B,
-	    split(X, B, N+16+(H*8));
+	    %split(X, B, N+16+(H*8));
+	    split(X, B, N+40+(H*8));
 	X ->
 	    <<A:N, Y:8, T/binary>> = B,
 	    {<<A:N>>, T, N};
 	_ -> split(X, B, N+8)
-    end.
-split_def(X, B) ->
-    split_def(X, B, 0).
-split_def(X, B, N) ->
-    <<Prev:N, Y:8, C/binary>> = B,
-    case Y of
-	?int -> split_def(X, B, N+8+?int_bits);
-	?binary ->
-	    <<_:N, Y:8, H:32, _/binary>> = B,
-	    %J = H*8,
-	    %<<_:N, Y:8, H:8, _:H, _/binary>> = B,
-	    split_def(X, B, N+40+(H*8));
-	?define ->
-	    <<_:N, _D/binary>> = C,
-	    {Func, T, _P} = split_def(?fun_end, C),
-	    Hash = hash:doit(Func, chalang_constants:hash_size()),
-	    DSize = chalang_constants:hash_size(),
-	    B2 = <<Prev:N, 2, DSize:32, Hash/binary, T/binary>>,
-	    split_def(X, B2, N+40+(DSize*8));
-	X ->
-	    <<A:N, Y:8, T/binary>> = B,
-	    {<<A:N>>, T, N};
-	_ -> split_def(X, B, N+8)
     end.
 split_if(X, B) ->
     split_if(X, B, 0).

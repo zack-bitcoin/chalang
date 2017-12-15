@@ -1,5 +1,5 @@
 -module(arithmetic_chalang).
--export([doit/3]).
+-export([doit/3, pow/2]).
 
 -define(add, 50).
 -define(subtract, 51).
@@ -15,6 +15,12 @@
 
 b2i(true) -> 1;
 b2i(false) -> 0.
+pow(B, 0) -> 0;
+pow(B, 1) -> B;
+pow(B, A) when ((A rem 2) == 0) ->
+    pow(B*B, A div 2);
+pow(B, A) ->
+    B * pow(B, A-1).
 int_arithmetic(?add, A, B) -> A+B;
 int_arithmetic(?subtract, A, B) -> B-A;
 int_arithmetic(?mul, A, B) -> A*B;
@@ -22,7 +28,8 @@ int_arithmetic(?divide, A, B) -> B div A;
 int_arithmetic(?gt, A, B) -> b2i(A < B);
 int_arithmetic(?lt, A, B) -> b2i(B < A);
 %int_arithmetic(?eq, A, B) -> b2i(A == B);
-int_arithmetic(?pow, A, B) -> round(math:pow(B, A)); 
+%int_arithmetic(?pow, A, B) -> round(math:pow(B, A)); 
+int_arithmetic(?pow, A, B) -> pow(B, A); 
 int_arithmetic(?remainder, A, B) -> 
     B rem A.
 doit(?eq, A, B) ->

@@ -123,7 +123,7 @@ opcode | symbol | stack changes | comment
 137 | is_list | L -- L B | checks if the thing on the top of the stack is a list or not. Does not drop it.
 
 
-The following are compiler macros that make it easier to program:
+The following are how comments work for the forth-like compiler.
 
 * ( a open parenthesis starts a multi-line comment block.
 

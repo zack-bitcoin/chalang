@@ -8,6 +8,10 @@
 -module(compiler_lisp2).
 -export([doit/1, test/0]).
 -define(int_bits, 32).
+-define(int, 0).
+-define(binary, 2).
+-define(define, 110).
+-define(fun_end, 111).
 test() ->
     Files = [
 	     "first_macro", "square_each_macro", 
@@ -257,6 +261,29 @@ split(C, B) -> split(C, B, []).
 split(C, [C|B], Out) -> {lists:reverse(Out), B};
 split(C, [D|B], Out) ->
     split(C, B, [D|Out]).
+split_def(X, B) ->
+    split_def(X, B, 0).
+split_def(X, B, N) ->
+    <<Prev:N, Y:8, C/binary>> = B,
+    case Y of
+	?int -> split_def(X, B, N+8+?int_bits);
+	?binary ->
+	    <<_:N, Y:8, H:32, _/binary>> = B,
+	    %J = H*8,
+	    %<<_:N, Y:8, H:8, _:H, _/binary>> = B,
+	    split_def(X, B, N+40+(H*8));
+	?define ->
+	    <<_:N, _D/binary>> = C,
+	    {Func, T, _P} = split_def(?fun_end, C),
+	    Hash = hash:doit(Func, chalang_constants:hash_size()),
+	    DSize = chalang_constants:hash_size(),
+	    B2 = <<Prev:N, 2, DSize:32, Hash/binary, T/binary>>,
+	    split_def(X, B2, N+40+(DSize*8));
+	X ->
+	    <<A:N, Y:8, T/binary>> = B,
+	    {<<A:N>>, T, N};
+	_ -> split_def(X, B, N+8)
+    end.
 lambdas(<<0, N:32, T/binary>>, Done) -> 
     {T2, Done2} = lambdas(T, Done),
     {<<0, N:32, T2/binary>>, Done2};
@@ -266,7 +293,7 @@ lambdas(<<2, N:32, T/binary>>, Done) ->
     {T3, Done2} = lambdas(T2, Done),
     {<<2, N:32, X:M, T3/binary>>, Done2};
 lambdas(<<110, T/binary>>, Done) ->
-    {Func, T2, _} = chalang:split_def(111, T),
+    {Func, T2, _} = split_def(111, T),
     Hash = hash:doit(Func, chalang_constants:hash_size()),
     Bool = is_in(Hash, Done),
     {Bin, Done2} = 
