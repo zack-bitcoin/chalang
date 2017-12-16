@@ -24,7 +24,7 @@
 
 macro test
 binary 32 qfPbi+pbLu+SN+VICd2kPwwhj4DQ0yijP1tM//8zSOY= hash print
-% binary 32 Q+s3EEGaJrywFpYUNhG2Sv9X5/H+7H6xHZKVmehJUMw= == swap drop swap drop print
- binary 12 Q+s3EEGaJrywFpYU == swap drop swap drop print
+ binary 32 Q+s3EEGaJrywFpYUNhG2Sv9X5/H+7H6xHZKVmehJUMw= == swap drop swap drop print
+% binary 12 Q+s3EEGaJrywFpYU == swap drop swap drop print
 ;
 

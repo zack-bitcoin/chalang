@@ -4,7 +4,7 @@
 	    ram_current = 0, ram_most = 0, ram_limit = 0, 
 	    vars = {},  
 	    funs = {}, many_funs = 0, fun_limit = 0,
-	    state = [], hash_size = 12
+	    state = [], hash_size = chalang_constants:hash_size()
 	   }).
 -record(state, {
 	  height, %how many blocks exist so far

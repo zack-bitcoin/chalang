@@ -2,4 +2,4 @@
 -export([hash_size/0]).
 
 hash_size() ->
-    12.%should probably be bigger
+    32.%should probably be bigger
