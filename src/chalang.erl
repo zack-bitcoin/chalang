@@ -21,7 +21,7 @@ new_state(Height, Slash) ->
 -define(int, 0).
 -define(binary, 2).
 -define(print, 10).
--define(crash, 11).
+-define(return, 11).
 -define(nop, 12).
 -define(fail, 13).
 -define(drop, 20).
@@ -211,7 +211,7 @@ run2([<<?define:8, Script/binary>>|T], D) ->
 		       funs = M},
 	    run2([Script2|T], NewD)
     end;
-run2([<<?crash:8, _/binary>>|_], D) ->
+run2([<<?return:8, _/binary>>|_], D) ->
     run2([<<>>], D);
 run2([<<Command:8, Script/binary>>|T], D) ->
     case run4(Command, D) of
@@ -509,7 +509,7 @@ balanced_f(<<?binary:8, H:32, Script/binary>>, D) ->
     balanced_f(Script2, D);
 balanced_f(<<_:8, Script/binary>>, X) ->
     balanced_f(Script, X).
-none_of(X) -> none_of(X, ?crash).
+none_of(X) -> none_of(X, ?return).
 none_of(<<>>, _) -> true;
 none_of(<<X:8, _/binary>>, X) -> false;
 none_of(<<?int:8, _:?int_bits, Script/binary>>, X) -> 

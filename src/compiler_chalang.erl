@@ -1,7 +1,7 @@
 -module(compiler_chalang).
 -export([doit/1, print_binary/1]).
 
-%-define(or_die, compile(<<" not if crash else then ">>)).
+%-define(or_die, compile(<<" not if return else then ">>)).
 %-define(plus_store, compile(<<" dup @ rot + swap ! ">>)).
 -define(int_bits, 32).
 
@@ -194,7 +194,7 @@ make_binary([H|T], B) ->
 w2o(<<"int">>) -> 0;
 w2o(<<"binary">>) -> 2;
 w2o(<<"print">>) -> 10;
-w2o(<<"crash">>) -> 11;
+w2o(<<"return">>) -> 11;
 w2o(<<"nop">>) -> 12;
 w2o(<<"fail">>) -> 13;
 w2o(<<"drop">>) -> 20;
@@ -260,7 +260,7 @@ w2o(<<"is_list">>) -> 137;
 w2o(_) -> not_op.
 %to_opcodes([<<"or_die">>|R], F, Out) ->
     %( bool -- )
-    %if bool is true, ignore. if bool is false, then crash.
+    %if bool is true, ignore. if bool is false, then return.
 %    to_opcodes(R, F, flip(?or_die) ++ Out);
 %to_opcodes([<<"+!">>|R], F, Out) ->
     %( 5 N -- ) in this exampe N increments by 5.
