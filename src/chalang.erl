@@ -112,7 +112,7 @@ data_maker(OpGas, RamGas, Vars, Funs, ScriptSig, SPK, State, HashSize) ->
        hash_size = HashSize}.
     
 %run2 processes a single opcode of the script. in comparison to run3/2, run2 is able to edit more aspects of the RUN2's state. run2 is used to define functions and variables. run3/2 is for all the other opcodes. 
-run5([A], D) ->
+run5(A, D) ->
     true = balanced_f(A, 0),
     run2([A], D).
 run2(_, D) when D#d.op_gas < 0 ->
@@ -487,7 +487,7 @@ run4(?is_list, D) ->
 	ram_current = D#d.ram_current - 1};
 run4(?nop, D) -> D;
 run4(?fail, D) -> 
-    {error, fail}.
+    {error, "fail"}.
 
 memory(L) -> memory(L, 0).
 memory([], X) -> X+1;
