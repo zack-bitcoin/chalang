@@ -28,7 +28,6 @@ int_arithmetic(?divide, A, B) -> B div A;
 int_arithmetic(?gt, A, B) -> b2i(A < B);
 int_arithmetic(?lt, A, B) -> b2i(B < A);
 %int_arithmetic(?eq, A, B) -> b2i(A == B);
-%int_arithmetic(?pow, A, B) -> round(math:pow(B, A)); 
 int_arithmetic(?pow, A, B) -> pow(B, A); 
 int_arithmetic(?remainder, A, B) -> 
     B rem A.
