@@ -4,7 +4,7 @@
 	    ram_current = 0, ram_most = 0, ram_limit = 0, 
 	    vars = {},  
 	    funs = {}, many_funs = 0, fun_limit = 0,
-	    state = [], hash_size = 12
+	    state = [], hash_size = chalang_constants:hash_size()
 	   }).
 -record(state, {
 	  height, %how many blocks exist so far
@@ -21,7 +21,7 @@ new_state(Height, Slash) ->
 -define(int, 0).
 -define(binary, 2).
 -define(print, 10).
--define(crash, 11).
+-define(return, 11).
 -define(nop, 12).
 -define(fail, 13).
 -define(drop, 20).
@@ -112,9 +112,14 @@ data_maker(OpGas, RamGas, Vars, Funs, ScriptSig, SPK, State, HashSize) ->
        hash_size = HashSize}.
     
 %run2 processes a single opcode of the script. in comparison to run3/2, run2 is able to edit more aspects of the RUN2's state. run2 is used to define functions and variables. run3/2 is for all the other opcodes. 
-run5([A], D) ->
+run5(A, D) ->
     true = balanced_f(A, 0),
     run2([A], D).
+run2(_, {error, S}) ->
+    io:fwrite("had an error\n"),
+    io:fwrite(S),
+    io:fwrite("\n"),
+    {error, S};
 run2(_, D) when D#d.op_gas < 0 ->
     io:fwrite("out of time"),
     D = ok,
@@ -160,33 +165,23 @@ run2([<<?caseif:8, Script/binary>>|Tail], D) ->
 	       op_gas = D#d.op_gas - Steps},
     run2([Case|[Rest2|Tail]], NewD);
 run2([<<?call:8, ?fun_end:8, Script/binary>>|Tail], D) ->
-    %tail call optimization
-    [H|T] = D#d.stack,
-    Definition = maps:get(H, D#d.funs),
-    S = size(Definition),
-    NewD = D#d{op_gas = D#d.op_gas - S - 10,
-	       ram_current = D#d.ram_current + S - 1,%-1 is for the call that is removed
-	       stack = T},
-    run2([Definition|[<<?fun_end:8>>|[Script|Tail]]], NewD);
+    run2([<<?call:8, Script/binary>>|Tail], D); %tail call optimization
 run2([<<?call:8>>|[<<?fun_end:8>>|Tail]], D) ->
-    %tail call optimization
-    %should work if "call" is the last instruction of a function, 
-    %it should also work when "call" is the last instruction of a conditional branch, and the conditional branch's "then" is the last instruction of the function.
-    [H|T] = D#d.stack,
-    Definition = maps:get(H, D#d.funs),
-    S = size(Definition),
-    NewD = D#d{op_gas = D#d.op_gas - S - 10,
-	       ram_current = D#d.ram_current + S - 1,%-1 is for the call that is removed
-	       stack = T},
-    run2([Definition|[<<?fun_end:8>>|Tail]], NewD);
+    run2([<<?call>>|Tail], D); %tail call optimization
 run2([<<?call:8, Script/binary>>|Tail], D) ->
-    [H|T] = D#d.stack,
-    Definition = maps:get(H, D#d.funs),
-    S = size(Definition),
-    NewD = D#d{op_gas = D#d.op_gas - S - 10,
-	       ram_current = D#d.ram_current + S + 2,%-1 for call, +1 for fun_end, +2 for 2 new list links.
-	       stack = T},
-    run2([Definition|[<<?fun_end:8>>|[Script|Tail]]],NewD);
+    case D#d.stack of 
+        [H|T] ->
+            case maps:find(H, D#d.funs) of
+                error -> {error, "called undefined function"};
+                {ok, Definition} ->
+                    S = size(Definition),
+                    NewD = D#d{op_gas = D#d.op_gas - S - 10,
+                               ram_current = D#d.ram_current + S + 2,%-1 for call, +1 for fun_end, +2 for 2 new list links.
+                               stack = T},
+                    run2([Definition|[<<?fun_end:8>>|[Script|Tail]]],NewD)
+                end;
+        _ -> {error, "stack underflow"}
+    end;
 run2([<<?define:8, Script/binary>>|T], D) ->
     %io:fwrite("run2 define\n"),
     {Definition, Script2, _} = split(?fun_end, Script),
@@ -211,8 +206,29 @@ run2([<<?define:8, Script/binary>>|T], D) ->
 		       funs = M},
 	    run2([Script2|T], NewD)
     end;
-run2([<<?crash:8, _/binary>>|_], D) ->
+run2([<<?return:8, _/binary>>|_], D) ->
     run2([<<>>], D);
+run2([<<Command:8, Script/binary>>|T], D) 
+  when ((Command == ?bool_and) or 
+        (Command == ?bool_or) or 
+        (Command == ?bool_xor)) ->
+    io:fwrite("run2 bool and/or/xor\n"),
+    case D#d.stack of
+        [<<A:32>>|[<<B:32>>|R]] ->
+            io:fwrite("bool combine\n"),
+            C = bool2(Command, A, B),
+            D2 = D#d{stack = [<<C:32>>|R],
+                     op_gas = D#d.op_gas - 1,
+                     ram_current = D#d.ram_current - 2},
+            run2([Script|T], D2);
+        [_|[_|_]] -> 
+            io:fwrite("can only bool_and two 4 byte values\n"),
+            {error, "can only bool_and two 4 byte values"};
+        _ -> 
+            io:fwrite("stack undeflow\n"),
+            {error, "stack underflow"}
+    end;
+    
 run2([<<Command:8, Script/binary>>|T], D) ->
     case run4(Command, D) of
 	{error, R} -> {error, R};
@@ -222,6 +238,16 @@ run2([<<Command:8, Script/binary>>|T], D) ->
 	    %io:fwrite("\n"),
 	    run2([Script|T], NewD)
     end.
+bool2(?bool_and, _, 0) -> 0;
+bool2(?bool_and, 0, _) -> 0;
+bool2(?bool_and, _, _) -> 1;
+bool2(?bool_or, 0, 0) -> 0;
+bool2(?bool_or, _, _) -> 1;
+bool2(?bool_xor, 0, 0) -> 0;
+bool2(?bool_xor, 0, _) -> 1;
+bool2(?bool_xor, _, 0) -> 1;
+bool2(?bool_xor, _, _) -> 0.
+    
 
 run4(?print, D) ->
     print_stack(D#d.stack),
@@ -235,169 +261,187 @@ run4(?drop, D) ->
 	_ -> {error, "stack underflow"}
     end;
 run4(?dup, D) ->
-    [H|T] = D#d.stack,
-    D#d{stack = [H|[H|T]],
-	ram_current = D#d.ram_current + memory(H),
-	op_gas = D#d.op_gas - 1};
+    case D#d.stack of
+        [H|T] ->
+            D#d{stack = [H|[H|T]],
+                ram_current = D#d.ram_current + memory(H),
+                op_gas = D#d.op_gas - 1};
+        _ -> {error, "stack underflow"}
+    end;
 run4(?swap, D) ->
-    [A|[B|C]] = D#d.stack,
-    Stack2 = [B|[A|C]],
-    D#d{stack = Stack2,
-	op_gas = D#d.op_gas - 1};
+    case D#d.stack of
+        [A|[B|C]] ->
+            Stack2 = [B|[A|C]],
+            D#d{stack = Stack2,
+                op_gas = D#d.op_gas - 1};
+        _ -> {error, "stack underflow"}
+    end;
 run4(?tuck, D) ->
-    [A|[B|[C|E]]] = D#d.stack,
-    Stack2 = [B|[C|[A|E]]],
-    D#d{stack = Stack2,
-	op_gas = D#d.op_gas - 1};
+    case D#d.stack of
+        [A|[B|[C|E]]] ->
+            Stack2 = [B|[C|[A|E]]],
+            D#d{stack = Stack2,
+                op_gas = D#d.op_gas - 1};
+        _ -> {error, "stack underflow"}
+    end;
 run4(?rot, D) ->
-    [A|[B|[C|E]]] = D#d.stack,
-    Stack2 = [C|[A|[B|E]]],
-    D#d{stack = Stack2,
-	op_gas = D#d.op_gas - 1};
+    case D#d.stack of
+        [A|[B|[C|E]]] ->
+            Stack2 = [C|[A|[B|E]]],
+            D#d{stack = Stack2,
+                op_gas = D#d.op_gas - 1};
+        _ -> {error, "stack underflow"}
+    end;
 run4(?ddup, D) ->
-    [A|[B|C]] = D#d.stack,
-    Stack2 = [A|[B|[A|[B|C]]]],
-    D#d{stack = Stack2,
-	ram_current = D#d.ram_current +
-	    memory(A) + memory(B),
-	op_gas = D#d.op_gas - 1};
+    case D#d.stack of 
+        [A|[B|C]] ->
+            Stack2 = [A|[B|[A|[B|C]]]],
+            D#d{stack = Stack2,
+                ram_current = D#d.ram_current +
+                memory(A) + memory(B),
+                op_gas = D#d.op_gas - 1};
+        _ -> {error, "stack underflow"}
+    end;
 run4(?tuckn, D) ->
-    [N|[X|S]] = D#d.stack,
-    H = lists:sublist(S, 1, N),
-    T = lists:sublist(S, N+1, 100000000000000000),
-    Stack2 = H ++ [X|T],
-    D#d{stack = Stack2,
-	op_gas = D#d.op_gas - 1};
+    case D#d.stack of
+        [N|[X|S]] ->
+            H = lists:sublist(S, 1, N),
+            T = lists:sublist(S, N+1, 100000000000000000),
+            Stack2 = H ++ [X|T],
+            D#d{stack = Stack2,
+                op_gas = D#d.op_gas - 1};
+        _ -> {error, "stack underflow"}
+    end;
 run4(?pickn, D) ->
-    [N|S] = D#d.stack,
-    H = lists:sublist(S, 1, N - 1),
-    [X|T] = lists:sublist(S, N, 100000000000000000),
-    Stack2 = [X|(H ++ T)],
-    D#d{stack = Stack2,
-	op_gas = D#d.op_gas - 1};
+    case D#d.stack of
+        [N|S] ->
+            H = lists:sublist(S, 1, N - 1),
+            case lists:sublist(S, N, 100000000000000000) of
+                [X|T] ->
+                    Stack2 = [X|(H ++ T)],
+                    D#d{stack = Stack2,
+                        op_gas = D#d.op_gas - 1};
+                _ -> {error, "stack underflow"}
+            end;
+        _ -> {error, "stack underflow"}
+    end;
 run4(?to_r, D) ->
-    [H|T] = D#d.stack,
-    D#d{stack = T,
-	op_gas = D#d.op_gas - 1,
-	alt = [H|D#d.alt]};
+    case D#d.stack of
+        [H|T] ->
+            D#d{stack = T,
+                op_gas = D#d.op_gas - 1,
+                alt = [H|D#d.alt]};
+        _ -> {error, "stack underflow"}
+    end;
 run4(?from_r, D) ->
-    [H|T] = D#d.alt,
-    D#d{stack = [H|D#d.stack],
-	alt = T,
-	op_gas = D#d.op_gas - 1};
+    case D#d.alt of
+        [H|T] ->
+            D#d{stack = [H|D#d.stack],
+                alt = T,
+                op_gas = D#d.op_gas - 1};
+        _ -> {error, "alt stack underflow"}
+    end;
 run4(?r_fetch, D) ->
-    [H|T] = D#d.alt,
-    D#d{stack = [H|D#d.stack],
-	op_gas = D#d.op_gas - 1};
+    case D#d.alt of
+        [H|T] ->
+            D#d{stack = [H|D#d.stack],
+                op_gas = D#d.op_gas - 1};
+        _ -> {error, "alt stack underflow"}
+    end;
 run4(?hash, D) ->
-    [H|T] = D#d.stack,
-    D#d{stack = [hash:doit(H, D#d.hash_size)|T],
-	op_gas = D#d.op_gas - 20};
+    case D#d.stack of
+        [H|T] ->
+            D#d{stack = [hash:doit(H, D#d.hash_size)|T],
+                op_gas = D#d.op_gas - 20};
+        _ -> {error, "stack underflow"}
+    end;
 run4(?verify_sig, D) ->
-    [Pub|[Data|[Sig|T]]] = D#d.stack,
-    io:fwrite("about to verify\n"),
-    io:fwrite(packer:pack({verify, Data, Sig, Pub})),
-    io:fwrite("\n"),
-    %B = sign:verify_sig(Data, base64:encode(Sig), base64:encode(Pub)),
-    B = sign:verify_sig(Data, base64:encode(Sig), Pub),
-    B2 = case B of
-	     true -> <<1:(?int_bits)>>;
-	     false -> <<0:(?int_bits)>>
-			  end,
-    D#d{stack = [B2|T],
-	op_gas = D#d.op_gas - 20};
+    case D#d.stack of
+        [Pub|[Data|[Sig|T]]] ->
+            io:fwrite("about to verify\n"),
+            io:fwrite(packer:pack({verify, Data, Sig, Pub})),
+            io:fwrite("\n"),
+                                                %B = sign:verify_sig(Data, base64:encode(Sig), base64:encode(Pub)),
+            B = sign:verify_sig(Data, Sig, Pub),
+            B2 = case B of
+                     true -> <<1:(?int_bits)>>;
+                     false -> <<0:(?int_bits)>>
+                                  end,
+            D#d{stack = [B2|T],
+                op_gas = D#d.op_gas - 20};
+        _ -> {error, "stack underflow"}
+    end;
 run4(X, D) when (X >= ?add) and (X < ?eq) ->
-    [A|[B|C]] = D#d.stack,
-    D#d{stack = [arithmetic_chalang:doit(X, A, B)|C],
-	op_gas = D#d.op_gas - 1,
-	ram_current = D#d.ram_current - 2};
+    case D#d.stack of
+        [A|[B|C]] ->
+            D#d{stack = [arithmetic_chalang:doit(X, A, B)|C],
+                op_gas = D#d.op_gas - 1,
+                ram_current = D#d.ram_current - 2};
+        _ -> {error, "stack underflow"}
+    end;
 run4(?eq, D) ->
-    ST = D#d.stack,
-    [A|[B|_]] = ST,
-    C = if
-	    A == B -> 1;
-	    true -> 0
-	end,
-    S = [<<C:?int_bits>>|ST],
-    D#d{stack = S, 
-	op_gas = D#d.op_gas - 1,
-	ram_current = D#d.ram_current + 1};
-
+    case D#d.stack of
+        [A|[B|_]] ->
+            C = if
+                    A == B -> 1;
+                    true -> 0
+                end,
+            S = [<<C:?int_bits>>|D#d.stack],
+            D#d{stack = S, 
+                op_gas = D#d.op_gas - 1,
+                ram_current = D#d.ram_current + 1};
+        _ -> {error, "stack underflow"}
+    end;
 run4(?bool_flip, D) ->
-    [<<H:32>>|T] = D#d.stack,
-    B = case H of
-	    0 -> 1;
-	    _ -> 0
-	end,
-    D#d{op_gas = D#d.op_gas - 1,
-	stack = [<<B:32>>|T]};
-run4(?bool_and, D) ->
-    [<<A:32>>|[<<B:32>>|T]] = D#d.stack,
-    C = case {A, B} of
-	    {0, _} -> 0;
-	    {_, 0} -> 0;
-	    {_, _} -> 1
-	end,
-    D#d{op_gas = D#d.op_gas - 1,
-	stack = [<<C:32>>|T],
-	ram_current = D#d.ram_current - 2};
-run4(?bool_or, D) ->
-    [<<A:32>>|[<<B:32>>|T]] = D#d.stack,
-    C = case {A, B} of
-	    {0, 0} -> 0;
-	    {_, _} -> 1
-	end,
-    D#d{op_gas = D#d.op_gas - 1,
-	stack = [<<C:32>>|T],
-	ram_current = D#d.ram_current - 2};
-run4(?bool_xor, Data) ->
-    [G|[H|T]] = Data#d.stack,
-    B = 8 * size(G),
-    D = 8 * size(H),
-    <<A:B>> = G,
-    <<C:D>> = H,
-    J = case {A, C} of
-	    {0, 0} -> 0;
-	    {0, _} -> 1;
-	    {_, 0} -> 1;
-	    _ -> 0
-	end,
-    Data#d{op_gas = Data#d.op_gas - 1,
-	stack = [<<J:32>>|T],
-	ram_current = Data#d.ram_current - 2};
+    D2 = D#d{op_gas = D#d.op_gas - 1},
+    case D#d.stack of
+        [<<0:32>>|T] -> D2#d{stack = [<<1:32>>|T]};
+        [<<_:32>>|T] -> D2#d{stack = [<<0:32>>|T]};
+        [X|T] -> {error, "can only bool flip a 4 byte value"};
+        _ -> {error, "stack underflow"}
+    end;
 run4(?bin_and, D) ->
-    [G|[H|T]] = D#d.stack,
-    B = 8 * size(G),
-    D = 8 * size(H),
-    <<A:B>> = G,
-    <<C:D>> = H,
-    E = max(B, D),
-    F = A band C,
-    D#d{op_gas = D#d.op_gas - E,
-	stack = [<<F:E>>|T],
-	ram_current = D#d.ram_current - min(B, D) - 1};
+    case D#d.stack of
+        [G|[H|T]] ->
+            B = 8 * size(G),
+            D = 8 * size(H),
+            <<A:B>> = G,
+            <<C:D>> = H,
+            E = max(B, D),
+            F = A band C,
+            D#d{op_gas = D#d.op_gas - E,
+                stack = [<<F:E>>|T],
+                ram_current = D#d.ram_current - min(B, D) - 1};
+        _ -> {error, "stack underflow"}
+    end;
 run4(?bin_or, D) ->
-    [G|[H|T]] = D#d.stack,
-    B = 8 * size(G),
-    D = 8 * size(H),
-    <<A:B>> = G,
-    <<C:D>> = H,
-    E = max(B, D),
-    F = A bor C,
-    D#d{op_gas = D#d.op_gas - E,
-	stack = [<<F:E>>|T],
-	ram_current = D#d.ram_current - min(B, D) - 1};
+    case D#d.stack of
+        [G|[H|T]] ->
+            B = 8 * size(G),
+            D = 8 * size(H),
+            <<A:B>> = G,
+            <<C:D>> = H,
+            E = max(B, D),
+            F = A bor C,
+            D#d{op_gas = D#d.op_gas - E,
+                stack = [<<F:E>>|T],
+                ram_current = D#d.ram_current - min(B, D) - 1};
+        _ -> {error, "stack underflow"}
+    end;
 run4(?bin_xor, Data) ->
-    [G|[H|T]] = Data#d.stack,
-    B = 8 * size(G),
-    D = 8 * size(H),
-    <<A:B>> = G,
-    <<C:D>> = H,
-    E = max(B, D),
-    F = A bxor C,
-    Data#d{op_gas = Data#d.op_gas - E,
-	stack = [<<F:E>>|T],
-	ram_current = Data#d.ram_current - min(B, D) - 1};
+    case Data#d.stack of
+    [G|[H|T]] ->
+            B = 8 * size(G),
+            D = 8 * size(H),
+            <<A:B>> = G,
+            <<C:D>> = H,
+            E = max(B, D),
+            F = A bxor C,
+            Data#d{op_gas = Data#d.op_gas - E,
+                   stack = [<<F:E>>|T],
+                   ram_current = Data#d.ram_current - min(B, D) - 1};
+        _ -> {error, "stack underflow"}
+    end;
 run4(?stack_size, D) ->
     S = D#d.stack,
     D#d{op_gas = D#d.op_gas - 1,
@@ -425,69 +469,111 @@ run4(?many_funs, D) ->
 run4(?fun_end, D) ->
     D#d{op_gas = D#d.op_gas - 1};
 run4(?set, D) ->
-    [<<Key:32>>|[Value|T]] = D#d.stack,
-    Vars = setelement(Key, D#d.vars, Value),
-    D#d{op_gas = D#d.op_gas - 1,
-	stack = T,
-	vars = Vars};
+    case D#d.stack of
+        [<<Key:32>>|[Value|T]] ->
+            if 
+                (Key > size(D#d.vars)) ->
+                    {error, "ran out of space for variables"};
+                true ->
+                    Vars = setelement(Key, D#d.vars, Value),
+                    D#d{op_gas = D#d.op_gas - 1,
+                        stack = T,
+                        vars = Vars}
+            end;
+        _ -> {error, "stack underflow"}
+    end;
 run4(?fetch, D) ->
-    [<<Key:32>>|T] = D#d.stack,
-    Value = case element(Key, D#d.vars) of
-		e -> [];
-		V -> V
-	    end,
-    D#d{op_gas = D#d.op_gas - 1,
-	stack = [Value|T],
-	ram_current = D#d.ram_current + memory(Value) + 1};
+    case D#d.stack of
+        [<<Key:32>>|T] ->
+            if
+                (Key > size(D#d.vars)) ->
+                    {error, "cannot fetch variables from outside the allocated space"};
+                true ->
+                    Value = case element(Key, D#d.vars) of
+                                e -> [];
+                                V -> V
+                            end,
+                    D#d{op_gas = D#d.op_gas - 1,
+                        stack = [Value|T],
+                        ram_current = D#d.ram_current + memory(Value) + 1}
+            end;
+        _ -> {error, "stack underflow"}
+    end;
 run4(?cons, D) -> % ( A [B] -- [A, B] )
-    [A|[B|T]] = D#d.stack,
-    D#d{op_gas = D#d.op_gas - 1,
-	stack = [[B|A]|T],
-	ram_current = D#d.ram_current + 1};
+    case D#d.stack of
+        [A|[B|T]] ->
+            D#d{op_gas = D#d.op_gas - 1,
+                stack = [[B|A]|T],
+                ram_current = D#d.ram_current + 1};
+        _ -> {error, "stack underflow"}
+    end;
 run4(?car, D) -> % ( [A, B] -- A [B] )
-    [[B|A]|T] = D#d.stack,
-    D#d{op_gas = D#d.op_gas - 1,
-	stack = [A|[B|T]],
-	ram_current = D#d.ram_current - 1};
+    case D#d.stack of
+        [[B|A]|T] ->
+            D#d{op_gas = D#d.op_gas - 1,
+                stack = [A|[B|T]],
+                ram_current = D#d.ram_current - 1};
+        _ -> {error, "stack undeflow"}
+    end;
 run4(?nil, D) ->
     D#d{op_gas = D#d.op_gas - 1,
 	stack = [[]|D#d.stack],
 	ram_current = D#d.ram_current + 1};
 run4(?append, D) ->
-    [A|[B|T]] = D#d.stack,
-    C = if
-	    is_binary(A) and is_binary(B) ->
-		<<B/binary, A/binary>>;
-	    is_list(A) and is_list(B) ->
-		B ++ A
-	end,
-    D#d{op_gas = D#d.op_gas - 1,
-	stack = [C|T],
-	ram_current = D#d.ram_current + 1};
+    case D#d.stack of
+        [A|[B|T]] ->
+            C = if
+                    is_binary(A) and is_binary(B) ->
+                        <<B/binary, A/binary>>;
+                    is_list(A) and is_list(B) ->
+                        B ++ A
+                end,
+            D#d{op_gas = D#d.op_gas - 1,
+                stack = [C|T],
+                ram_current = D#d.ram_current + 1};
+        _ -> {error, "stack underflow"}
+    end;
 run4(?split, D) ->
-    [<<N:?int_bits>>|[L|T]] = D#d.stack,
-    M = N * 8,
-    true = is_binary(L),
-    <<A:M, B/binary>> = L,
-    D#d{op_gas = D#d.op_gas - 1,
-	stack = [<<A:M>>|[B|T]],
-	ram_current = D#d.ram_current - 1};
+    case D#d.stack of
+        [<<N:?int_bits>>|[L|T]] ->
+            M = N * 8,
+            if
+                is_binary(L) ->
+                    <<A:M, B/binary>> = L,
+                    D#d{op_gas = D#d.op_gas - 1,
+                        stack = [<<A:M>>|[B|T]],
+                        ram_current = D#d.ram_current - 1};
+                true -> {error, "can only split binaries"}
+            end;
+        [_|[_|_]] -> {error, "need to use a 4-byte integer to say where to split the binary"};
+        _ -> {error, "stack underflow"}
+    end;
 run4(?reverse, D) ->
-    [H|T] = D#d.stack,
-    D#d{op_gas = D#d.op_gas - length(H),
-	stack = [lists:reverse(H)|T]};
+    case D#d.stack of
+        [H|T] ->
+            if
+                is_list(H) ->
+                    D#d{op_gas = D#d.op_gas - length(H),
+                        stack = [lists:reverse(H)|T]};
+                true -> {error, "can only reverse a list"}
+            end;
+        _ -> {error, "stack underflow"}
+    end;
 run4(?is_list, D) ->
-    [H|T] = D#d.stack,
-    G = if
-	    is_list(H) -> <<1:?int_bits>>;
-	    true -> <<0:?int_bits>>
-	end,
-    D#d{op_gas = D#d.op_gas - 1,
-	stack = [G|[H|T]],
-	ram_current = D#d.ram_current - 1};
+    case D#d.stack of
+        [H|T] ->
+            G = if
+                    is_list(H) -> <<1:?int_bits>>;
+                    true -> (<<0:?int_bits>>)
+                end,
+            D#d{op_gas = D#d.op_gas - 1,
+                stack = [G|[H|T]],
+                ram_current = D#d.ram_current - 1};
+        _ -> {error, "stack underflow"}
+    end;
 run4(?nop, D) -> D;
 run4(?fail, D) -> 
-    {error, fail}.
+    {error, "fail"}.
 
 memory(L) -> memory(L, 0).
 memory([], X) -> X+1;
@@ -509,7 +595,7 @@ balanced_f(<<?binary:8, H:32, Script/binary>>, D) ->
     balanced_f(Script2, D);
 balanced_f(<<_:8, Script/binary>>, X) ->
     balanced_f(Script, X).
-none_of(X) -> none_of(X, ?crash).
+none_of(X) -> none_of(X, ?return).
 none_of(<<>>, _) -> true;
 none_of(<<X:8, _/binary>>, X) -> false;
 none_of(<<?int:8, _:?int_bits, Script/binary>>, X) -> 

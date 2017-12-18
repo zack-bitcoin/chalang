@@ -17,7 +17,7 @@ doit(<<>>) ->
     ok.
 
 doit2(10) -> " print";
-doit2(11) -> " crash";
+doit2(11) -> " return";
 doit2(12) -> " nop";
 doit2(20) -> " drop";
 doit2(21) -> " dup";

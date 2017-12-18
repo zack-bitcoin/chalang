@@ -9,6 +9,7 @@ int 11 == >r drop drop
 int 10 == >r drop drop
 int 12 == >r drop drop
 int 12 == >r drop drop
-r> r> r> r> and and and
+print
+r> r> r> r> print and print and and
 %should return 1
 ;

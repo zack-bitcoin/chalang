@@ -3,7 +3,7 @@
 
 macro Amount int 1000 ;
 
-macro Draw int 1 int 0 int 0 crash ;
+macro Draw int 1 int 0 int 0 return ;
 
 : or_die not if Draw else then ;
 
@@ -27,7 +27,7 @@ macro bothRevealed Secret2 reveal swap
 
 %syntax for case statements.
 macro -> == if drop drop ;
-macro -- crash else then drop ;
+macro -- return else then drop ;
 
 macro main
   int 1 -> player1revealed --

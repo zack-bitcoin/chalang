@@ -12,7 +12,7 @@ opcode | symbol | stack changes | comment
 opcode | symbol | stack changes | comment
 ---| ---   | --- | ---
 10 | print | ( Y -- X ) | prints the top element on stack
-11 | crash |    |code stops execution here. Whatever is on top of the stack is the final state.
+11 | return |    | code stops execution here. Whatever is on top of the stack is the final state.
 12 | nop | ( -- ) | does nothing.
 13 | fail | ( -- ) | throws an error. Invalid transaction.
 
