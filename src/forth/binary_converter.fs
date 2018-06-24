@@ -1,26 +1,29 @@
+% For converting a list of bits into an integer.
 
+
+% Some macros to make lists easier.
 macro [ nil ;
 macro , swap cons ;
 macro ] swap cons reverse ;
 
 
+% Binary conversion function
 : bc2 % (Accumulator BinList -- Int)
-  >r print
+  >r
   nil == if drop drop r>
   else drop
-    car swap r> int 2 print * + recurse call
+    car swap r> int 2 * + recurse call
   then
 ;
-
 : binary_convert % (BinList -- Int)
   int 0 bc2 call
 ;
 
 
-( Binary 1010 is decimal 8 )
-
+% the test. returns [true] if it succeeds.
+% Binary 1010 is decimal 8 
 macro test
 [int 1, int 0, int 1, int 0]
-binary_convert call print
+binary_convert call
 int 10 == swap drop swap drop
 ;
