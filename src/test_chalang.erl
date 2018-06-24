@@ -20,10 +20,11 @@ run_scripts([H|T], Gas, Loc) ->
     run_scripts(T, NewGas, Loc).
 test() -> test(?loc).
 test(Loc) ->
-    Scripts = ["function", "variable",
+    Scripts = [
+	       "function", "variable",
 	       "macro", "case", "recursion", "map",
 	       "math", "hashlock", "case2", 
-	       "case_binary", "sign"],
+	       "case_binary", "binary_converter"],
 	       %"merge"],
     Gas = 10000,
     run_scripts(Scripts, Gas, Loc),
