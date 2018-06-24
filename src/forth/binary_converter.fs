@@ -15,7 +15,7 @@ macro ] swap cons reverse ;
     car swap r> int 2 * + recurse call
   then
 ;
-: binary_convert (BinList -- Int)
+macro binary_convert (BinList -- Int)
   int 0 bc2 call
 ;
 
@@ -24,6 +24,6 @@ macro ] swap cons reverse ;
 % Binary 1100 is decimal 12
 macro test
 [int 1, int 1, int 0, int 0]
-binary_convert call
+binary_convert
 int 12 == swap drop swap drop
 ;
