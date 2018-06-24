@@ -21,7 +21,7 @@ macro ] swap cons reverse ;
 
 
 % the test. returns [true] if it succeeds.
-% Binary 1010 is decimal 8 
+% Binary 1010 is decimal 10
 macro test
 [int 1, int 0, int 1, int 0]
 binary_convert call
