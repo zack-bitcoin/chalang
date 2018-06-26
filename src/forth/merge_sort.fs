@@ -59,16 +59,14 @@ macro merge_setup ( List -- ListOfLengthOneLists )
 : sort2 ( ListOfSortedLists -- SortedList )
   car nil == ( if there is only 1 sorted list left, return it. )
   if
-    drop cons
+    drop drop
   else
     ( sort the first 2 lists, and append the result to the listofsortedlists. )
     drop car tuck merge nil cons ++ recurse call
   then
 ;
 macro sort ( UnsortedList -- SortedList )
-  merge_setup
-  sort2 call
-  car drop
+  merge_setup sort2 call
 ;
 
 macro test
