@@ -50,14 +50,15 @@ macro merge_setup ( List -- ListOfLengthOneLists )
   merge_setup2 map
 ;
 : sort2 ( ListOfSortedLists -- SortedList )
-  nil ==
+  nil == % if there is nothing to sort, return empty list.
   if
     drop 
   else
-    drop car nil == 
+    drop car nil == % if there is only 1 sorted list left, return it.
     if
       drop cons
     else
+      % sort the first 2 lists, and append the result to the listofsortedlists.
       drop car tuck merge nil cons ++ recurse call
     then
   then
