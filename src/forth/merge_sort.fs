@@ -72,7 +72,6 @@ macro sort ( UnsortedList -- SortedList )
 
 macro test
   % [int 4, int 13] [int 2, int 5, int 10] merge 
-  % nil sort print 
    [ int 10, int 2, int 13, int 4, int 5 ] sort
   [ int 2, int 4, int 5, int 10, int 13 ]
   == tuck drop drop
