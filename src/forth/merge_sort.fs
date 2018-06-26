@@ -15,7 +15,7 @@ macro ] , reverse ;
     drop recurse call
   then ;
 macro map ( List Fun -- NewList )
-  >r nil swap map2 call
+  >r nil swap map2 call r> drop
 ;
 
 % merge two sorted lists into one sorted list.
