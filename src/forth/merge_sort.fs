@@ -1,6 +1,5 @@
 ( mergesort )
 
-
 ( helper macros for making lists. )
 macro [ nil ;
 macro , swap cons ;
@@ -57,17 +56,12 @@ macro merge_setup ( List -- ListOfLengthOneLists )
 
 ( sort a list )
 : sort2 ( ListOfSortedLists -- SortedList )
-  nil == ( if there is nothing to sort, return empty list. )
+  car nil == ( if there is only 1 sorted list left, return it. )
   if
-    drop 
+    drop cons
   else
-    drop car nil == ( if there is only 1 sorted list left, return it. )
-    if
-      drop cons
-    else
-      ( sort the first 2 lists, and append the result to the listofsortedlists. )
-      drop car tuck merge nil cons ++ recurse call
-    then
+    ( sort the first 2 lists, and append the result to the listofsortedlists. )
+    drop car tuck merge nil cons ++ recurse call
   then
 ;
 macro sort ( UnsortedList -- SortedList )
@@ -77,8 +71,10 @@ macro sort ( UnsortedList -- SortedList )
 ;
 
 macro test
-  ( [int 4, int 13] [int 2, int 5, int 10] merge )
-  [ int 10, int 2, int 13, int 4, int 5 ] sort
+  % [int 4, int 13] [int 2, int 5, int 10] merge 
+  % nil sort print 
+   [ int 10, int 2, int 13, int 4, int 5 ] sort
   [ int 2, int 4, int 5, int 10, int 13 ]
   == tuck drop drop
+  %int 0
 ;
