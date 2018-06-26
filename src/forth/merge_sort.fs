@@ -1,9 +1,11 @@
 ( mergesort )
 
+
 ( helper macros for making lists. )
 macro [ nil ;
 macro , swap cons ;
 macro ] , reverse ;
+
 
 % higher order function "map". applies a function to every element of a list. [A, B, B] -> [f(A), f(B), f(C)] 
 : map2 ( OldList NewList -- List2 )
@@ -17,6 +19,7 @@ macro ] , reverse ;
 macro map ( List Fun -- NewList )
   >r nil swap map2 call r> drop
 ;
+
 
 ( merge two sorted lists into one sorted list. )
 : merge2 ( L1 L2 Accumulator -- L3 )
@@ -43,12 +46,16 @@ macro merge ( L1 L2 -- L3 )
   nil merge2 call
 ;
 
-( sort a list )
+
+( example: [A, B, C] -> [[A], [B], [C]]. )
 : merge_setup2 ( X -- [X] )
   nil cons ;
 macro merge_setup ( List -- ListOfLengthOneLists )
   merge_setup2 map
 ;
+
+
+( sort a list )
 : sort2 ( ListOfSortedLists -- SortedList )
   nil == ( if there is nothing to sort, return empty list. )
   if
@@ -64,7 +71,9 @@ macro merge_setup ( List -- ListOfLengthOneLists )
   then
 ;
 macro sort ( UnsortedList -- SortedList )
- merge_setup sort2 call car drop
+  merge_setup
+  sort2 call
+  car drop
 ;
 
 macro test
