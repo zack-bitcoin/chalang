@@ -1,6 +1,6 @@
-% mergesort 
+( mergesort )
 
-% helper macros for making lists.
+( helper macros for making lists. )
 macro [ nil ;
 macro , swap cons ;
 macro ] , reverse ;
