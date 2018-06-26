@@ -1,3 +1,4 @@
+
 We should have 2 types of functions.
 One for fast recursion, and the other for merkelizing the code.
 
