@@ -24,11 +24,11 @@ macro map ( List Fun -- NewList )
 : merge2 ( L1 L2 Accumulator -- L3 )
   >r
   nil == if ( if L1 is [] )
-    drop drop reverse r> ++ reverse
+    drop drop r> reverse swap ++
   else
     drop swap nil ==
     if ( if L2 is [] )
-      drop drop reverse r> ++ reverse
+      drop drop r> reverse swap ++
     else
       ( add bigger element to list in r stack )
       drop
