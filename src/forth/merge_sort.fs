@@ -34,10 +34,11 @@ macro map ( List Fun -- NewList )
       drop
       car swap rot car swap rot 2dup
       < if
-        swap r> cons >r rot cons r> recurse call
+        swap r> cons >r rot
       else
-        r> cons >r swap cons r> recurse call
+        r> cons >r swap
       then
+      cons r> recurse call
     then
   then
 ;
