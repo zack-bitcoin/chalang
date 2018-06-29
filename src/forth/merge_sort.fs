@@ -7,7 +7,7 @@ macro ] , reverse ;
 
 
 % higher order function "map". applies a function to every element of a list. [A, B, B] -> [f(A), f(B), f(C)] 
-: map2 ( OldList NewList -- List2 )
+: map2 ( NewList OldList -- List2 )
   car swap r@ call rot cons swap
   nil ==
   if
