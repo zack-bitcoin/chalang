@@ -1,6 +1,6 @@
-(macro eqs_lib_clear () '(nop swap drop swap drop))
+% this is all happening at run-time.
 
-(macro eqs (A B)
-       '(nop A B === swap drop swap drop))
-(macro gt (A B)
-       '(nop A B > swap drop swap drop))
+(macro elclear () '(tuck drop drop))
+
+(macro eqs (A B) '(nop A B === elclear))
+(macro gt (A B)  '(nop A B > elclear))

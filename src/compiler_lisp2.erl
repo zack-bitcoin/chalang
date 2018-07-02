@@ -13,7 +13,8 @@
 -define(define, 110).
 -define(fun_end, 111).
 test() ->
-    Files = [ "hashlock",
+    Files = [ "case", 
+	      "hashlock",
 	     "first_macro", "square_each_macro", 
 	     "cond_macro", "primes", 
 	     "function", "let", "gcf",
@@ -383,6 +384,9 @@ is_op(<<"rot">>) -> {true, <<24>>, 3, 3};
 is_op(<<"2dup">>) -> {true, <<25>>, 4, 4};
 is_op(<<"tuckn">>) -> {true, <<26>>, 1, 1};
 is_op(<<"pickn">>) -> {true, <<27>>, 1, 1};
+is_op(<<">r">>) -> {true, <<30>>, 1, 0};
+is_op(<<"r>">>) -> {true, <<31>>, 0, 1};
+is_op(<<"r@">>) -> {true, <<32>>, 0, 1};
 is_op(<<"hash">>) -> {true, <<40>>, 1, 1};
 is_op(<<"verify_sig">>) -> {true, <<41>>, 3, 1};
 is_op(<<"pub2addr">>) -> {true, <<42>>, 1, 1};
@@ -394,6 +398,9 @@ is_op(<<">">>) -> {true, <<54>>, 2, 1};
 is_op(<<"<">>) -> {true, <<55>>, 2, 1};
 is_op(<<"rem">>) -> {true, <<57>>, 2, 1};
 is_op(<<"===">>) -> {true, <<58>>, 2, 3};
+is_op(<<"if">>) -> {true, <<70>>, 1, 0};
+is_op(<<"else">>) -> {true, <<71>>, 0, 0};
+is_op(<<"then">>) -> {true, <<72>>, 0, 0};
 is_op(<<"not">>) -> {true, <<80>>, 1, 1};
 is_op(<<"and">>) -> {true, <<81>>, 2, 1};
 is_op(<<"or">>) -> {true, <<82>>, 2, 1};
@@ -401,6 +408,20 @@ is_op(<<"xor">>) -> {true, <<83>>, 2, 1};
 is_op(<<"band">>) -> {true, <<84>>, 2, 1};
 is_op(<<"bor">>) -> {true, <<85>>, 2, 1};
 is_op(<<"bxor">>) -> {true, <<86>>, 2, 1};
+is_op(<<"stack_size">>) -> {true, <<90>>, 0, 1};
+is_op(<<"total_coins">>) -> {true, <<91>>, 0, 1};
+is_op(<<"height">>) -> {true, <<92>>, 0, 1};
+is_op(<<"slash">>) -> {true, <<93>>, 0, 1};
+is_op(<<"gas">>) -> {true, <<94>>, 0, 1};
+is_op(<<"ram">>) -> {true, <<95>>, 0, 1};
+is_op(<<"many_vars">>) -> {true, <<97>>, 0, 1};
+is_op(<<"many_funs">>) -> {true, <<98>>, 0, 1};
+is_op(<<"oracle">>) -> {true, <<99>>, 0, 1};
+is_op(<<"id_of_caller">>) -> {true, <<100>>, 0, 1};
+is_op(<<"accounts">>) -> {true, <<101>>, 0, 1};
+is_op(<<"channels">>) -> {true, <<102>>, 0, 1};
+is_op(<<"verify_merkle">>) -> {true, <<103>>, 3, 2};
+
 is_op(<<"=">>) -> {true, <<10,10,10>>, 2, 1};
 is_op(<<"lambda">>) -> {true, <<110>>, 3, 0};
 is_op(<<"end_lambda">>) -> {true, <<111>>, 0, 0};
@@ -419,9 +440,6 @@ is_op(<<"++">>) -> {true, <<134>>, 2, 1};
 is_op(<<"split">>) -> {true, <<135>>, 2, 2};
 is_op(<<"reverse">>) -> {true, <<136>>, 1, 1};
 is_op(<<"is_list">>) -> {true, <<137, 22, 20>>, 1, 2};
-is_op(<<"if">>) -> {true, <<70>>, 1, 0};
-is_op(<<"else">>) -> {true, <<71>>, 0, 0};
-is_op(<<"then">>) -> {true, <<72>>, 0, 0};
 
 is_op(_) -> {false, not_an_op, 0, 0}.
 

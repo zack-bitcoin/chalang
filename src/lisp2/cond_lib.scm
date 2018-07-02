@@ -1,4 +1,7 @@
 
+% cond happens at compile time, case happens at run time.
+% case.scm tests this out.
+
 (macro case (X)
        (cond (((= X ()) '(nop))
 	      (true '(nop
