@@ -56,7 +56,7 @@ doit(A) ->
     Funcs = dict:new(),
     List4 = to_ops(List2, Funcs),
     {List5, _} = lambdas(List4, []),
-    disassembler:doit(List5),
+    Forth = disassembler:doit(List5),
     io:fwrite("VM\n"),
     Gas = 10000,
     VM = chalang:vm(List5, Gas*100, Gas*10, Gas, Gas, []),
@@ -120,8 +120,17 @@ macros([<<"macro">>|[Name|_]], _) ->
     io:fwrite("\n\nerror, macro named "),
     io:fwrite(Name),
     io:fwrite(" has the wrong number of inputs\n\n");
+%macros([<<"macro_name">>, Name], D) ->
+%    {[Name], D};
+%macros([<<"call_ct">>, F, Args], D) ->
+%    io:fwrite("call ct situation\n"),
+%    {Ins, D2} = macros(Args, D),
+    %io:fwrite(packer:pack([F, macros(Ins, D)])),
+%    {Vars, Code} = dict:fetch(F, D2),
+%    apply_macro(Code, Vars, Ins, D2);
 %macros([<<"quote">>|T], D) ->
-%    macros(T, D);
+%    {[<<"quote">>|T], D};
+    %ok;
 macros([H|T], D) when is_list(H) ->
     {T2, D2} = macros(H, D),
     {T3, D3} = macros(T, D2),
@@ -166,6 +175,14 @@ lisp_quote([H|T], D) ->
     [lisp_quote(H, D)|
      lisp_quote(T, D)];
 lisp_quote(X, _) -> X.
+%lisp([<<"call_ct">>|_], D) ->
+%    io:fwrite("compiler lisp 2 call\n"),
+%    io:fwrite("compiler lisp 2 call 00\n"),
+%    ok;
+%lisp([<<"call_ct">>, [F], Ins], D) ->
+%    io:fwrite("compiler lisp 2 call\n"),
+%    {Vars, Code} = dict:fetch(F, D),
+%    apply_macro(Code, Vars, Ins, D);
 lisp([<<"print">>|T], D) -> 
     io:fwrite("print statment\n"),
     io:fwrite(T),
@@ -524,6 +541,7 @@ rpn([[H|S]|T]) ->
 rpn([H|T]) -> 
     rpn2(T) ++ [H].
 rpn2([]) -> [];
+rpn2(<<"nil">>) -> [];
 rpn2([H|T]) when is_list(H) ->
     [rpn(H)|rpn2(T)];
 rpn2([H|T]) ->

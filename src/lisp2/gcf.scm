@@ -4,7 +4,7 @@
 (let ((gcf (define (a b)
 	     (case (((eqs 0 b) a)
 		    (true (recurse b (rem a b))))))))
-       (eqs 12 (apply gcf '(24 36))))
+  (eqs 12 (apply gcf '(24 36))))
 
 
 % computing gcf at compile-time
