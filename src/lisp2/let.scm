@@ -2,7 +2,10 @@
 
 % this is happening at compile time.
 
-(eqs 8 
-     (let ((x 5)
-	    (y (- x 2)))
-       '(+ x y)))
+(macro test ()
+  (= 8 
+    (let ((x 5)
+	  (y (- x 2)))
+      (+ x y))))
+
+(test)
