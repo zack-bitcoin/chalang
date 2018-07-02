@@ -13,7 +13,7 @@
 -define(define, 110).
 -define(fun_end, 111).
 test() ->
-    Files = [
+    Files = [ "hashlock",
 	     "first_macro", "square_each_macro", 
 	     "cond_macro", "primes", 
 	     "function", "let", "gcf",
@@ -62,21 +62,21 @@ doit(A) ->
     %print_binary(List4),
     %Words, Tree, Tree2, Tree3, 
     %{Tree35, Tree4, List, List2, List3, 
-    {{Tree35, List, List4
+    {{Tree3, Tree35, List, List4
       }, VM}.%VM}. 
-quote_list([<<"macro">>|T]) ->
-    [<<"macro">>|T];
-quote_list([<<"quote">>|T]) ->
-    quote_list2(T);
-quote_list([H|T]) ->
-    [quote_list(H)|
-     quote_list(T)];
-quote_list(X) -> X.
-quote_list2([A]) ->
-    [<<"cons">>, quote_list2(A), <<"nil">>];
-quote_list2([A|B]) ->
-    [<<"cons">>, quote_list2(A), quote_list2(B)];
-quote_list2(X) -> X.
+%quote_list([<<"macro">>|T]) ->
+%    [<<"macro">>|T];
+%quote_list([<<"quote">>|T]) ->
+%    quote_list2(T);
+%quote_list([H|T]) ->
+%    [quote_list(H)|
+%     quote_list(T)];
+%quote_list(X) -> X.
+%quote_list2([A]) ->
+%    [<<"cons">>, quote_list2(A), <<"nil">>];
+%quote_list2([A|B]) ->
+%    [<<"cons">>, quote_list2(A), quote_list2(B)];
+%quote_list2(X) -> X.
 
 imports([<<"import">>, []], Done) -> {[], Done};
 imports([<<"import">>, [H|T]], Done) ->
@@ -119,6 +119,8 @@ macros([<<"macro">>|[Name|_]], _) ->
     io:fwrite("\n\nerror, macro named "),
     io:fwrite(Name),
     io:fwrite(" has the wrong number of inputs\n\n");
+%macros([<<"quote">>|T], D) ->
+%    macros(T, D);
 macros([H|T], D) when is_list(H) ->
     {T2, D2} = macros(H, D),
     {T3, D3} = macros(T, D2),
@@ -257,10 +259,10 @@ print_binary(<<A:8, B/binary>>) ->
     io:fwrite("\n"),
     print_binary(B);
 print_binary(<<>>) -> ok.
-split(C, B) -> split(C, B, []).
-split(C, [C|B], Out) -> {lists:reverse(Out), B};
-split(C, [D|B], Out) ->
-    split(C, B, [D|Out]).
+%split(C, B) -> split(C, B, []).
+%split(C, [C|B], Out) -> {lists:reverse(Out), B};
+%split(C, [D|B], Out) ->
+%    split(C, B, [D|Out]).
 split_def(X, B) ->
     split_def(X, B, 0).
 split_def(X, B, N) ->
@@ -350,6 +352,7 @@ variables([H|T], {Dict, Many}) ->
 		%Int = list_to_integer(binary_to_list(H)),
 		%{[<<"int">>, <<Int:32>>], {Dict, Many}};
 	    D -> 
+		io:fwrite("variables case D \n"),
 		Bin = decode(H),
 		S = size(Bin),
 		{[<<"binary">>, <<S:32>>, Bin], {Dict, Many}};
@@ -380,6 +383,9 @@ is_op(<<"rot">>) -> {true, <<24>>, 3, 3};
 is_op(<<"2dup">>) -> {true, <<25>>, 4, 4};
 is_op(<<"tuckn">>) -> {true, <<26>>, 1, 1};
 is_op(<<"pickn">>) -> {true, <<27>>, 1, 1};
+is_op(<<"hash">>) -> {true, <<40>>, 1, 1};
+is_op(<<"verify_sig">>) -> {true, <<41>>, 3, 1};
+is_op(<<"pub2addr">>) -> {true, <<42>>, 1, 1};
 is_op(<<"+">>) -> {true, <<50>>, 2, 1};
 is_op(<<"-">>) -> {true, <<51>>, 2, 1};
 is_op(<<"*">>) -> {true, <<52>>, 2, 1};
@@ -481,14 +487,15 @@ is_64(_) -> false.
 is_64_2(<<>>) -> true;
 is_64_2(<<X:8, Y/binary>>) -> 
     (is_int(<<X:8>>) 
-     or ((X>64) and (X<90)) 
-     or ((X>96) and (X<122)) 
+     or ((X>64) and (X<91)) 
+     or ((X>96) and (X<123)) 
+     or (X == hd("=")) 
      or (X == hd("/")) 
      or (X == hd("+")))
 	and is_64_2(Y).
-encode(X) -> 
-    Y = base64:encode(X),
-    <<45,45, Y/binary>>.
+%encode(X) -> 
+%    Y = base64:encode(X),
+%    <<45,45, Y/binary>>.
 decode(X) ->
     <<45,45, Y/binary>> = X,
     base64:decode(Y).
