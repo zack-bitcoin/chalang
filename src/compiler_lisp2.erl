@@ -13,7 +13,8 @@
 -define(define, 110).
 -define(fun_end, 111).
 test() ->
-    Files = [ "case", 
+    Files = [
+	      "case", 
 	      "hashlock",
 	     "first_macro", "square_each_macro", 
 	     "cond_macro", "primes", 
@@ -135,9 +136,37 @@ macros([H|T], D) when is_list(H) ->
     {T2, D2} = macros(H, D),
     {T3, D3} = macros(T, D2),
     {[T2|T3], D3};
+%macros([<<"print">>|T], D) ->
+%    io:fwrite("print statment\n"),
+%    io:fwrite(T),
+%    io:fwrite("\n"),
+%    macros(T, D);
+%macros([<<"=">>, A, B], D) ->
+    %io:fwrite("macro equal \n"),
+    %io:fwrite(packer:pack(A)),
+%    {A3, _} = macros(A, D),
+%    A2 = lisp(A3, D),
+%    B2 = lisp(B, D),
+    %io:fwrite(packer:pack([A2, B2])),
+%    {bool_atom_to_int(A2 == B2), D};
+%macros([<<">">>, A, B], F) ->
+%    io:fwrite("macro gt \n"),
+%    {C, _} = macros(A, F),
+%    {D, _} = macros(B, F),
+%    {bool_atom_to_int(C > D), F};
+%macros([<<"<">>, A, B], F) ->
+%    io:fwrite("macro lt \n"),
+%    {C, _} = macros(A, F),
+%    {D, _} = macros(B, F),
+%    {bool_atom_to_int(C < D), F};
+%macros([<<"is_list">>, A], F) ->
+%    io:fwrite("macro is_list \n"),
+%    {B, _} = macros(A, F),
+%    {bool_atom_to_int(is_list(B)), F};
 macros([H|T], D) ->
     case dict:find(H, D) of
 	error -> 
+	    %io:fwrite("macro error \n"),
 	    {T2, D2} = macros(T, D),
 	    {[H|T2], D2};
 	{ok, {Vars, Code}} ->
@@ -169,6 +198,7 @@ replace([H|T], A, B) ->
 replace(A, A, B) -> B;
 replace(X, _, _) -> X.
 lisp_quote([[<<"unquote">>|T]|T2], D) -> 
+    %{T3, _} = macros(T, D),
     [lisp(T, D)|
      lisp_quote(T2, D)];
 lisp_quote([H|T], D) -> 
@@ -187,67 +217,90 @@ bool_atom_to_int(true) ->
     1;
 bool_atom_to_int(false) ->
     0.
-lisp([<<"print">>|T], D) -> 
-    io:fwrite("print statment\n"),
-    io:fwrite(T),
-    io:fwrite("\n"),
-    lisp(T, D);
 lisp([<<"quote">>|T], D) -> lisp_quote(T, D);
 lisp([<<"cond">>, T], D) -> lisp(lisp_cond(T, D), D);
-lisp([<<"=">>, A, B], D) ->
-    C = lisp(A, D),
-    E = lisp(B, D),
-    bool_atom_to_int(C == E);
 lisp([<<">">>, A, B], F) ->
-    C = lisp(A, F),
-    D = lisp(B, F),
+    {A2, _} = macros(A, F),
+    {B2, _} = macros(B, F),
+    C = lisp(A2, F),
+    D = lisp(B2, F),
     bool_atom_to_int(C > D);
 lisp([<<"<">>, A, B], F) ->
-    C = lisp(A, F),
-    D = lisp(B, F),
+    {A2, _} = macros(A, F),
+    {B2, _} = macros(B, F),
+    C = lisp(A2, F),
+    D = lisp(B2, F),
     bool_atom_to_int(C < D);
 lisp([<<"is_list">>, A], F) ->
-    B = lisp(A, F),
+    {A2, _} = macros(A, F),
+    B = lisp(A2, F),
     bool_atom_to_int(is_list(B));
+lisp([<<"=">>, A, B], D) ->
+    %io:fwrite("macro equal \n"),
+    %io:fwrite(packer:pack(A)),
+    {A3, _} = macros(A, D),
+    A2 = lisp(A3, D),
+    {B3, _} = macros(B, D),
+    B2 = lisp(B3, D),
+    bool_atom_to_int(A2 == B2);
 lisp([<<"+">>, A, B], F) ->
-    C = lisp(A, F),
-    D = lisp(B, F),
+    {A2, _} = macros(A, F),
+    {B2, _} = macros(B, F),
+    C = lisp(A2, F),
+    D = lisp(B2, F),
     C + D;
 lisp([<<"-">>, A, B], F) ->
-    C = lisp(A, F),
-    D = lisp(B, F),
-    io:fwrite(packer:pack([A, C, D])),
+    {A2, _} = macros(A, F),
+    {B2, _} = macros(B, F),
+    C = lisp(A2, F),
+    D = lisp(B2, F),
+    %io:fwrite(packer:pack([A, C, D])),
     C - D;
 lisp([<<"/">>, A, B], F) ->
-    C = lisp(A, F),
-    D = lisp(B, F),
+    {A2, _} = macros(A, F),
+    {B2, _} = macros(B, F),
+    C = lisp(A2, F),
+    D = lisp(B2, F),
     C div D;
 lisp([<<"*">>, A, B], F) ->
-    C = lisp(A, F),
-    D = lisp(B, F),
+    {A2, _} = macros(A, F),
+    {B2, _} = macros(B, F),
+    C = lisp(A2, F),
+    D = lisp(B2, F),
     C * D;
 lisp([<<"rem">>, A, B], F) ->
-    C = lisp(A, F),
-    D = lisp(B, F),
+    {A2, _} = macros(A, F),
+    {B2, _} = macros(B, F),
+    C = lisp(A2, F),
+    D = lisp(B2, F),
     C rem D;
 lisp([<<"reverse">>, A], F) ->
     lists:reverse(lisp(A, F));
 lisp([<<"cons">>, A, B], F) ->
-    C = lisp(A, F),
-    D = lisp(B, F),
+    %{A2, _} = macros(A, F),
+    {B2, _} = macros(B, F),
+    C = lisp(A, F),% error
+    D = lisp(B2, F),
     [C|D];
 lisp([<<"car">>, A], F) ->
-    C = lisp(A, F),
+    {A2, _} = macros(A, F),
+    C = lisp(A2, F),
     hd(C);
 lisp([<<"cdr">>, A], F) ->
-    C = lisp(A, F),
+    {A2, _} = macros(A, F),
+    C = lisp(A2, F),
     tl(C);
 lisp([<<"or">>, A, B], F) ->
-    bih(A, F) or bih(B, F);
+    {A2, _} = macros(A, F),
+    {B2, _} = macros(B, F),
+    bih(A2, F) or bih(B2, F);
 lisp([<<"and">>, A, B], F) ->
-    bih(A, F) and bih(B, F);
+    {A2, _} = macros(A, F),
+    {B2, _} = macros(B, F),
+    bih(A2, F) and bih(B2, F);
 lisp([<<"not">>, A], F) ->
-    not(bih(A, F));
+    {A2, _} = macros(A, F),
+    not(bih(A2, F));
 lisp(X, _) -> X.
 bih(A, F) -> bool_interpret(lisp(A, F)).
 bool_interpret(<<"false">>) -> false;
@@ -259,7 +312,9 @@ bool_interpret([<<"true">>]) -> true;
 bool_interpret(true) -> true;
 bool_interpret(1) -> true;
 
-bool_interpret(X) -> {error, bad_bool, X}.
+bool_interpret(X) -> 
+    %io:fwrite(packer:pack(X)),
+    {error, bad_bool, X}.
 
     
 lisp_cond([], _) ->

@@ -9,9 +9,8 @@
 	      (true
 	       (cons (* 2 (car L)) (map_double (cdr L)))))))
 
-(macro == (A B) (= A B))
 (macro test ()
-       (== (map_double '(2 3 4 5))
+       (= (map_double '(2 3 4 5))
 	  '(4 6 8 10)))
 (test)
 

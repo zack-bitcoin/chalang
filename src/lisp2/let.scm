@@ -7,16 +7,17 @@
       '(+ x y)))
 
 (eqs 8 (test))
-% now to do it at compile time
 
+
+% now to do it at compile time
 (macro Fun1 () 5)
-(macro sub (X Y) (- X Y))
 (macro Fun2 ()
-       (sub (Fun1) 2))
-(macro == (A B) (= A B))
+       (- (Fun1) 2))
 (macro test2 ()
-       (== 8 (+ (Fun1) (Fun2)))
+       (= 8 (+ (Fun1) (Fun2)))
        )
 (test2)
+%(eqs 8 (+ (Fun1 Fun2)))
 
 and
+
