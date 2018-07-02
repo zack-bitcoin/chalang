@@ -13,8 +13,8 @@
 	      (true (ctgcf b (rem a b))))))
 
 (macro test ()
-   (= (ctgcf 24 36) 12)
-)
+   (eqs 12 (ctgcf 24 36))
+   )
 (test)
-
 and
+%0

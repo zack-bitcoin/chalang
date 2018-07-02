@@ -183,6 +183,10 @@ lisp_quote(X, _) -> X.
 %    io:fwrite("compiler lisp 2 call\n"),
 %    {Vars, Code} = dict:fetch(F, D),
 %    apply_macro(Code, Vars, Ins, D);
+bool_atom_to_int(true) ->
+    1;
+bool_atom_to_int(false) ->
+    0.
 lisp([<<"print">>|T], D) -> 
     io:fwrite("print statment\n"),
     io:fwrite(T),
@@ -193,18 +197,18 @@ lisp([<<"cond">>, T], D) -> lisp(lisp_cond(T, D), D);
 lisp([<<"=">>, A, B], D) ->
     C = lisp(A, D),
     E = lisp(B, D),
-    C == E;
+    bool_atom_to_int(C == E);
 lisp([<<">">>, A, B], F) ->
     C = lisp(A, F),
     D = lisp(B, F),
-    C > D;
+    bool_atom_to_int(C > D);
 lisp([<<"<">>, A, B], F) ->
     C = lisp(A, F),
     D = lisp(B, F),
-    C < D;
+    bool_atom_to_int(C < D);
 lisp([<<"is_list">>, A], F) ->
     B = lisp(A, F),
-    is_list(B);
+    bool_atom_to_int(is_list(B));
 lisp([<<"+">>, A, B], F) ->
     C = lisp(A, F),
     D = lisp(B, F),
@@ -212,6 +216,7 @@ lisp([<<"+">>, A, B], F) ->
 lisp([<<"-">>, A, B], F) ->
     C = lisp(A, F),
     D = lisp(B, F),
+    io:fwrite(packer:pack([A, C, D])),
     C - D;
 lisp([<<"/">>, A, B], F) ->
     C = lisp(A, F),
@@ -248,9 +253,12 @@ bih(A, F) -> bool_interpret(lisp(A, F)).
 bool_interpret(<<"false">>) -> false;
 bool_interpret([<<"false">>]) -> false;
 bool_interpret(false) -> false;
+bool_interpret(0) -> false;
 bool_interpret(<<"true">>) -> true;
 bool_interpret([<<"true">>]) -> true;
 bool_interpret(true) -> true;
+bool_interpret(1) -> true;
+
 bool_interpret(X) -> {error, bad_bool, X}.
 
     
@@ -439,7 +447,7 @@ is_op(<<"accounts">>) -> {true, <<101>>, 0, 1};
 is_op(<<"channels">>) -> {true, <<102>>, 0, 1};
 is_op(<<"verify_merkle">>) -> {true, <<103>>, 3, 2};
 
-is_op(<<"=">>) -> {true, <<10,10,10>>, 2, 1};
+%is_op(<<"=">>) -> {true, <<10,10,10>>, 2, 1};
 is_op(<<"lambda">>) -> {true, <<110>>, 3, 0};
 is_op(<<"end_lambda">>) -> {true, <<111>>, 0, 0};
 is_op(<<"recurse">>) -> {true, <<112, 113>>, 0, 1};
