@@ -13,7 +13,7 @@
 -define(define, 110).
 -define(fun_end, 111).
 test() ->
-    Files = [
+    Files = [ "map2",
 	      "case", 
 	      "hashlock",
 	     "first_macro", "square_each_macro", 
@@ -129,8 +129,8 @@ macros([<<"macro">>|[Name|_]], _) ->
     %io:fwrite(packer:pack([F, macros(Ins, D)])),
 %    {Vars, Code} = dict:fetch(F, D2),
 %    apply_macro(Code, Vars, Ins, D2);
-%macros([<<"quote">>|T], D) ->
-%    {[<<"quote">>|T], D};
+macros([<<"quote">>|T], D) ->
+    {[<<"quote">>|T], D};
     %ok;
 macros([H|T], D) when is_list(H) ->
     {T2, D2} = macros(H, D),
@@ -219,6 +219,30 @@ bool_atom_to_int(false) ->
     0.
 lisp([<<"quote">>|T], D) -> lisp_quote(T, D);
 lisp([<<"cond">>, T], D) -> lisp(lisp_cond(T, D), D);
+lisp([<<"execute">>,[<<"quote">>, F],A], D) ->
+    io:fwrite("lisp call\n"),
+    %io:fwrite(FID),
+    io:fwrite("\n"),
+    case dict:find(F, D) of
+	error ->
+	    io:fwrite("no function named "),
+	    io:fwrite(F),
+	    io:fwrite("\n"),
+	    1=2;
+	{ok, {Vars, Code}} ->
+	    {T3, D2} = macros(A, D),
+	    %{T2, _} = macros(A, D),%
+	    T4 = lisp(T3, D2),
+	    T2 = apply_macro(Code, Vars, T4, D2),
+	    %D2 = D, %
+	    lisp(T2, D2)
+    end;
+%lisp([<<"call">>|T], D) ->
+%    io:fwrite("call tail "),
+
+%%    io:fwrite(packer:pack(T)),
+%    io:fwrite("\n"),
+%    1=2;
 lisp([<<">">>, A, B], F) ->
     {A2, _} = macros(A, F),
     {B2, _} = macros(B, F),
@@ -620,8 +644,19 @@ quote_unquote(<<"'(", T/binary>>) ->
 quote_unquote(<<"`(", T/binary>>) ->
     T2 = quote_unquote(T),
     <<"( unquote ", T2/binary>>;
+quote_unquote(<<"'", T/binary>>) ->
+    {Atom, T2} = quote_unquote_atom(T),
+    io:fwrite(Atom),
+    <<"( function ", Atom/binary, " ) ">>;
 quote_unquote(<<X, T/binary>>) ->
     T2 = quote_unquote(T),
     <<X, T2/binary>>;
 quote_unquote(X) -> X.
+
+quote_unquote_atom(B) ->
+    qua2(B, <<>>).
+qua2(<<" ", T2/binary>>, X) -> {X, T2};
+qua2(<<L, R/binary>>, X) ->
+    qua2(R, <<X/binary, L>>).
+    
 

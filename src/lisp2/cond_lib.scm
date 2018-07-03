@@ -1,5 +1,5 @@
 
-% cond happens at compile time, case happens at run time.
+% case happens at run time. cond happens at compile time.
 % case.scm tests this out.
 
 (macro case (X)

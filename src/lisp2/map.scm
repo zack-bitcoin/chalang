@@ -1,9 +1,10 @@
 (import (eqs_lib.scm function_lib.scm cond_lib.scm let_lib.scm tree_lib.scm))
 
-% currently there are no higher-order functions at compile-time
 
 
 % first lets do a map completely at compile time.
+% this does not use higher-order macros
+% see map2.scm for compile-time example that uses higher-order macros.
 (macro map_double (L)
        (cond (((= () L) ())
 	      (true
