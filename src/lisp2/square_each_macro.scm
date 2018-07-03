@@ -19,7 +19,7 @@
 			  ,(tree (cdr X)))))))
 
 (and
- (eqs (sqr (2 3))
+ (= (sqr (2 3))
     (cons 4 (cons 9 nil)))
- (eqs (tree (4 9))
+ (= (tree (4 9))
     (cons 4 (cons 9 nil))))

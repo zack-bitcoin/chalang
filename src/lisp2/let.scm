@@ -6,7 +6,7 @@
 	  (y (- x 2)))
       '(+ x y)))
 
-(eqs 8 (test))
+(= 8 (test))
 
 
 % now to do it at compile time

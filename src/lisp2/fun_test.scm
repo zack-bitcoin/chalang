@@ -4,5 +4,5 @@
 
 (macro square () (define (x) (* x x)))
 
-(eqs 16
-     (apply (square) '((apply (square) '(2)))))
+(= 16
+     (execute (square) '((execute (square) '(2)))))

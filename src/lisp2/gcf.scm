@@ -2,9 +2,9 @@
 
 % computing gcf at run-time
 (let ((gcf (define (a b)
-	     (case (((eqs 0 b) a)
+	     (case (((= 0 b) a)
 		    (true (recurse b (rem a b))))))))
-  (eqs 12 (apply gcf '(24 36))))
+  (= 12 (execute gcf '(24 36))))
 
 
 % computing gcf at compile-time
@@ -13,7 +13,7 @@
 	      (true (ctgcf b (rem a b))))))
 
 (macro test ()
-   (eqs 12 (ctgcf 24 36))
+   (= 12 (ctgcf 24 36))
    )
 (test)
 and

@@ -13,7 +13,8 @@
 -define(define, 110).
 -define(fun_end, 111).
 test() ->
-    Files = [ "case", 
+    Files = [ "eqs_test",
+	      "case", 
 	      "hashlock",
 	      "first_macro", "square_each_macro", 
 	      "cond_macro", "primes", 
@@ -124,14 +125,6 @@ macros([<<"macro">>|[Name|_]], _) ->
     io:fwrite("\n\nerror, macro named "),
     io:fwrite(Name),
     io:fwrite(" has the wrong number of inputs\n\n");
-%macros([<<"macro_name">>, Name], D) ->
-%    {[Name], D};
-%macros([<<"call_ct">>, F, Args], D) ->
-%    io:fwrite("call ct situation\n"),
-%    {Ins, D2} = macros(Args, D),
-    %io:fwrite(packer:pack([F, macros(Ins, D)])),
-%    {Vars, Code} = dict:fetch(F, D2),
-%    apply_macro(Code, Vars, Ins, D2);
 macros([<<"quote">>|T], D) ->
     {[<<"quote">>|T], D};
     %ok;
@@ -139,33 +132,6 @@ macros([H|T], D) when is_list(H) ->
     {T2, D2} = macros(H, D),
     {T3, D3} = macros(T, D2),
     {[T2|T3], D3};
-%macros([<<"print">>|T], D) ->
-%    io:fwrite("print statment\n"),
-%    io:fwrite(T),
-%    io:fwrite("\n"),
-%    macros(T, D);
-%macros([<<"=">>, A, B], D) ->
-    %io:fwrite("macro equal \n"),
-    %io:fwrite(packer:pack(A)),
-%    {A3, _} = macros(A, D),
-%    A2 = lisp(A3, D),
-%    B2 = lisp(B, D),
-    %io:fwrite(packer:pack([A2, B2])),
-%    {bool_atom_to_int(A2 == B2), D};
-%macros([<<">">>, A, B], F) ->
-%    io:fwrite("macro gt \n"),
-%    {C, _} = macros(A, F),
-%    {D, _} = macros(B, F),
-%    {bool_atom_to_int(C > D), F};
-%macros([<<"<">>, A, B], F) ->
-%    io:fwrite("macro lt \n"),
-%    {C, _} = macros(A, F),
-%    {D, _} = macros(B, F),
-%    {bool_atom_to_int(C < D), F};
-%macros([<<"is_list">>, A], F) ->
-%    io:fwrite("macro is_list \n"),
-%    {B, _} = macros(A, F),
-%    {bool_atom_to_int(is_list(B)), F};
 macros([H|T], D) ->
     case dict:find(H, D) of
 	error -> 
@@ -333,15 +299,19 @@ bool_interpret(true) -> true;
 bool_interpret(1) -> true;
 
 bool_interpret(X) -> 
-    %io:fwrite(packer:pack(X)),
+    io:fwrite("bad bool \n"),
+    io:fwrite(X),
+    io:fwrite("\n"),
+    io:fwrite(packer:pack(X)),
+    io:fwrite("\n"),
     {error, bad_bool, X}.
 
     
 lisp_cond([], _) ->
     {error, no_true_cond};
 lisp_cond([[Bool, Code]|T], D) ->
-    %B = lisp(Bool),
-    {B2, _} = macros(Bool, D),
+    B = lisp(Bool, D),
+    {B2, _} = macros(B, D),
     B3 = lisp(B2, D),
     A = bool_interpret(B3),
     case A of

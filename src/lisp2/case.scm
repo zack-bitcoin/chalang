@@ -8,9 +8,7 @@
 (Z)
 
 % next show a case statment at run time 
-
-(case (((eqs 1 2) 6)
+(case (((= 1 2) 6)
        (true 7 )))
 
-
-== tuck drop drop
+and

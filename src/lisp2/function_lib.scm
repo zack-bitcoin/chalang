@@ -1,3 +1,5 @@
+% this is a library for making functions at run-time.
+
 (macro test (X)
        (cond
 	(((= () X) ())
@@ -103,7 +105,9 @@
 %(function_codes_1 1 '(function_gets (x) '(+ x 5) 0))
 %5 (nop lambda (function_vars (x) 0) (function_codes_1 1 '(function_gets (x) '(+ x 5) 0)) end_lambda)
 
-(macro apply (F V)
+%(macro apply (F V)
+%       (cons call (reverse (cons F (reverse V)))))
+(macro execute (F V)
        (cons call (reverse (cons F (reverse V)))))
 
 

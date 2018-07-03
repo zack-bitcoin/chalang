@@ -30,14 +30,14 @@
 (macro success () '(cons 4294967293 nil))%third biggest.
 (macro logic_unification (Var Code)
        '(case
-	    (((eqs (@ Var) (empty))
+	    (((= (@ Var) (empty))
 	      ((! Code Var) (success)))
-	     ((eqs (@ Var) Code) (success))
+	     ((= (@ Var) Code) (success))
 	     (true (fail)))))
 %(! (empty) 1)
 %(logic_unification 1 (+ 5 3))
-%(and (eqs (fail) (logic_unification 1 (+ 5 2)))
-%     (eqs 8 (@ 1)))
+%(and (= (fail) (logic_unification 1 (+ 5 2)))
+%     (= 8 (@ 1)))
 
 (macro empties (N)
        (cond (((= N 0) ())
@@ -81,7 +81,7 @@
 			  (set_empties (cdr L)))))))
 (macro clause_logic (pairs out)
        (cond (((= pairs ()) '(true out))
-	      (true (cons '((eqs (logic_unification
+	      (true (cons '((= (logic_unification
 				  ,(car (car pairs))
 				  ,(car (cdr (car pairs))))
 				 (fail))
@@ -99,25 +99,25 @@
 
 %(! (empty) 1)(! (empty) 2)
 %(case
-%    (((eqs (logic_unification 1 3) (fail)) (fail))
-%     ((eqs (logic_unification 2 (+ 10 (@ 1))) (fail)) (fail))
+%    (((= (logic_unification 1 3) (fail)) (fail))
+%     ((= (logic_unification 2 (+ 10 (@ 1))) (fail)) (fail))
 %     (true (@ 2))))
 
 
 %(reverse (tree (no_repeats '(a b c b a))))
 %(tree (no_repeats '(a b c b a)))
 
-%(case (((eqs 1 1)(fail))
+%(case (((= 1 1)(fail))
 %       (true 0)))
 %(prolog_or 5)%(tree '()))
 %(prolog_or (tree '(C1 C2)))
 
-%(case (((not (eqs C1 (fail))) C1)))
+%(case (((not (= C1 (fail))) C1)))
 
 (macro prolog_or ()
        (define (L)
-	 (case (((eqs L nil) (fail))
-		((not (eqs (car L) (fail))) (car L))
+	 (case (((= L nil) (fail))
+		((not (= (car L) (fail))) (car L))
 		(true (recurse (cdr L)))))))
 
-%(apply (prolog_or) ((cons (fail) (tree '(5)))))
+%(execute (prolog_or) ((cons (fail) (tree '(5)))))

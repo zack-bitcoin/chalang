@@ -7,14 +7,15 @@
 
 (macro map ()
        (define (F X)
-	 (case (((eqs nil X) nil)
+	 (case (((= nil X) nil)
 		 (true (cons
-			 (apply F ((car X)))
+			 (execute F ((car X)))
 			 (recurse F (cdr X))))))))
 
-(eqs
-  (apply (map) ((double) (tree '(2 3 4 5))))
+(=
+  (execute (map) ((double) (tree '(2 3 4 5))))
   (tree '(4 6 8 10)))
+
 
 % this map is happening completely at compile-time
 (macro map2 (f l)
