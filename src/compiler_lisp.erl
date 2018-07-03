@@ -1,11 +1,23 @@
+
+%If the compiler is written in macros, it is easier to understand, and modify.
+
 -module(compiler_lisp).
 -export([doit/1, test/0]).
 -define(int_bits, 32).
+-define(int, 0).
+-define(binary, 2).
+-define(define, 110).
+-define(fun_end, 111).
 test() ->
-    Files = ["first", "eqs", "cons", 
-	     "car", "set", "lambda", "gcf",
-	     "cond", "error", 
-	     "macro"],
+    Files = [ "sort_test",
+	      "eqs_test",
+	      "case", 
+	      "hashlock",
+	      "first_macro", "square_each_macro", 
+	      "primes", 
+	      "function", "let", "gcf",
+	      "fun_test", "map_test"
+	    ],
     test2(Files).
 test2([]) -> success;
 test2([H|T]) ->
@@ -18,132 +30,250 @@ test2([H|T]) ->
 	    test2(T);
 	X -> X
     end.
+doit_1(A, Done) ->
+    B = remove_comments(<<A/binary, <<"\n">>/binary>>),
+    B2 = quote_unquote(B),
+    C = add_spaces(B2),
+    Words = to_words(C, <<>>, []),
+    Tree = to_lists(Words),
+    imports(Tree, Done).
+    
 doit(A) when is_list(A) ->
     doit(list_to_binary(A));
 doit(A) ->
-    B = remove_comments(A),
-    C = add_spaces(B),
-    Words = to_words(C, <<>>, []),
-    Tree = to_lists(Words),
-    %true = ins_outs(Tree),
-    {Tree1, _} = macros(Tree, dict:new()),
-    {Tree2, _} = lambdas(Tree1, 0),
-    %rename vars in functions. That way we have dynamic scope. Replace every first var with FuncNameV1, second with FuncNameV2, etc.
+    {Tree1, _} = doit_1(A, []),
+    %io:fwrite(Tree1),
+    %io:fwrite("\n"),
+    %io:fwrite(packer:pack(Tree1)),
+    %io:fwrite("\n"),
+    %Tree1 = quote_list(Tree),
+    io:fwrite("Macros\n"),
+    Tree2 = integers(Tree1),
+    {Tree3, _} = macros(Tree2, dict:new()),
+    io:fwrite("rpn\n"),
+    Tree35 = rpn(Tree3),%change to reverse polish notation.
+    List = flatten(Tree35),
+    List2 = variables(List, {dict:new(), 1}),
+    Funcs = dict:new(),
+    List4 = to_ops(List2, Funcs),
+    {List5, _} = lambdas(List4, []),
+    Forth = disassembler:doit(List5),
+    io:fwrite("VM\n"),
+    Gas = 10000,
+    VM = chalang:vm(List5, Gas*100, Gas*10, Gas, Gas, []),
+    {{Tree1, Tree3, Tree35, List, List4
+      }, VM}.
 
-    {Tree3, FuncNames, _} = functions(Tree2, [], 0),%gets rid of "define", puts the bytes for : and ; to make a function. 
+imports([<<"import">>, []], Done) -> {[], Done};
+imports([<<"import">>, [H|T]], Done) ->
+    io:fwrite("importing "),
+    io:fwrite(H),
+    B = is_in(H, Done),
+    {Tree, Done2} = 
+	if
+	    B -> {[], Done};
+	    true ->		
+		{ok, File} = file:read_file("src/lisp/" ++ binary_to_list(H)),
+		D2 = [H|Done],
+		{Tr, D3} = doit_1(File, D2),
+		{Tr, D3}
+	end,
+    {Tree2, Done3} = imports([<<"import">>, T], Done2),
+    {[Tree|Tree2], Done3};
+imports([H|T], Done) -> 
+    {H2, Done2} = imports(H, Done),
+    {T2, Done3} = imports(T, Done2),
+    {[H2|T2], Done3};
+imports(Tree, Done) -> {Tree, Done}.
 
-    %var_number_check(Tree, Functions),%checks that every function has the right number of inputs.
-    Tree33 = conds(Tree3),
-    Tree335 = lists(Tree33),
-    Tree34 = eqs(Tree335),
-    Tree345 = variable_gets(Tree34, FuncNames),
-    Tree35 = rpn(Tree345),%change to reverse polish notation.
-    Tree37 = add_calls(Tree35, FuncNames),
-    Tree4 = compile_functions(Tree37),
-    List = flatten(Tree4),
-    List2 = variables(List, {dict:new(), 1}, FuncNames),
-    Funcs = hash_functions(List2, dict:new()),
-    List3 = remove_funcnames(List2),
-    List4 = to_ops(List3, Funcs),
-    
-    VM = chalang:vm(List4, 1000, 1000, 1000, 1000, []),
-    %print_binary(List4),
-    %Words, Tree, Tree2, Tree3, 
-    %{Tree35, Tree4, List, List2, List3, 
-     {{FuncNames, Tree, Tree2, Tree34, Tree345, Tree37, List, List2, List4
-      }, VM}. 
-macros([<<"define-syntax">>|[Name|[Vars|[Code]]]], D) ->
-    io:fwrite("macro name "),
-    io:fwrite(Name),
-    io:fwrite("\n"),
-    C = compile_vars(Vars) ++ [Code],
-    D2 = dict:store(Name, C, D),
+integers([A|B]) ->
+    [integers(A)|
+     integers(B)];
+integers(A) ->
+    B = is_int(A),
+    if
+	B -> list_to_integer(binary_to_list(A));
+	true -> A
+    end.
+
+macros([<<"macro">>, Name, Vars, Code], D) ->
+    D2 = dict:store(Name, {Vars, Code}, D),
     {[], D2};
-macros([H|T], D) -> %when is_list(H) ->
+macros([<<"macro">>|[Name|_]], _) ->
+    io:fwrite("\n\nerror, macro named "),
+    io:fwrite(Name),
+    io:fwrite(" has the wrong number of inputs\n\n");
+macros([<<"quote">>|T], D) ->
+    {[<<"quote">>|T], D};
+macros([H|T], D) when is_list(H) ->
+    {T2, D2} = macros(H, D),
+    {T3, D3} = macros(T, D2),
+    {[T2|T3], D3};
+macros([H|T], D) ->
     case dict:find(H, D) of
 	error -> 
-	    {H2, D2} = macros(H, D),
-	    {T2, D3} = macros(T, D2),
-	    {[H2|T2], D3};
-	{ok, Val} -> 
 	    {T2, D2} = macros(T, D),
-	    {[<<"nop">>] ++ T2 ++ Val, D2}
+	    {[H|T2], D2};
+	{ok, {Vars, Code}} ->
+	    {T3, D2} = macros(T, D),
+	    T2 = apply_macro(Code, Vars, T3, D2),
+	    macros(T2, D2)
     end;
 macros(X, D) -> {X, D}.
-    
-variable_gets([<<"set!">>|[Name|[Definition]]], F) ->
-    [<<"set!">>, Name] ++ [variable_gets(Definition, F)];
-variable_gets([<<":">>|[Name|[Vars|[Code]]]], F) ->
-    [<<":">>, Name, Vars] ++ [variable_gets(Code, F)];
-variable_gets([H|[<<"!">>|T]], F) ->
-    [H|[<<"!">>|variable_gets(T, F)]];
-variable_gets([H|T], F) ->
-    [variable_gets(H, F)|
-     variable_gets(T, F)];
-variable_gets(X, FuncNames) -> 
-    B = is_variable(X, FuncNames),
-    if
-	B -> [<<"get">>, X];
-	%B -> 
-	true -> X
-    end.
-is_variable(X, FuncNames) ->
-    B = is_in(X, FuncNames),
-    C = is_int(X),
-    D = is_64(X),
-    {E, _, _, _} = is_op(X),
-    (not B)
-	and is_binary(X)
-	and (not C)
-	and (not D)
-	and (not E).
-lists([<<"list">>|T]) ->
-    B = lists2(T),
-    [<<"nop">>, <<"nil">>] ++ B;
-lists([H|T]) ->
-    [lists(H)|lists(T)];
-lists(X) -> X.
-lists2([<<"list">>|_]) -> io:fwrite("error, 'list' can only be the first element of a list");
-lists2([H|T]) when is_list(H) ->
-    [lists(H)] ++ [<<"swap">>, <<"cons">>] ++ lists2(T);
-lists2([H|T]) ->
-    [H] ++ [<<"swap">>, <<"cons">>] ++ lists2(T);
-lists2(X) -> X.
-add_calls([H], F) when is_list(H) ->
-    [add_calls(H, F)];
-add_calls([H], FuncNames) -> 
-    B = is_in(H, FuncNames),
-    if
-	B -> [H, <<"call">>];
-	true ->[H]
+   
+apply_macro(Code, [], [], D) ->
+    lisp(Code, D);
+apply_macro(Code, [V|Vars], [H|T], D) ->%D is a dict of the defined macros.
+    %V is the name given in the definition of the macro.
+    %H is the name given when calling the macro in the code.
+    Code2 = replace(Code, V, H),
+    apply_macro(Code2, Vars, T, D);
+apply_macro(C,_,_,_) ->
+    io:fwrite("\nwrong number of inputs to function "),
+    io:fwrite(C),
+    io:fwrite("\n"),
+    C = -1.
+replace([], _, _) -> [];
+replace([H|T], A, B) ->
+    [replace(H, A, B)|
+     replace(T, A, B)];
+replace(A, A, B) -> B;
+replace(X, _, _) -> X.
+lisp_quote([[<<"unquote">>|T]|T2], D) -> 
+    [lisp(T, D)|
+     lisp_quote(T2, D)];
+lisp_quote([H|T], D) -> 
+    [lisp_quote(H, D)|
+     lisp_quote(T, D)];
+lisp_quote(X, _) -> X.
+bool_atom_to_int(true) -> 1;
+bool_atom_to_int(false) -> 0.
+lisp([<<"quote">>|T], D) -> lisp_quote(T, D);
+lisp([<<"cond">>, T], D) -> lisp(lisp_cond(T, D), D);
+lisp([<<"execute">>,[<<"quote">>, F],A], D) ->
+    case dict:find(F, D) of
+	error ->
+	    io:fwrite("no function named "),
+	    io:fwrite(F),
+	    io:fwrite("\n"),
+	    1=2;
+	{ok, {Vars, Code}} ->
+	    {T3, D2} = macros(A, D),
+	    T4 = lisp(T3, D2),
+	    T2 = apply_macro(Code, Vars, T4, D2),
+	    lisp(T2, D2)
     end;
-add_calls([H|T], F) -> 
-    [add_calls(H, F)|
-     add_calls(T, F)];
-add_calls(X, _F) -> X.
-	    
-eqs([<<"=">>|T]) ->
-    [<<"nop">>] ++ eqs(T) ++ [<<"===">>,<<"swap">>, <<"drop">>,<<"swap">>, <<"drop">>];
-eqs([H|T]) -> [eqs(H)|eqs(T)];
-eqs(X) -> X.
-conds([<<"cond">>, T]) -> conds2(T);
-conds([H|T]) -> [conds(H)|conds(T)];
-conds(X) -> X.
-conds2([[A,B]|T]) -> %It is a list of pairs. The first part of each pair should leave exactly 1 thing on the stack.
-    [<<"nop">>] ++ [A]++[<<"if">>] ++[B] ++ [<<"else">>] ++ conds2(T) ++ [<<"then">>];
-
-conds2([]) -> [].
+lisp([<<"execute">>,F,A], D) ->
+    lisp([<<"execute">>,[<<"quote">>, F],A], D);
+lisp([<<">">>, A, B], F) ->
+    {A2, _} = macros(A, F),
+    {B2, _} = macros(B, F),
+    C = lisp(A2, F),
+    D = lisp(B2, F),
+    bool_atom_to_int(C > D);
+lisp([<<"<">>, A, B], F) ->
+    {A2, _} = macros(A, F),
+    {B2, _} = macros(B, F),
+    C = lisp(A2, F),
+    D = lisp(B2, F),
+    bool_atom_to_int(C < D);
+lisp([<<"is_list">>, A], F) ->
+    {A2, _} = macros(A, F),
+    B = lisp(A2, F),
+    bool_atom_to_int(is_list(B));
+lisp([<<"=">>, A, B], D) ->
+    {A3, _} = macros(A, D),
+    A2 = lisp(A3, D),
+    {B3, _} = macros(B, D),
+    B2 = lisp(B3, D),
+    bool_atom_to_int(A2 == B2);
+lisp([<<"+">>, A, B], F) ->
+    {A2, _} = macros(A, F),
+    {B2, _} = macros(B, F),
+    C = lisp(A2, F),
+    D = lisp(B2, F),
+    C + D;
+lisp([<<"-">>, A, B], F) ->
+    {A2, _} = macros(A, F),
+    {B2, _} = macros(B, F),
+    C = lisp(A2, F),
+    D = lisp(B2, F),
+    C - D;
+lisp([<<"/">>, A, B], F) ->
+    {A2, _} = macros(A, F),
+    {B2, _} = macros(B, F),
+    C = lisp(A2, F),
+    D = lisp(B2, F),
+    C div D;
+lisp([<<"*">>, A, B], F) ->
+    {A2, _} = macros(A, F),
+    {B2, _} = macros(B, F),
+    C = lisp(A2, F),
+    D = lisp(B2, F),
+    C * D;
+lisp([<<"rem">>, A, B], F) ->
+    {A2, _} = macros(A, F),
+    {B2, _} = macros(B, F),
+    C = lisp(A2, F),
+    D = lisp(B2, F),
+    C rem D;
+lisp([<<"reverse">>, A], F) ->
+    lists:reverse(lisp(A, F));
+lisp([<<"cons">>, A, B], F) ->
+    {B2, _} = macros(B, F),
+    C = lisp(A, F),
+    D = lisp(B2, F),
+    [C|D];
+lisp([<<"car">>, A], F) ->
+    {A2, _} = macros(A, F),
+    C = lisp(A2, F),
+    hd(C);
+lisp([<<"cdr">>, A], F) ->
+    {A2, _} = macros(A, F),
+    C = lisp(A2, F),
+    tl(C);
+lisp([<<"or">>, A, B], F) ->
+    {A2, _} = macros(A, F),
+    {B2, _} = macros(B, F),
+    bih(A2, F) or bih(B2, F);
+lisp([<<"and">>, A, B], F) ->
+    {A2, _} = macros(A, F),
+    {B2, _} = macros(B, F),
+    bih(A2, F) and bih(B2, F);
+lisp([<<"not">>, A], F) ->
+    {A2, _} = macros(A, F),
+    not(bih(A2, F));
+lisp(X, _) -> X.
+bih(A, F) -> bool_interpret(lisp(A, F)).
+bool_interpret(<<"false">>) -> false;
+bool_interpret([<<"false">>]) -> false;
+bool_interpret(false) -> false;
+bool_interpret(0) -> false;
+bool_interpret(<<"true">>) -> true;
+bool_interpret([<<"true">>]) -> true;
+bool_interpret(true) -> true;
+bool_interpret(1) -> true;
+bool_interpret(X) -> 
+    io:fwrite("bad bool \n"),
+    io:fwrite(X),
+    io:fwrite("\n"),
+    io:fwrite(packer:pack(X)),
+    io:fwrite("\n"),
+    {error, bad_bool, X}.
     
-lambdas([], N) -> {[], N};
-lambdas([[[<<"lambda">>, Vars, Code]|T]|T2], N) -> 
-    X = list_to_binary("lambda" ++ integer_to_list(N)),
-    {[[<<"define">>, X, Vars, Code],[X, T]]++T2,
-     N+1};
-lambdas([H|T], N) -> 
-    {A, N2} = lambdas(H, N),
-    {B, N3} = lambdas(T, N2),
-    {[A|B], N3};
-lambdas(X, N) -> {X, N}.
+lisp_cond([], _) ->
+    {error, no_true_cond};
+lisp_cond([[Bool, Code]|T], D) ->
+    B = lisp(Bool, D),
+    {B2, _} = macros(B, D),
+    B3 = lisp(B2, D),
+    A = bool_interpret(B3),
+    case A of
+	true -> Code;
+	false -> lisp_cond(T, D);
+	X -> X
+    end.
+
 print_binary({error, R}) ->
     io:fwrite("error! \n"),
     io:fwrite(R),
@@ -153,77 +283,81 @@ print_binary(<<A:8, B/binary>>) ->
     io:fwrite("\n"),
     print_binary(B);
 print_binary(<<>>) -> ok.
-remove_funcnames([]) -> [];
-remove_funcnames([<<":">>|[_|T]]) -> 
-    [<<":">>|remove_funcnames(T)];
-remove_funcnames([H|T]) -> 
-    [H|remove_funcnames(T)].
-hash_functions([], D) -> D;
-hash_functions([<<":">>|[Name|T]], D1) -> 
-    {Code1, T2} = split(<<";">>, T),
-    Code2 = to_ops(Code1, D1),
-    D2 = dict:store(Name, hash:doit(Code2, chalang_constants:hash_size()), D1),
-    hash_functions(T2, D2);
-hash_functions([_|T], D) ->
-    hash_functions(T, D).
-split(C, B) -> split(C, B, []).
-split(C, [C|B], Out) -> {lists:reverse(Out), B};
-split(C, [D|B], Out) ->
-    split(C, B, [D|Out]).
+split_def(X, B) ->
+    split_def(X, B, 0).
+split_def(X, B, N) ->
+    <<Prev:N, Y:8, C/binary>> = B,
+    case Y of
+	?int -> split_def(X, B, N+8+?int_bits);
+	?binary ->
+	    <<_:N, Y:8, H:32, _/binary>> = B,
+	    split_def(X, B, N+40+(H*8));
+	?define ->
+	    <<_:N, _D/binary>> = C,
+	    {Func, T, _P} = split_def(?fun_end, C),
+	    Hash = hash:doit(Func, chalang_constants:hash_size()),
+	    DSize = chalang_constants:hash_size(),
+	    B2 = <<Prev:N, 2, DSize:32, Hash/binary, T/binary>>,
+	    split_def(X, B2, N+40+(DSize*8));
+	X ->
+	    <<A:N, Y:8, T/binary>> = B,
+	    {<<A:N>>, T, N};
+	_ -> split_def(X, B, N+8)
+    end.
+lambdas(<<0, N:32, T/binary>>, Done) -> 
+    {T2, Done2} = lambdas(T, Done),
+    {<<0, N:32, T2/binary>>, Done2};
+lambdas(<<2, N:32, T/binary>>, Done) ->
+    M = N * 8,
+    <<X:M, T2/binary>> = T,
+    {T3, Done2} = lambdas(T2, Done),
+    {<<2, N:32, X:M, T3/binary>>, Done2};
+lambdas(<<110, T/binary>>, Done) ->
+    {Func, T2, _} = split_def(111, T),
+    Hash = hash:doit(Func, chalang_constants:hash_size()),
+    Bool = is_in(Hash, Done),
+    {Bin, Done2} = 
+	if 
+	    Bool -> 
+		{<<>>, Done};
+	    true -> 
+		{<<110, Func/binary, 111>>, [Hash|Done]}
+	end,
+    {T3, Done3} = lambdas(T2, Done2),
+    DSize = chalang_constants:hash_size(),
+    {<<Bin/binary, 2, DSize:32, Hash/binary, T3/binary>>, Done3};
+lambdas(<<X, T/binary>>, Done) -> 
+    {T2, Done2} = lambdas(T, Done),
+    {<<X, T2/binary>>, Done2};
+lambdas(<<>>, D) -> {<<>>, D}.
+    
 to_ops([], _) -> <<>>;
 to_ops([H|T], F) -> 
     {B, C, _, _} = is_op(H),%is it a built-in word?
     A = if
 	    B -> C;%return it's compiled format.
-	    true ->%if it isn't built in
-		case dict:find(H, F) of %check if it is a function.
-		    error -> H; %if it isn't a function, then it is probably compiled already.
-		    {ok, Val} -> %It is a function.
-			S = size(Val),
-			<<2, S:32, Val/binary>>
-		end
+	    true -> H %if it isn't built in
     end,
     Y = to_ops(T, F),
     <<A/binary, Y/binary>>;
 to_ops(X, _) -> 
     io:fwrite(X),
     X = ok.
-functions([<<"define">>|[Name|[Vars|T]]], N, L) -> 
-    C = [Vars|T],
-    {[<<";">>, <<":">>, Name] ++ C, [Name|N], L};
-functions([H|T], N, L) -> 
-    {C1, N1, L2} = functions(H, [], L),
-    {C2, N2, L3} = functions(T, [], L2),
-    {[C1|C2], N++N1++N2, L3};
-functions(X, N, L) -> 
-    {X, N, L}.
-compile_functions([]) -> [];
-compile_functions([<<":">>, Name, Vars, Code, <<";">>]) -> 
-    Vars2 = compile_vars(Vars),
-    [<<":">>, Name] ++ Vars2 ++ Code ++ [<<";">>];
-compile_functions([H|T]) ->
-    [compile_functions(H)|compile_functions(T)];
-compile_functions(X) -> X.
-compile_vars([]) -> [];
-compile_vars([H|T]) -> [H, <<"!">>] ++ compile_vars(T).
 is_in(H, [H|_]) -> true;
 is_in(_, []) ->  false;
 is_in(X, [_|T]) -> is_in(X, T).
-variables([], {_Dict, _Many}, _) -> [];
-variables([<<":">>|[N|T]], {Dict, Many}, Funcs) -> 
-    [<<":">>|[N|variables(T, {Dict, Many}, Funcs)]];
-variables([H|T], {Dict, Many}, FuncNames) ->
-    B = is_in(H, FuncNames),
-    C = is_int(H),
+variables([], {_Dict, _Many}) -> [];
+variables([<<":">>|[N|T]], {Dict, Many}) -> 
+    [<<":">>|[N|variables(T, {Dict, Many})]];
+variables([H|T], {Dict, Many}) ->
+    B = is_integer(H),
     D = is_64(H),
     {E, _, _, _} = is_op(H),
     {A, D2} = 
 	if
-	    B -> {[H], {Dict, Many}};
-	    C -> 
-		Int = list_to_integer(binary_to_list(H)),
-		{[<<"int">>, <<Int:32>>], {Dict, Many}};
+	    B -> {[<<"int">>, <<H:32>>], {Dict, Many}};
 	    D -> 
+		io:fwrite("variables case D \n"),
 		Bin = decode(H),
 		S = size(Bin),
 		{[<<"binary">>, <<S:32>>, Bin], {Dict, Many}};
@@ -237,7 +371,7 @@ variables([H|T], {Dict, Many}, FuncNames) ->
 			{[<<"int">>, <<Val:32>>], {Dict, Many}}
 		end
 	end,
-    A ++ variables(T, D2, FuncNames).
+    A ++ variables(T, D2).
 %{true, compiles, inputs, outputs}
 is_op(<<"true">>) -> {true, <<0,1:32>>, 0, 1};
 is_op(<<"false">>) -> {true, <<0,0:32>>, 0, 1};
@@ -254,15 +388,45 @@ is_op(<<"rot">>) -> {true, <<24>>, 3, 3};
 is_op(<<"2dup">>) -> {true, <<25>>, 4, 4};
 is_op(<<"tuckn">>) -> {true, <<26>>, 1, 1};
 is_op(<<"pickn">>) -> {true, <<27>>, 1, 1};
+is_op(<<">r">>) -> {true, <<30>>, 1, 0};
+is_op(<<"r>">>) -> {true, <<31>>, 0, 1};
+is_op(<<"r@">>) -> {true, <<32>>, 0, 1};
+is_op(<<"hash">>) -> {true, <<40>>, 1, 1};
+is_op(<<"verify_sig">>) -> {true, <<41>>, 3, 1};
+is_op(<<"pub2addr">>) -> {true, <<42>>, 1, 1};
 is_op(<<"+">>) -> {true, <<50>>, 2, 1};
 is_op(<<"-">>) -> {true, <<51>>, 2, 1};
 is_op(<<"*">>) -> {true, <<52>>, 2, 1};
 is_op(<<"/">>) -> {true, <<53>>, 2, 1};
+is_op(<<">">>) -> {true, <<54>>, 2, 1};
+is_op(<<"<">>) -> {true, <<55>>, 2, 1};
 is_op(<<"rem">>) -> {true, <<57>>, 2, 1};
 is_op(<<"===">>) -> {true, <<58>>, 2, 3};
-is_op(<<"=">>) -> {true, <<10,10,10>>, 2, 1};
-is_op(<<":">>) -> {true, <<110>>, 3, 0};
-is_op(<<";">>) -> {true, <<111>>, 0, 0};
+is_op(<<"if">>) -> {true, <<70>>, 1, 0};
+is_op(<<"else">>) -> {true, <<71>>, 0, 0};
+is_op(<<"then">>) -> {true, <<72>>, 0, 0};
+is_op(<<"not">>) -> {true, <<80>>, 1, 1};
+is_op(<<"and">>) -> {true, <<81>>, 2, 1};
+is_op(<<"or">>) -> {true, <<82>>, 2, 1};
+is_op(<<"xor">>) -> {true, <<83>>, 2, 1};
+is_op(<<"band">>) -> {true, <<84>>, 2, 1};
+is_op(<<"bor">>) -> {true, <<85>>, 2, 1};
+is_op(<<"bxor">>) -> {true, <<86>>, 2, 1};
+is_op(<<"stack_size">>) -> {true, <<90>>, 0, 1};
+is_op(<<"total_coins">>) -> {true, <<91>>, 0, 1};
+is_op(<<"height">>) -> {true, <<92>>, 0, 1};
+is_op(<<"slash">>) -> {true, <<93>>, 0, 1};
+is_op(<<"gas">>) -> {true, <<94>>, 0, 1};
+is_op(<<"ram">>) -> {true, <<95>>, 0, 1};
+is_op(<<"many_vars">>) -> {true, <<97>>, 0, 1};
+is_op(<<"many_funs">>) -> {true, <<98>>, 0, 1};
+is_op(<<"oracle">>) -> {true, <<99>>, 0, 1};
+is_op(<<"id_of_caller">>) -> {true, <<100>>, 0, 1};
+is_op(<<"accounts">>) -> {true, <<101>>, 0, 1};
+is_op(<<"channels">>) -> {true, <<102>>, 0, 1};
+is_op(<<"verify_merkle">>) -> {true, <<103>>, 3, 2};
+is_op(<<"lambda">>) -> {true, <<110>>, 3, 0};
+is_op(<<"end_lambda">>) -> {true, <<111>>, 0, 0};
 is_op(<<"recurse">>) -> {true, <<112, 113>>, 0, 1};
 is_op(<<"call">>) -> {true, <<113>>, 1, 1};
 is_op(<<"@">>) -> {true, <<121>>, 1, 1};
@@ -276,9 +440,9 @@ is_op(<<"cdr">>) -> {true, <<131, 22, 20>>, 1, 1};
 is_op(<<"nil">>) -> {true, <<132>>, 0, 1};
 is_op(<<"++">>) -> {true, <<134>>, 2, 1};
 is_op(<<"split">>) -> {true, <<135>>, 2, 2};
-is_op(<<"if">>) -> {true, <<70>>, 1, 0};
-is_op(<<"else">>) -> {true, <<71>>, 0, 0};
-is_op(<<"then">>) -> {true, <<72>>, 0, 0};
+is_op(<<"reverse">>) -> {true, <<136>>, 1, 1};
+is_op(<<"is_list">>) -> {true, <<137, 22, 20>>, 1, 2};
+
 is_op(_) -> {false, not_an_op, 0, 0}.
 
 to_lists(Words) ->
@@ -343,14 +507,12 @@ is_64(_) -> false.
 is_64_2(<<>>) -> true;
 is_64_2(<<X:8, Y/binary>>) -> 
     (is_int(<<X:8>>) 
-     or ((X>64) and (X<90)) 
-     or ((X>96) and (X<122)) 
+     or ((X>64) and (X<91)) 
+     or ((X>96) and (X<123)) 
+     or (X == hd("=")) 
      or (X == hd("/")) 
      or (X == hd("+")))
 	and is_64_2(Y).
-encode(X) -> 
-    Y = base64:encode(X),
-    <<45,45, Y/binary>>.
 decode(X) ->
     <<45,45, Y/binary>> = X,
     base64:decode(Y).
@@ -361,6 +523,7 @@ rpn([[H|S]|T]) ->
 rpn([H|T]) -> 
     rpn2(T) ++ [H].
 rpn2([]) -> [];
+rpn2(<<"nil">>) -> [];
 rpn2([H|T]) when is_list(H) ->
     [rpn(H)|rpn2(T)];
 rpn2([H|T]) ->
@@ -369,4 +532,30 @@ flatten([]) -> [];
 flatten([H|T]) -> 
     flatten(H) ++ flatten(T);
 flatten(X) -> [X].
+    
+quote_unquote(<<"'(", T/binary>>) ->
+    T2 = quote_unquote(T),
+    <<"( quote ", T2/binary>>;
+quote_unquote(<<",(", T/binary>>) ->
+    T2 = quote_unquote(T),
+    <<"( unquote ", T2/binary>>;
+quote_unquote(<<"'", T/binary>>) ->
+    {Atom, T2} = quote_unquote_atom(T),
+    T3 = quote_unquote(T2),
+    <<"( quote ", Atom/binary, " ) ",T3/binary>>;
+quote_unquote(<<",", T/binary>>) ->
+    {Atom, T2} = quote_unquote_atom(T),
+    T3 = quote_unquote(T2),
+    <<"( unquote ", Atom/binary, " ) ",T3/binary>>;
+quote_unquote(<<X, T/binary>>) ->
+    T2 = quote_unquote(T),
+    <<X, T2/binary>>;
+quote_unquote(X) -> X.
+
+quote_unquote_atom(B) ->
+    qua2(B, <<>>).
+qua2(<<32, T2/binary>>, X) -> {X, T2};%space
+qua2(<<10, T2/binary>>, X) -> {X, T2};%newline
+qua2(<<L, R/binary>>, X) ->
+    qua2(R, <<X/binary, L>>).
     
