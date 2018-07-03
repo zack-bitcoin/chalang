@@ -20,7 +20,7 @@ test() ->
 	      "first_macro", "square_each_macro", 
 	      "cond_macro", "primes", 
 	      "function", "let", "gcf",
-	      "fun_test", "map"%, %"merge",
+	      "fun_test", "map"
 	     %"prolog"
 	    ],
     test2(Files).
@@ -66,24 +66,8 @@ doit(A) ->
     io:fwrite("VM\n"),
     Gas = 10000,
     VM = chalang:vm(List5, Gas*100, Gas*10, Gas, Gas, []),
-    %print_binary(List4),
-    %Words, Tree, Tree2, Tree3, 
-    %{Tree35, Tree4, List, List2, List3, 
     {{Tree1, Tree3, Tree35, List, List4
-      }, VM}.%VM}. 
-%quote_list([<<"macro">>|T]) ->
-%    [<<"macro">>|T];
-%quote_list([<<"quote">>|T]) ->
-%    quote_list2(T);
-%quote_list([H|T]) ->
-%    [quote_list(H)|
-%     quote_list(T)];
-%quote_list(X) -> X.
-%quote_list2([A]) ->
-%    [<<"cons">>, quote_list2(A), <<"nil">>];
-%quote_list2([A|B]) ->
-%    [<<"cons">>, quote_list2(A), quote_list2(B)];
-%quote_list2(X) -> X.
+      }, VM}.
 
 imports([<<"import">>, []], Done) -> {[], Done};
 imports([<<"import">>, [H|T]], Done) ->
@@ -101,13 +85,11 @@ imports([<<"import">>, [H|T]], Done) ->
 	end,
     {Tree2, Done3} = imports([<<"import">>, T], Done2),
     {[Tree|Tree2], Done3};
-    
 imports([H|T], Done) -> 
     {H2, Done2} = imports(H, Done),
     {T2, Done3} = imports(T, Done2),
     {[H2|T2], Done3};
 imports(Tree, Done) -> {Tree, Done}.
-
 
 integers([A|B]) ->
     [integers(A)|
@@ -128,7 +110,6 @@ macros([<<"macro">>|[Name|_]], _) ->
     io:fwrite(" has the wrong number of inputs\n\n");
 macros([<<"quote">>|T], D) ->
     {[<<"quote">>|T], D};
-    %ok;
 macros([H|T], D) when is_list(H) ->
     {T2, D2} = macros(H, D),
     {T3, D3} = macros(T, D2),
@@ -136,16 +117,12 @@ macros([H|T], D) when is_list(H) ->
 macros([H|T], D) ->
     case dict:find(H, D) of
 	error -> 
-	    %io:fwrite("macro error \n"),
 	    {T2, D2} = macros(T, D),
 	    {[H|T2], D2};
 	{ok, {Vars, Code}} ->
 	    {T3, D2} = macros(T, D),
 	    T2 = apply_macro(Code, Vars, T3, D2),
-	    %io:fwrite("T2 macros "),
-	    %io:fwrite({0, T2}),
 	    macros(T2, D2)
-	    %{apply_macro(Code, Vars, T, D), D}
     end;
 macros(X, D) -> {X, D}.
    
@@ -168,25 +145,14 @@ replace([H|T], A, B) ->
 replace(A, A, B) -> B;
 replace(X, _, _) -> X.
 lisp_quote([[<<"unquote">>|T]|T2], D) -> 
-    %{T3, _} = macros(T, D),
     [lisp(T, D)|
      lisp_quote(T2, D)];
 lisp_quote([H|T], D) -> 
     [lisp_quote(H, D)|
      lisp_quote(T, D)];
 lisp_quote(X, _) -> X.
-%lisp([<<"call_ct">>|_], D) ->
-%    io:fwrite("compiler lisp 2 call\n"),
-%    io:fwrite("compiler lisp 2 call 00\n"),
-%    ok;
-%lisp([<<"call_ct">>, [F], Ins], D) ->
-%    io:fwrite("compiler lisp 2 call\n"),
-%    {Vars, Code} = dict:fetch(F, D),
-%    apply_macro(Code, Vars, Ins, D);
-bool_atom_to_int(true) ->
-    1;
-bool_atom_to_int(false) ->
-    0.
+bool_atom_to_int(true) -> 1;
+bool_atom_to_int(false) -> 0.
 lisp([<<"quote">>|T], D) -> lisp_quote(T, D);
 lisp([<<"cond">>, T], D) -> lisp(lisp_cond(T, D), D);
 lisp([<<"execute">>,[<<"quote">>, F],A], D) ->
@@ -198,10 +164,8 @@ lisp([<<"execute">>,[<<"quote">>, F],A], D) ->
 	    1=2;
 	{ok, {Vars, Code}} ->
 	    {T3, D2} = macros(A, D),
-	    %{T2, _} = macros(A, D),%
 	    T4 = lisp(T3, D2),
 	    T2 = apply_macro(Code, Vars, T4, D2),
-	    %D2 = D, %
 	    lisp(T2, D2)
     end;
 lisp([<<"execute">>,F,A], D) ->
@@ -223,8 +187,6 @@ lisp([<<"is_list">>, A], F) ->
     B = lisp(A2, F),
     bool_atom_to_int(is_list(B));
 lisp([<<"=">>, A, B], D) ->
-    %io:fwrite("macro equal \n"),
-    %io:fwrite(packer:pack(A)),
     {A3, _} = macros(A, D),
     A2 = lisp(A3, D),
     {B3, _} = macros(B, D),
@@ -241,7 +203,6 @@ lisp([<<"-">>, A, B], F) ->
     {B2, _} = macros(B, F),
     C = lisp(A2, F),
     D = lisp(B2, F),
-    %io:fwrite(packer:pack([A, C, D])),
     C - D;
 lisp([<<"/">>, A, B], F) ->
     {A2, _} = macros(A, F),
@@ -264,9 +225,8 @@ lisp([<<"rem">>, A, B], F) ->
 lisp([<<"reverse">>, A], F) ->
     lists:reverse(lisp(A, F));
 lisp([<<"cons">>, A, B], F) ->
-    %{A2, _} = macros(A, F),
     {B2, _} = macros(B, F),
-    C = lisp(A, F),% error
+    C = lisp(A, F),
     D = lisp(B2, F),
     [C|D];
 lisp([<<"car">>, A], F) ->
@@ -298,7 +258,6 @@ bool_interpret(<<"true">>) -> true;
 bool_interpret([<<"true">>]) -> true;
 bool_interpret(true) -> true;
 bool_interpret(1) -> true;
-
 bool_interpret(X) -> 
     io:fwrite("bad bool \n"),
     io:fwrite(X),
@@ -306,7 +265,6 @@ bool_interpret(X) ->
     io:fwrite(packer:pack(X)),
     io:fwrite("\n"),
     {error, bad_bool, X}.
-
     
 lisp_cond([], _) ->
     {error, no_true_cond};
@@ -321,7 +279,6 @@ lisp_cond([[Bool, Code]|T], D) ->
 	X -> X
     end.
 
-
 print_binary({error, R}) ->
     io:fwrite("error! \n"),
     io:fwrite(R),
@@ -331,10 +288,6 @@ print_binary(<<A:8, B/binary>>) ->
     io:fwrite("\n"),
     print_binary(B);
 print_binary(<<>>) -> ok.
-%split(C, B) -> split(C, B, []).
-%split(C, [C|B], Out) -> {lists:reverse(Out), B};
-%split(C, [D|B], Out) ->
-%    split(C, B, [D|Out]).
 split_def(X, B) ->
     split_def(X, B, 0).
 split_def(X, B, N) ->
@@ -343,8 +296,6 @@ split_def(X, B, N) ->
 	?int -> split_def(X, B, N+8+?int_bits);
 	?binary ->
 	    <<_:N, Y:8, H:32, _/binary>> = B,
-	    %J = H*8,
-	    %<<_:N, Y:8, H:8, _:H, _/binary>> = B,
 	    split_def(X, B, N+40+(H*8));
 	?define ->
 	    <<_:N, _D/binary>> = C,
@@ -380,7 +331,6 @@ lambdas(<<110, T/binary>>, Done) ->
     {T3, Done3} = lambdas(T2, Done2),
     DSize = chalang_constants:hash_size(),
     {<<Bin/binary, 2, DSize:32, Hash/binary, T3/binary>>, Done3};
-    %<<110, Func/binary, 111, 2, 12:32, Hash/binary, T3/binary>>;
 lambdas(<<X, T/binary>>, Done) -> 
     {T2, Done2} = lambdas(T, Done),
     {<<X, T2/binary>>, Done2};
@@ -391,14 +341,7 @@ to_ops([H|T], F) ->
     {B, C, _, _} = is_op(H),%is it a built-in word?
     A = if
 	    B -> C;%return it's compiled format.
-	    true ->%if it isn't built in
-		H 
-		%case dict:find(H, F) of %check if it is a function.
-		%    error -> H; %if it isn't a function, then it is probably compiled already.
-		%    {ok, Val} -> %It is a function.
-		%	S = size(Val),
-		%	<<2, S:32, Val/binary>>
-		%end
+	    true -> H %if it isn't built in
     end,
     Y = to_ops(T, F),
     <<A/binary, Y/binary>>;
@@ -412,17 +355,12 @@ variables([], {_Dict, _Many}) -> [];
 variables([<<":">>|[N|T]], {Dict, Many}) -> 
     [<<":">>|[N|variables(T, {Dict, Many})]];
 variables([H|T], {Dict, Many}) ->
-    %B = is_in(H, FuncNames),
     B = is_integer(H),
-    %C = is_int(H),
     D = is_64(H),
     {E, _, _, _} = is_op(H),
     {A, D2} = 
 	if
 	    B -> {[<<"int">>, <<H:32>>], {Dict, Many}};
-	    %C -> 
-		%Int = list_to_integer(binary_to_list(H)),
-		%{[<<"int">>, <<Int:32>>], {Dict, Many}};
 	    D -> 
 		io:fwrite("variables case D \n"),
 		Bin = decode(H),
@@ -492,8 +430,6 @@ is_op(<<"id_of_caller">>) -> {true, <<100>>, 0, 1};
 is_op(<<"accounts">>) -> {true, <<101>>, 0, 1};
 is_op(<<"channels">>) -> {true, <<102>>, 0, 1};
 is_op(<<"verify_merkle">>) -> {true, <<103>>, 3, 2};
-
-%is_op(<<"=">>) -> {true, <<10,10,10>>, 2, 1};
 is_op(<<"lambda">>) -> {true, <<110>>, 3, 0};
 is_op(<<"end_lambda">>) -> {true, <<111>>, 0, 0};
 is_op(<<"recurse">>) -> {true, <<112, 113>>, 0, 1};
@@ -582,9 +518,6 @@ is_64_2(<<X:8, Y/binary>>) ->
      or (X == hd("/")) 
      or (X == hd("+")))
 	and is_64_2(Y).
-%encode(X) -> 
-%    Y = base64:encode(X),
-%    <<45,45, Y/binary>>.
 decode(X) ->
     <<45,45, Y/binary>> = X,
     base64:decode(Y).
@@ -611,9 +544,6 @@ quote_unquote(<<"'(", T/binary>>) ->
 quote_unquote(<<",(", T/binary>>) ->
     T2 = quote_unquote(T),
     <<"( unquote ", T2/binary>>;
-%quote_unquote(<<"`(", T/binary>>) ->
-%    T2 = quote_unquote(T),
-%    <<"( unquote ", T2/binary>>;
 quote_unquote(<<"'", T/binary>>) ->
     {Atom, T2} = quote_unquote_atom(T),
     T3 = quote_unquote(T2),
@@ -630,4 +560,3 @@ qua2(<<10, T2/binary>>, X) -> {X, T2};%newline
 qua2(<<L, R/binary>>, X) ->
     qua2(R, <<X/binary, L>>).
     
-

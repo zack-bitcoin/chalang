@@ -48,7 +48,11 @@
 		       (recurse a (cdr b))))
 		(true (cons (car a)
 			    (recurse (cdr a) b)))))))
+
+% rt_merge needs to be instantiated before the definition of rt_sort2.
+% because the hash of rt_merge needs to be embedded in rt_sort2's definition.
 (drop (rt_merge))
+
 %(execute (rt_merge) ((tree (2 4 6)) (tree (3 5 6))))
 
 (macro rt_sort2 ()
