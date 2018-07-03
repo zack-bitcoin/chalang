@@ -234,6 +234,8 @@ lisp([<<"execute">>,[<<"quote">>, F],A], D) ->
 	    %D2 = D, %
 	    lisp(T2, D2)
     end;
+lisp([<<"execute">>,F,A], D) ->
+    lisp([<<"execute">>,[<<"quote">>, F],A], D);
 lisp([<<">">>, A, B], F) ->
     {A2, _} = macros(A, F),
     {B2, _} = macros(B, F),

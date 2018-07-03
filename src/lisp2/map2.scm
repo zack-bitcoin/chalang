@@ -3,19 +3,20 @@
 (macro map (f l)
        (cond (((= () l) ())
 	      (true
-	       (cons (execute f (car l)) (map f (cdr l)))))))
+	       (cons (execute f (cons (car l) ()))
+		     (map f (cdr l)))))))
 (macro fun (x) (* 2 x) )
+
+
 (macro test ()
-       (map 'fun (cons (cons 3 ())
-			 (cons (cons 4 ())
-			       (cons (cons 5 ()) ())))))
+       (map 'fun (cons 3 (cons 4 (cons 5 ())))))
 (macro test3 ()
        (=
-	(cons 6 (cons 8 (cons 10 ())))
-	(test)))
+	(test)
+	(cons 6 (cons 8 (cons 10 ())))))
 (test3)
 
+(macro test5 (f)
+       (map f (cons 3 (cons 4 (cons 5 ())))))
+%(test5 'fun)
 
-%(macro test_once ()
-%       (execute '(fun) (cons 5 ())))
-% (test_once)
