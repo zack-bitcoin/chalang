@@ -13,7 +13,8 @@
 -define(define, 110).
 -define(fun_end, 111).
 test() ->
-    Files = [ "eqs_test",
+    Files = [ "sort",
+	      "eqs_test",
 	      "case", 
 	      "hashlock",
 	      "first_macro", "square_each_macro", 

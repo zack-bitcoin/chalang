@@ -4,7 +4,6 @@
 % the map is happening completely at run-time
 
 (macro double () (define (x) (+ x x)))
-
 (macro map ()
        (define (F X)
 	 (cond (((= nil X) nil)
@@ -18,16 +17,16 @@
 
 
 % this map is happening completely at compile-time
+(macro double2 (x) (* 2 x) )
 (macro map2 (f l)
        (cond (((= () l) ())
 	      (true
 	       (cons (execute f ((car l)))
 		     (map2 f (cdr l)))))))
-(macro fun (x) (* 2 x) )
 (macro test3 ()
        (=
-	(map2 'fun (3 4 5))
-	(6 8 10)))
+	(map2 'double2 (2 3 4 5))
+	(4 6 8 10)))
 (test3)
 
 and
