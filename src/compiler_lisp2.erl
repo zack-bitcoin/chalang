@@ -9,14 +9,14 @@
 -define(define, 110).
 -define(fun_end, 111).
 test() ->
-    Files = [ "sort",
+    Files = [ "sort_test",
 	      "eqs_test",
 	      "case", 
 	      "hashlock",
 	      "first_macro", "square_each_macro", 
 	      "primes", 
 	      "function", "let", "gcf",
-	      "fun_test", "map"
+	      "fun_test", "map_test"
 	    ],
     test2(Files).
 test2([]) -> success;
