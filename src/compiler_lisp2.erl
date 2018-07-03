@@ -46,6 +46,10 @@ doit(A) when is_list(A) ->
     doit(list_to_binary(A));
 doit(A) ->
     {Tree1, _} = doit_1(A, []),
+    %io:fwrite(Tree1),
+    %io:fwrite("\n"),
+    %io:fwrite(packer:pack(Tree1)),
+    %io:fwrite("\n"),
     %Tree1 = quote_list(Tree),
     io:fwrite("Macros\n"),
     Tree2 = integers(Tree1),
@@ -64,7 +68,7 @@ doit(A) ->
     %print_binary(List4),
     %Words, Tree, Tree2, Tree3, 
     %{Tree35, Tree4, List, List2, List3, 
-    {{Tree3, Tree35, List, List4
+    {{Tree1, Tree3, Tree35, List, List4
       }, VM}.%VM}. 
 %quote_list([<<"macro">>|T]) ->
 %    [<<"macro">>|T];
@@ -639,10 +643,8 @@ quote_unquote(<<"`(", T/binary>>) ->
     <<"( unquote ", T2/binary>>;
 quote_unquote(<<"'", T/binary>>) ->
     {Atom, T2} = quote_unquote_atom(T),
-    io:fwrite("atom quote: "),
-    io:fwrite(Atom),
-    io:fwrite("\n"),
-    <<"( quote ", Atom/binary, " ) ",T2/binary>>;
+    T3 = quote_unquote(T2),
+    <<"( quote ", Atom/binary, " ) ",T3/binary>>;
 quote_unquote(<<X, T/binary>>) ->
     T2 = quote_unquote(T),
     <<X, T2/binary>>;
