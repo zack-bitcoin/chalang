@@ -6,7 +6,7 @@
 	       (cons (execute f (car l)) (map f (cdr l)))))))
 (macro fun (x) (* 2 x) )
 (macro test ()
-       (map '(fun) (cons (cons 3 ())
+       (map 'fun (cons (cons 3 ())
 			 (cons (cons 4 ())
 			       (cons (cons 5 ()) ())))))
 (macro test3 ()

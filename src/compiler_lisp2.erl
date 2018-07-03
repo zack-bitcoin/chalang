@@ -220,9 +220,6 @@ bool_atom_to_int(false) ->
 lisp([<<"quote">>|T], D) -> lisp_quote(T, D);
 lisp([<<"cond">>, T], D) -> lisp(lisp_cond(T, D), D);
 lisp([<<"execute">>,[<<"quote">>, F],A], D) ->
-    io:fwrite("lisp call\n"),
-    %io:fwrite(FID),
-    io:fwrite("\n"),
     case dict:find(F, D) of
 	error ->
 	    io:fwrite("no function named "),
@@ -237,12 +234,6 @@ lisp([<<"execute">>,[<<"quote">>, F],A], D) ->
 	    %D2 = D, %
 	    lisp(T2, D2)
     end;
-%lisp([<<"call">>|T], D) ->
-%    io:fwrite("call tail "),
-
-%%    io:fwrite(packer:pack(T)),
-%    io:fwrite("\n"),
-%    1=2;
 lisp([<<">">>, A, B], F) ->
     {A2, _} = macros(A, F),
     {B2, _} = macros(B, F),
@@ -646,8 +637,10 @@ quote_unquote(<<"`(", T/binary>>) ->
     <<"( unquote ", T2/binary>>;
 quote_unquote(<<"'", T/binary>>) ->
     {Atom, T2} = quote_unquote_atom(T),
+    io:fwrite("atom quote: "),
     io:fwrite(Atom),
-    <<"( function ", Atom/binary, " ) ">>;
+    io:fwrite("\n"),
+    <<"( quote ", Atom/binary, " ) ",T2/binary>>;
 quote_unquote(<<X, T/binary>>) ->
     T2 = quote_unquote(T),
     <<X, T2/binary>>;
@@ -655,7 +648,8 @@ quote_unquote(X) -> X.
 
 quote_unquote_atom(B) ->
     qua2(B, <<>>).
-qua2(<<" ", T2/binary>>, X) -> {X, T2};
+qua2(<<32, T2/binary>>, X) -> {X, T2};%space
+qua2(<<10, T2/binary>>, X) -> {X, T2};%newline
 qua2(<<L, R/binary>>, X) ->
     qua2(R, <<X/binary, L>>).
     
