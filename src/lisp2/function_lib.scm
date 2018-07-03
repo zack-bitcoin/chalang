@@ -1,14 +1,9 @@
-% this is a library for making functions at run-time.
 
-(macro test (X)
-       (cond
-	(((= () X) ())
-	 (true (cons (car '(X)) (test (cdr '(X))))))))
-%(test (+ 1 0))
+% this is a library for making functions at run-time.
 
 
 (macro Fname () 900)
-(macro Fdepth () '(@ ,(Fname)))
+(macro Fdepth () '(@ ,Fname))
 (! 1 (Fname))
 (macro function_v (X)
        '(+ (Fdepth) X))
@@ -53,9 +48,9 @@
 	  (cons (function_codes_2 Many (car Code))
 		(function_codes_2 Many (cdr Code))))
 	 ((= (car Code) call)
-	   '(nop ,(cdr Code) (+ ,(Fdepth) Many) ,(Fname) !
+	   '(nop ,(cdr Code) (+ ,Fdepth Many) ,Fname !
 		 call
-		 (- ,(Fdepth) Many) ,(Fname) !))
+		 (- ,Fdepth Many) ,Fname !))
 	 (true (cons (car Code)
 		     (function_codes_2 Many (cdr Code)))))))
 (macro function_codes_1 (Many Code)

@@ -1,7 +1,4 @@
 
-in map2.scm the higher order macros are very fragile. It seems like if I change anything about that file it breaks.
-We should make it work better, or at least give better error messages.
-
 Lisp should have tests for:
 append
 

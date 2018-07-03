@@ -5,4 +5,4 @@
 (macro square () (define (x) (* x x)))
 
 (= 16
-     (execute (square) '((execute (square) '(2)))))
+     (execute (square) ((execute (square) (2)))))

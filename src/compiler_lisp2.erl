@@ -1,9 +1,5 @@
 
-%If the compiler is in macros, it is easier to understand. 
-%you can look at the source without having to learn erlang. you only have to understand lisp.
-%dog-fooding the macro system results in a better macro system.
-%I would like to use the macros to define a erlang-like language, and a python-like language, and a javascript-like language. So I want them to be good enough.
-
+%If the compiler is written in macros, it is easier to understand, and modify.
 
 -module(compiler_lisp2).
 -export([doit/1, test/0]).
@@ -18,10 +14,9 @@ test() ->
 	      "case", 
 	      "hashlock",
 	      "first_macro", "square_each_macro", 
-	      "cond_macro", "primes", 
+	      "primes", 
 	      "function", "let", "gcf",
 	      "fun_test", "map"
-	     %"prolog"
 	    ],
     test2(Files).
 test2([]) -> success;
@@ -548,6 +543,10 @@ quote_unquote(<<"'", T/binary>>) ->
     {Atom, T2} = quote_unquote_atom(T),
     T3 = quote_unquote(T2),
     <<"( quote ", Atom/binary, " ) ",T3/binary>>;
+quote_unquote(<<",", T/binary>>) ->
+    {Atom, T2} = quote_unquote_atom(T),
+    T3 = quote_unquote(T2),
+    <<"( unquote ", Atom/binary, " ) ",T3/binary>>;
 quote_unquote(<<X, T/binary>>) ->
     T2 = quote_unquote(T),
     <<X, T2/binary>>;
