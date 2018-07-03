@@ -6,14 +6,14 @@
 
 
 (macro Fname () 900)
-(macro Fdepth () '(@ `(Fname)))
+(macro Fdepth () '(@ ,(Fname)))
 (! 1 (Fname))
 (macro function_v (X)
        '(+ (Fdepth) X))
 (macro function_vars (V N)
        (cond (((= V ()) ())
 	      (true '(nop (function_v N) !
-			  (function_vars `(cdr V) `(+ N 1)))))))
+			  (function_vars ,(cdr V) ,(+ N 1)))))))
 (macro function_get (Var Code N)
        %We need to replace each Var in Code with (@ (function_v N)) where Var is the Nth variable in Vars.
        (cond (((= Code ()) '())
@@ -51,9 +51,9 @@
 	  (cons (function_codes_2 Many (car Code))
 		(function_codes_2 Many (cdr Code))))
 	 ((= (car Code) call)
-	   '(nop `(cdr Code) (+ `(Fdepth) Many) `(Fname) !
+	   '(nop ,(cdr Code) (+ ,(Fdepth) Many) ,(Fname) !
 		 call
-		 (- `(Fdepth) Many) `(Fname) !))
+		 (- ,(Fdepth) Many) ,(Fname) !))
 	 (true (cons (car Code)
 		     (function_codes_2 Many (cdr Code)))))))
 (macro function_codes_1 (Many Code)
@@ -82,9 +82,9 @@
        '(nop 
 	     lambda
 	     (function_vars Vars 0)
-	     %`(nop print)
-	     (function_codes_2 `(length Vars)
-		    '(function_gets `(reverse Vars) '(Code) 0))
+	     %,(nop print)
+	     (function_codes_2 ,(length Vars)
+		    '(function_gets ,(reverse Vars) '(Code) 0))
 	     end_lambda))
 %(length (1 1 5))
 %'(doubles '(doubles '(1 2 3 4)))

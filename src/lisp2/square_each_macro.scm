@@ -7,16 +7,16 @@
 
 (macro sqr (X)
        (cond (((= X ()) '(nil))
-	      ((is_list X) '(cons (square `(car X))
-				  (sqr `(cdr X))))
+	      ((is_list X) '(cons (square ,(car X))
+				  (sqr ,(cdr X))))
 	      (true X))))
 (macro tree (X)
        (cond (((= X ()) '(nil))
 	      ((not (is_list X)) X)
-	      ((is_list (car X)) '(cons `(tree (car X))
-					`(tree (cdr X))))
-	     (true '(cons `(car X)
-			  `(tree (cdr X)))))))
+	      ((is_list (car X)) '(cons ,(tree (car X))
+					,(tree (cdr X))))
+	     (true '(cons ,(car X)
+			  ,(tree (cdr X)))))))
 
 (and
  (eqs (sqr (2 3))

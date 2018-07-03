@@ -1,40 +1,7 @@
 (import (eqs_lib.scm function_lib.scm cond_lib.scm let_lib.scm tree_lib.scm))
 
 
-
-% first lets do a map completely at compile time.
-% this does not use higher-order macros
-% see map2.scm for compile-time example that uses higher-order macros.
-(macro map_double (L)
-       (cond (((= () L) ())
-	      (true
-	       (cons (* 2 (car L)) (map_double (cdr L)))))))
-
-(macro test ()
-       (= (map_double '(2 3 4 5))
-	  '(4 6 8 10)))
-(test)
-
-
-
-% now a mix. We compute most of the mapping at compile time, and we do the comparison at run-time
-
-(macro double_ct (x) (+ x x))
-
-(macro map_helper (L)
-       (cond (((= () L) nil)
-	      (true
-	       '(cons `(double_ct (car L))
-		     `(map_helper (cdr L)))))))
-
-(eqs
- (map_helper '(2 3 4 5))
- (tree '(4 6 8 10)))
-
-
-%1
-% next the map is happening completely at run-time
-% we can use higher-order functions at run-time.
+% the map is happening completely at run-time
 
 (macro double () (define (x) (+ x x)))
 
@@ -49,5 +16,18 @@
   (apply (map) ((double) (tree '(2 3 4 5))))
   (tree '(4 6 8 10)))
 
- and and
+% this map is happening completely at compile-time
+(macro map2 (f l)
+       (cond (((= () l) ())
+	      (true
+	       (cons (execute f (cons (car l) ()))
+		     (map2 f (cdr l)))))))
+(macro fun (x) (* 2 x) )
+(macro test3 ()
+       (=
+	(map2 'fun (cons 3 (cons 4 (cons 5 ()))))
+	(cons 6 (cons 8 (cons 10 ())))))
+(test3)
+
+and
 

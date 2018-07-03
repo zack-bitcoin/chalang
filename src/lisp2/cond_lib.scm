@@ -5,9 +5,9 @@
 (macro case (X)
        (cond (((= X ()) '(nop))
 	      (true '(nop
-		      `(car (car X))
+		      ,(car (car X))
 		      if
-		      `(car (cdr (car X)))
+		      ,(car (cdr (car X)))
 		      else
-		      (case `(cdr X))
+		      (case ,(cdr X))
 		      then)))))

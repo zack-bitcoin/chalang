@@ -13,13 +13,12 @@
 -define(define, 110).
 -define(fun_end, 111).
 test() ->
-    Files = [ "map2",
-	      "case", 
+    Files = [ "case", 
 	      "hashlock",
-	     "first_macro", "square_each_macro", 
-	     "cond_macro", "primes", 
-	     "function", "let", "gcf",
-	     "fun_test", "map"%, %"merge",
+	      "first_macro", "square_each_macro", 
+	      "cond_macro", "primes", 
+	      "function", "let", "gcf",
+	      "fun_test", "map"%, %"merge",
 	     %"prolog"
 	    ],
     test2(Files).
@@ -638,9 +637,12 @@ flatten(X) -> [X].
 quote_unquote(<<"'(", T/binary>>) ->
     T2 = quote_unquote(T),
     <<"( quote ", T2/binary>>;
-quote_unquote(<<"`(", T/binary>>) ->
+quote_unquote(<<",(", T/binary>>) ->
     T2 = quote_unquote(T),
     <<"( unquote ", T2/binary>>;
+%quote_unquote(<<"`(", T/binary>>) ->
+%    T2 = quote_unquote(T),
+%    <<"( unquote ", T2/binary>>;
 quote_unquote(<<"'", T/binary>>) ->
     {Atom, T2} = quote_unquote_atom(T),
     T3 = quote_unquote(T2),
