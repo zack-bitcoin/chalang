@@ -82,7 +82,14 @@ make_list(X, Size, L) ->
     make_list(X, Size - 1, [X|L]).
 vm(Script, OpGas, RamGas, Funs, Vars, State) ->
     X = test(Script, OpGas, RamGas, Funs, Vars, State),
-    X#d.stack.
+    case X of
+	{error, R} -> io:fwrite("chalang error "),
+		      io:fwrite(R),
+		      io:fwrite("\n"),
+		      1=2;
+	_ ->
+	    X#d.stack
+    end.
 test(Script, OpGas, RamGas, Funs, Vars, State) ->
     D = #d{op_gas = OpGas,
 	   ram_limit = RamGas,
@@ -172,7 +179,8 @@ run2([<<?call:8, Script/binary>>|Tail], D) ->
     case D#d.stack of 
         [H|T] ->
             case maps:find(H, D#d.funs) of
-                error -> {error, "called undefined function"};
+                error -> 
+		    {error, "called undefined function"};
                 {ok, Definition} ->
                     S = size(Definition),
                     NewD = D#d{op_gas = D#d.op_gas - S - 10,

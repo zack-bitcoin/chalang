@@ -36,7 +36,9 @@
 	(1 3 3 4 5 8 9 20)))
 (test_ct_sort)
 
-% next at run-time
+
+
+%%%%%% next at run-time
 (macro rt_merge ()
        (define (a b)
 	 (cond (((= nil a) b)
@@ -46,29 +48,33 @@
 		       (recurse a (cdr b))))
 		(true (cons (car a)
 			    (recurse (cdr a) b)))))))
+(drop (rt_merge))
+%(execute (rt_merge) ((tree (2 4 6)) (tree (3 5 6))))
+
 (macro rt_sort2 ()
        (define (l)
 	 (cond (((= nil (cdr l)) (car l))
 		(true
 		 (recurse
 		  (reverse
-		   (cons (execute (rt_merge) (car l)
-				  (car (cdr l)))
-			 (reverse (cdr (cdr l)))))))))))
+		    (cons
+		     (execute (rt_merge) ((car l)
+					  (car (cdr l))))
+		     (reverse (cdr (cdr l)))))))))))
+%(execute (rt_sort2) ((tree ((5)(2)(6)(1)(3)))))
+
 (macro rt_setup ()
        (define (l)
 	 (cond (((= nil l) nil)
 		(true (cons (cons (car l) nil)
 			    (recurse (cdr l))))))))
+%(execute (rt_setup) ((tree (4 5 6))))
 
 (macro rt_sort (l)
-       (execute (rt_sort2) (execute (rt_setup) (l))))
+       '(execute ,(rt_sort2)
+		 ((execute ,(rt_setup) (l)))))
 
-(macro test_rt_sort ()
-       (rt_sort ((tree (3 1 5 3 9 20 4 8))))
-       )
-%(test_rt_sort)
-(macro test_rt_merge ()
-       (execute (rt_merge) ((tree (2 4 6)) (tree (3 5 6)))))
-%(test_rt_merge)
-%0
+(= (rt_sort ((tree (3 1 5 3 9 20 4 8))))
+   (tree (1 3 3 4 5 8 9 20)))
+
+and
