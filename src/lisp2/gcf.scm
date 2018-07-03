@@ -2,7 +2,7 @@
 
 % computing gcf at run-time
 (let ((gcf (define (a b)
-	     (case (((= 0 b) a)
+	     (cond (((= 0 b) a)
 		    (true (recurse b (rem a b))))))))
   (= 12 (execute gcf '(24 36))))
 

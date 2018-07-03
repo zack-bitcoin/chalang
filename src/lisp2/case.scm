@@ -8,7 +8,7 @@
 (Z)
 
 % next show a case statment at run time 
-(case (((= 1 2) 6)
+(cond (((= 1 2) 6)
        (true 7 )))
 
 and

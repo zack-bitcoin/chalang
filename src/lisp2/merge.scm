@@ -5,7 +5,7 @@
 
 (macro merge ()
        (define (x y)
-	 (case (((= nil x) y)
+	 (cond (((= nil x) y)
 		 ((= nil y) x)
 		 ((> (car x) (car y))
 		  (cons (car x)
@@ -18,7 +18,7 @@
 
 (macro merge_to_lists ()
        (define (L)
-	 (case (((= nil L) nil)
+	 (cond (((= nil L) nil)
 		 (true (cons (cons (car L) nil)
 			     (recurse (cdr L))))))))
 (drop (merge_to_lists))
@@ -26,7 +26,7 @@
 
 (macro merge_sort_helper2 ()
        (define (L)
-	 (case (((= nil L) nil)
+	 (cond (((= nil L) nil)
 		((= nil (cdr L)) L)
 		(true (cons (merge (merge)
 				   ((car L)
@@ -38,7 +38,7 @@
 %       ((tree '(1 2))(tree '(2 3))))
 (macro merge_sort_helper ()
        (define (L)
-	 (case (((= nil (cdr L)) (car L))
+	 (cond (((= nil (cdr L)) (car L))
 		 (true (recurse
 			(merge (merge_sort_helper2)
 			       (L))))))))

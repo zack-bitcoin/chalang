@@ -7,7 +7,7 @@
 
 (macro map ()
        (define (F X)
-	 (case (((= nil X) nil)
+	 (cond (((= nil X) nil)
 		 (true (cons
 			 (execute F ((car X)))
 			 (recurse F (cdr X))))))))
