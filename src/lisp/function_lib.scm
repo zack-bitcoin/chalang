@@ -57,8 +57,7 @@
 		(function_codes_2 Many (cdr Code))))
 	 ((= (car Code) call)
 	  (cond (((= Many 0) 
-		  '(nop ,(cdr Code) 
-			call))
+		  (call (cdr Code)))
 		 (true 
 		  '(nop ,(cdr Code) (+ r@ Many) >r
 			call
