@@ -1,19 +1,13 @@
-
 % this is a library for making functions at run-time.
 
-
-% (macro Fname () 900) % global variable
-% (macro Fdepth () '(@ ,Fname))
-% (macro Fdepth () '(r@)) %
-% (! 1 (Fname))
-(>r 1) %
+(>r 1) 
 (macro function_v (X)
        (cond (((= X 0) '(r@))
 	      (true
 	       '(+ r@ X)))))
 (macro function_vars (V N)
        (cond (((= V ()) ())
-	      ((= N 0) '(nop r@ !
+	      ((= 0 N) '(nop r@ !
 			  ,(function_vars (cdr V) 1)))
 	      (true '(nop ,(function_v N) !
 			  ,(function_vars (cdr V) (+ N 1)))))))
@@ -31,10 +25,6 @@
 		      (function_get Var (cdr Code) N))))))
 (macro function_gets (Vars Code N) 
        (cond (((= Vars ()) Code)
-	      ((= N 0) (function_gets
-			(cdr Vars)
-			(function_get (car Vars) Code 0)
-			1))
 	      (true (function_gets
 		     (cdr Vars)
 		     (function_get (car Vars) Code N)
@@ -85,7 +75,7 @@
 	     (function_codes_2 ,(length Vars)
 		    ,(function_gets (reverse Vars) (Code) 0))
 	     end_fun))
-%(length (1 1 5))
+%(length (1 1 5 1 1 1 1))
 %(tree '(tree '(+ 1 2)))
 %(Fdepth) % 1
 %(function_v 3) % 4
