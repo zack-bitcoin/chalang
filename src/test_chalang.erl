@@ -46,5 +46,5 @@ test(Loc) ->
     [<<1000:32>>,<<0:32>>,<<3:32>>] = chalang:stack(D4),
     S = success,
     S = compiler_lisp:test(),
-    S = compiler_lisp2:test(),
+    %S = compiler_lisp2:test(),
     success.

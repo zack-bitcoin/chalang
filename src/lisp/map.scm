@@ -3,7 +3,7 @@
 % the map is happening completely at run-time
 
 (macro map ()
-       (define (F X)
+       (lambda (F X)
 	 (cond (((= nil X) nil)
 		 (true (cons
 			 (execute F ((car X)))

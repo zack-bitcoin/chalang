@@ -115,7 +115,7 @@
 %(cond (((not (= C1 (fail))) C1)))
 
 (macro prolog_or ()
-       (define (L)
+       (lambda (L)
 	 (cond (((= L nil) (fail))
 		((not (= (car L) (fail))) (car L))
 		(true (recurse (cdr L)))))))

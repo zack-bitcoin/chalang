@@ -9,7 +9,8 @@
 -define(define, 110).
 -define(fun_end, 111).
 test() ->
-    Files = [ "sort_test",
+    Files = [ "append_test",
+	      "sort_test",
 	      "eqs_test",
 	      "case", 
 	      "hashlock",
@@ -181,6 +182,12 @@ lisp([<<"is_list">>, A], F) ->
     {A2, _} = macros(A, F),
     B = lisp(A2, F),
     bool_atom_to_int(is_list(B));
+lisp([<<"is_atom">>, [<<"quote">>, X]], F) when is_binary(X) ->
+    bool_atom_to_int(true);
+lisp([<<"is_atom">>, _], F) ->
+    bool_atom_to_int(false);
+lisp([<<"is_number">>, X], F) ->
+    bool_atom_to_int(is_integer(X));
 lisp([<<"=">>, A, B], D) ->
     {A3, _} = macros(A, D),
     A2 = lisp(A3, D),
@@ -219,6 +226,12 @@ lisp([<<"rem">>, A, B], F) ->
     C rem D;
 lisp([<<"reverse">>, A], F) ->
     lists:reverse(lisp(A, F));
+lisp([<<"++">>, A, B], F) ->
+    {A2, _} = macros(A, F),
+    {B2, _} = macros(B, F),
+    A3 = lisp(A2, F),
+    B3 = lisp(B2, F),
+    A3 ++ B3;
 lisp([<<"cons">>, A, B], F) ->
     {B2, _} = macros(B, F),
     C = lisp(A, F),
@@ -425,8 +438,8 @@ is_op(<<"id_of_caller">>) -> {true, <<100>>, 0, 1};
 is_op(<<"accounts">>) -> {true, <<101>>, 0, 1};
 is_op(<<"channels">>) -> {true, <<102>>, 0, 1};
 is_op(<<"verify_merkle">>) -> {true, <<103>>, 3, 2};
-is_op(<<"lambda">>) -> {true, <<110>>, 3, 0};
-is_op(<<"end_lambda">>) -> {true, <<111>>, 0, 0};
+is_op(<<"start_fun">>) -> {true, <<110>>, 3, 0};
+is_op(<<"end_fun">>) -> {true, <<111>>, 0, 0};
 is_op(<<"recurse">>) -> {true, <<112, 113>>, 0, 1};
 is_op(<<"call">>) -> {true, <<113>>, 1, 1};
 is_op(<<"@">>) -> {true, <<121>>, 1, 1};

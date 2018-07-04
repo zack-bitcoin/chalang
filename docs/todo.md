@@ -1,6 +1,4 @@
 
-Lisp should have tests for:
-append
 
 We should add syntax for define and macro like this
 (define (newFunc A B) (+ (* A A) B))

@@ -1,7 +1,7 @@
 (import (eqs_lib.scm function_lib.scm cond_lib.scm let_lib.scm))
 
 % computing gcf at run-time
-(let ((gcf (define (a b)
+(let ((gcf (lambda (a b)
 	     (cond (((= 0 b) a)
 		    (true (recurse b (rem a b))))))))
   (= 12 (execute gcf '(24 36))))

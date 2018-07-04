@@ -35,7 +35,7 @@
 %%%%%% next at run-time
 
 (macro rt_merge ()
-       (define (a b)
+       (lambda (a b)
 	 (cond (((= nil a) b)
 		((= nil b) a)
 		((> (car a) (car b))
@@ -51,7 +51,7 @@
 %(execute (rt_merge) ((tree (2 4 6)) (tree (3 5 6))))
 
 (macro rt_sort2 ()
-       (define (l)
+       (lambda (l)
 	 (cond (((= nil (cdr l)) (car l))
 		(true
 		 (recurse
@@ -63,7 +63,7 @@
 %(execute (rt_sort2) ((tree ((5)(2)(6)(1)(3)))))
 
 (macro rt_setup ()
-       (define (l)
+       (lambda (l)
 	 (cond (((= nil l) nil)
 		(true (cons (cons (car l) nil)
 			    (recurse (cdr l))))))))

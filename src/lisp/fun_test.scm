@@ -2,7 +2,7 @@
 
 %This shows how to package a function so it can be imported and used in other libraries.
 
-(macro square () (define (x) (* x x)))
+(macro square () (lambda (x) (* x x)))
 
 (= 16
      (execute (square) ((execute (square) (2)))))
