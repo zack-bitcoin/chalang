@@ -1,4 +1,5 @@
-
+compile-time and run-time syntax inconsistencies:
+nil ()
 
 We should add syntax for define and macro like this
 (define (newFunc A B) (+ (* A A) B))
