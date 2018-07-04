@@ -7,5 +7,6 @@
        (cond (((= X 0) '(nil))
        	      (true '(cons Y ,(things (- X 1) Y))))))
 
-
-(eqs (things 3 5) (cons 5 (cons 5 (cons 5 nil))))
+(eqs
+ (things 3 5)
+ (cons 5 (cons 5 (cons 5 nil))))

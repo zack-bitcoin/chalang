@@ -24,7 +24,7 @@
 	       (cons (function_get Var (car Code) N)
 		      (function_get Var (cdr Code) N)))
 	      ((= (car Code) Var)
-	       (cons (@ (function_v N))
+	       (cons '(@ (function_v N))
 		     (function_get Var (cdr Code) N)))
 	      (true (cons
 		      (car Code)
@@ -38,7 +38,7 @@
 	      (true (function_gets
 		     (cdr Vars)
 		     (function_get (car Vars) Code N)
-		     (+ N 1))))))
+		     ,(+ N 1))))))
 (macro function_codes_cond (Many Code)
        (cond
 	(((= Code ()) ())
@@ -75,15 +75,15 @@
 	 (true (cons (car Code)
 		     (function_codes_2 Many (cdr Code)))))))
 (macro length (X)
-       (cond (((= X ()) (- (+ 0 78) 78))
-	      (true (+ (length (cdr X)) 1 nop)))))
+       (cond (((= X ()) 0)
+	      (true (+ (length (cdr X)) 1)))))
 (macro lambda (Vars Code)
        '(nop 
 	     start_fun
 	     ,(function_vars Vars 0)
 	     %,(nop print)
-	     ,(function_codes_2 (length Vars)
-		    (function_gets (reverse Vars) (Code) 0))
+	     (function_codes_2 ,(length Vars)
+		    ,(function_gets (reverse Vars) (Code) 0))
 	     end_fun))
 %(length (1 1 5))
 %(tree '(tree '(+ 1 2)))

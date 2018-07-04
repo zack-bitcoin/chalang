@@ -10,14 +10,15 @@
 -define(fun_end, 111).
 test() ->
     Files = [ "append_test",
-	      "sort_test",
 	      "eqs_test",
 	      "case", 
 	      "hashlock",
 	      "first_macro", "square_each_macro", 
 	      "primes", 
-	      "function", "let", "gcf",
-	      "fun_test", "map_test"
+	      "function", 
+	      "let", "gcf",
+	      "fun_test", "map_test",
+	      "sort_test"
 	    ],
     test2(Files).
 test2([]) -> success;
@@ -233,6 +234,7 @@ lisp([<<"++">>, A, B], F) ->
     B3 = lisp(B2, F),
     A3 ++ B3;
 lisp([<<"cons">>, A, B], F) ->
+    %{A2, _} = macros(A, F),
     {B2, _} = macros(B, F),
     C = lisp(A, F),
     D = lisp(B2, F),
