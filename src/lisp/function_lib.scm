@@ -1,6 +1,14 @@
 % this is a library for making functions at run-time.
 
-(>r 1) 
+% uses the r-stack to store the memory locations
+% for the input of the functions we are currently
+% processing. So the r-stack is used as a function
+% call stack, one additional thing is pushed every
+% time a function is called, and one thing is
+% removed every time a function returns.
+
+(>r 1)
+
 (macro function_v (X)
        (cond (((= X 0) '(r@))
 	      (true

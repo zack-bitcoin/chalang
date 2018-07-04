@@ -2,7 +2,7 @@
 (import (map.scm tree_lib.scm))
 
 % the first map is happening completely at run-time
-(macro double () (lambda (x) (+ x x)))
+(macro double () (lambda (x) (* 2 x)))
 (=
   (execute (map) ((double) (tree (2 3 4 5))))
   (tree (4 6 8 10)))
