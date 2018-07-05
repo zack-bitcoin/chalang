@@ -9,7 +9,8 @@
 -define(define, 110).
 -define(fun_end, 111).
 test() ->
-    Files = [ "enum_test",
+    Files = [ 
+	      "enum_test",
 	      "append_test",
 	      "eqs_test",
 	      "case", 
@@ -64,7 +65,7 @@ doit(A) ->
     io:fwrite("VM\n"),
     Gas = 10000,
     VM = chalang:vm(List5, Gas*100, Gas*10, Gas, Gas, []),
-    {{Tree1, Tree3, Tree35, List, List4
+    {{Tree1, Tree3, Tree35, List, List4, List5
       }, VM}.
 
 imports([<<"import">>, []], Done) -> {[], Done};
@@ -167,6 +168,8 @@ lisp([<<"execute">>,[<<"quote">>, F],A], D) ->
 	    lisp(T2, D2)
     end;
 lisp([<<"execute">>,F,A], D) ->
+    io:fwrite("bad execute!!\n"),
+    io:fwrite([F, A]),
     lisp([<<"execute">>,[<<"quote">>, F],A], D);
 lisp([<<">">>, A, B], F) ->
     {A2, _} = macros(A, F),
@@ -259,6 +262,8 @@ lisp([<<"and">>, A, B], F) ->
 lisp([<<"not">>, A], F) ->
     {A2, _} = macros(A, F),
     not(bih(A2, F));
+%lisp([<<"nil">>], F) ->
+%    [];
 lisp(X, _) -> X.
 bih(A, F) -> bool_interpret(lisp(A, F)).
 bool_interpret(<<"false">>) -> false;

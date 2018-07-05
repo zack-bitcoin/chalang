@@ -32,4 +32,5 @@ enum_test.scm
 
 These files are documentation of features:
 quotes_examples.scm
+fun_test2.scm
 

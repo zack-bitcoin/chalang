@@ -74,15 +74,20 @@
 	     start_fun
 	     ,(_load_inputs Vars 0)
 	     (_call_stack* ,(_length Vars)
-			  ,(_variables (reverse Vars)
-					   (Code)
-					   0))
+			   ,(_variables (reverse Vars)
+					(Code)
+					0))
 	     end_fun))
+;define stores the 32-byte function id into a variable
+(macro define (Name Vars Code)
+       '(! ,(lambda Vars Code) Name))
 (macro execute (Function Variables)
-       ; call a function
        (cons call
 	     (reverse (cons Function
 			    (reverse Variables)))))
+
+;(1 2 3)
+;(cons 1 (cons 2 (cons 3 ())))
 
 
 ;(_length (1 1 5 1 1 1 1))

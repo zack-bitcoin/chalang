@@ -2,13 +2,11 @@
 
 ; the map is happening completely at run-time
 
-(macro map ()
-       (lambda (F X)
-	 (cond (((= nil X) nil)
-		 (true (cons
-			 (execute F ((car X)))
-			 (recurse F (cdr X))))))))
-
+(define map (F X)
+  (cond (((= nil X) nil)
+	 (true (cons
+		(execute F ((car X)))
+		(recurse F (cdr X)))))))
 
 ; this map is happening completely at compile-time
 (macro map2 (f l)
@@ -17,3 +15,4 @@
 	       (cons (execute f ((car l)))
 		     (map2 f (cdr l)))))))
 
+			      
