@@ -1,5 +1,5 @@
-%This calculates the biggest prime below the input.
-%This calculation happens completely at compile-time.
+;This calculates the biggest prime below the input.
+;This calculation happens completely at compile-time.
 
 (import (eqs_lib.scm))
 

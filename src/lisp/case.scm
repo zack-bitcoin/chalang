@@ -1,6 +1,6 @@
 (import (eqs_lib.scm cond_lib.scm))
 
-% first show a case statement at compile time
+; first show a case statement at compile time
 (macro Z () 
        (cond (((= 0 1) 0)
 	      (true
@@ -9,7 +9,7 @@
 		 (true 1)))))))
  (Z)
 
-% next show a case statment at run time
+; next show a case statment at run time
 
 (cond (((= 1 2) 0)
        (false 0)

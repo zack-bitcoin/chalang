@@ -1,7 +1,7 @@
 (import (eqs_lib.scm let_lib.scm function_lib.scm))
 (and 
  (= 6 
-    (execute (lambda (x) (+ x x)) % anonymous function
+    (execute (lambda (x) (+ x x)) ; anonymous function
 	     (3)))
  (= 22
     (let ((Square (lambda (x) (* x x)))

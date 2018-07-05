@@ -1,12 +1,12 @@
 (import (eqs_lib.scm))
 
-% compile time
+; compile time
 (macro A () (= 5 5))
 (A)
 
 
-% run time
+; run time
 (= 6 6)
 
  and
-%0
+;0

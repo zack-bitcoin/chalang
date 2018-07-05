@@ -1,5 +1,5 @@
-% run time
-% case.scm tests this out.
+; run time
+; case.scm tests this out.
 
 (macro cond (X)
        (cond (((= X ()) '(nop))

@@ -1,8 +1,8 @@
 (import (eqs_lib.scm))
 
 (macro square (X) (* X X))
-%(macro eqs (A B)
-%       '(nop A B === swap drop swap drop))
+;(macro eqs (A B)
+;       '(nop A B === swap drop swap drop))
 
 
 (macro sqr (X)

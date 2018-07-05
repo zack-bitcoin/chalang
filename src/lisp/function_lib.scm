@@ -3,9 +3,9 @@
 ; uses the r-stack to store the memory locations
 ; for the input of the functions we are currently
 ; processing. So the r-stack is used as a function
-; call stack, one additional thing is pushed every
+; call stack, one additional thing is added to r every
 ; time a function is called, and one thing is
-; removed every time a function returns.
+; removed from r every time a function returns.
 
 (>r 500) ;start storing inputs to functions at 500, that way 1-499 are available for smart contract developers.
 
@@ -69,6 +69,7 @@
        (cond (((= X ()) 0)
 	      (true (+ (_length (cdr X)) 1)))))
 (macro lambda (Vars Code)
+       ; define a new function
        '(nop 
 	     start_fun
 	     ,(_load_inputs Vars 0)
@@ -77,8 +78,11 @@
 					   (Code)
 					   0))
 	     end_fun))
-(macro execute (F V)
-       (cons call (reverse (cons F (reverse V)))))
+(macro execute (Function Variables)
+       ; call a function
+       (cons call
+	     (reverse (cons Function
+			    (reverse Variables)))))
 
 
 ;(_length (1 1 5 1 1 1 1))
