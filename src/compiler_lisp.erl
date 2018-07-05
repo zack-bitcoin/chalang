@@ -498,6 +498,9 @@ remove_till(N, <<_:8, B/binary>>) ->
     remove_till(N, B).
 remove_comments(B) -> remove_comments(B, <<"">>).
 remove_comments(<<"">>, Out) -> Out;
+remove_comments(<<59:8, B/binary >>, Out) -> % [37] == "%".
+    C = remove_till(10, B), %10 is '\n'
+    remove_comments(C, Out);
 remove_comments(<<37:8, B/binary >>, Out) -> % [37] == "%".
     C = remove_till(10, B), %10 is '\n'
     remove_comments(C, Out);
