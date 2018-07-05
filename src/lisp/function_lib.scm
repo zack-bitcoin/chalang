@@ -9,7 +9,7 @@
 
 (>r 500) %start storing inputs to functions at 500, that way 1-499 are available for smart contract developers.
 
-(macro _function_v (X)
+(macro _pointer (X)
        % look up a pointer to the xth variable being stored for the current function being processed
        (cond (((= X 0) '(r@))
 	      (true '(+ r@ X)))))
@@ -19,19 +19,20 @@
        (cond (((= V ()) ())
 	      ((= 0 N) '(nop r@ !
 			  ,(_load_inputs (cdr V) 1)))
-	      (true '(nop ,(_function_v N) !
+	      (true '(nop ,(_pointer N) !
 			  ,(_load_inputs (cdr V) (+ N 1)))))))
 (macro _variable* (Var Code N)
        %Replace each Var in Code with the input to the function
        (cond (((= Code ()) ())
 	      (true
-	       (cons (cond
-		      (((is_list (car Code))
-			(_variable* Var (car Code) N))
-		       ((= (car Code) Var)
-			'(@ (_function_v N)))
-		       (true (car Code))))
-		     (_variable* Var (cdr Code) N))))))
+	       (cons
+		(cond
+		 (((is_list (car Code))
+		   (_variable* Var (car Code) N))
+		  ((= (car Code) Var)
+		   '(@ (_pointer N)))
+		  (true (car Code))))
+		(_variable* Var (cdr Code) N))))))
 (macro _variables (Vars Code N)
        % repeatedly use _variable* to replace
        % each Var in Code with the inputs to the function,
@@ -71,29 +72,22 @@
        '(nop 
 	     start_fun
 	     ,(_load_inputs Vars 0)
-	     %,(nop print)
 	     (_call_stack* ,(_length Vars)
 			  ,(_variables (reverse Vars)
 					   (Code)
 					   0))
 	     end_fun))
 %(_length (1 1 5 1 1 1 1))
-%(tree '(tree '(+ 1 2)))
-%(Fdepth) % 1
-%(_function_v 3) % 4
+%(_pointer 3) % 4
 
 %4 3 (_load_inputs (a b) 0)
 %(_variable* a '(+ a 1) 0) %900 @ 5 + @
 %(_variable* a (_variable* b (a b) 0) 1)
 %(_variables (a b) '(+ a (+ b 2)) 0)
 %(_call_stack* 3 '(+ (+ a b) c))
-%(function_codes_1 3 '(+ (+ a b) c))
 
 %3 (_load_inputs (x) 0)
-%5 (nop start_fun (_load_inputs (x) 0) (function_codes_1 1 '(_variables (x) '(+ x 5) 0)) end_fun)
 
-%(macro apply (F V)
-%       (cons call (reverse (cons F (reverse V)))))
 (macro execute (F V)
        (cons call (reverse (cons F (reverse V)))))
 
