@@ -1,4 +1,5 @@
 (import (eqs_lib.scm function_lib.scm cond_lib.scm let_lib.scm))
+; gcf is the greatest common factor
 
 ; computing gcf at run-time
 (let ((gcf (lambda (a b)

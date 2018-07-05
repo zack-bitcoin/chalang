@@ -1,4 +1,6 @@
-;T which was computed at compile time gets written directly into the byte-code which will be read at run-time.
+; T is a list computed at compile-time.
+; T possibly contains other lists.
+; tree converts T into a list available at run-time.
 
 (macro tree (T)
        (cond (((= T ()) '(nil))

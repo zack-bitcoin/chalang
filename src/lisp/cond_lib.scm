@@ -1,4 +1,4 @@
-; run time
+; this is the run time version of cond.
 ; case.scm tests this out.
 
 (macro cond (X)

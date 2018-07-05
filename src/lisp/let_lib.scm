@@ -1,3 +1,6 @@
+; let is a built-in tool for lisp. for an example, look at let.scm
+
+
 (macro let (pairs code)
        (cond
 	(((= pairs ()) code)

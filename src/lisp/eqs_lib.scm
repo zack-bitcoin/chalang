@@ -1,6 +1,5 @@
-; this is all happening at run-time.
+; this is the run-time way of checking of 2 things are equal.
 
-(macro elclear () '(tuck drop drop))
-(macro = (A B) '(nop A B === elclear))
+(macro = (A B) '(nop A B === tuck drop drop))
 
 

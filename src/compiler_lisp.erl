@@ -9,7 +9,8 @@
 -define(define, 110).
 -define(fun_end, 111).
 test() ->
-    Files = [ "append_test",
+    Files = [ "enum_test",
+	      "append_test",
 	      "eqs_test",
 	      "case", 
 	      "hashlock",
