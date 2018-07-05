@@ -7,7 +7,7 @@
 % time a function is called, and one thing is
 % removed every time a function returns.
 
-(>r 1)
+(>r 500) %start storing inputs to functions at 500, that way 1-499 are available for smart contract developers.
 
 (macro _function_v (X)
        % look up a pointer to the xth variable being stored for the current function being processed
@@ -24,15 +24,14 @@
 (macro _variable* (Var Code N)
        %Replace each Var in Code with the input to the function
        (cond (((= Code ()) ())
-	      ((is_list (car Code))
-	       (cons (_variable* Var (car Code) N)
-		      (_variable* Var (cdr Code) N)))
-	      ((= (car Code) Var)
-	       (cons '(@ (_function_v N))
-		     (_variable* Var (cdr Code) N)))
-	      (true (cons
-		      (car Code)
-		      (_variable* Var (cdr Code) N))))))
+	      (true
+	       (cons (cond
+		      (((is_list (car Code))
+			(_variable* Var (car Code) N))
+		       ((= (car Code) Var)
+			'(@ (_function_v N)))
+		       (true (car Code))))
+		     (_variable* Var (cdr Code) N))))))
 (macro _variables (Vars Code N)
        % repeatedly use _variable* to replace
        % each Var in Code with the inputs to the function,
