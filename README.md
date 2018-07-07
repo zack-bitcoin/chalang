@@ -16,7 +16,14 @@ This is the best of the compilers.
 
 [You can see forth-like example code here](/src/forth), hashlock is especially well documented.
 
-[You can see lisp-like example code here](/src/lisp), and [here](/src/lisp2).
+[You can see lisp-like example code here](/src/lisp)
+
+Here is an example of what a lisp function gets compiled to:
+```
+(lambda (x y z) (* (+ y x) (+ z x)))
+: function rot dup >r swap >r + r> r> + * ;
+```
+
 
 to install:
 

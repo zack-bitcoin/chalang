@@ -10,12 +10,23 @@
 ;You might worry that this is re-defining the function every time you want to use it.
 ;that is not a problem. The compiler only defines it the first time it is used, and after that it replaces each function definition with the 32-byte binary id for that function.
 
-;using an anonymous function.
-(=
- (apply (lambda (x) (* x x)) (3))
- 9)
-					;and
+					;using an anonymous function.
+;(apply (lambda (b c a) (+ a (- b c)))
+;       (7 3 2))
+;(apply (lambda (b c a) (+ a (- b c)))
+;       (7 3 2))
+;(apply (lambda (c b a) (+ a (- b c)))
+;       (() 7 3 2))
+(apply (lambda (c b a) (+ (+ 0 a) (- b c)))
+       (0 3 2))
+
+;(2 4 3
+;(= 1 (apply (lambda (x y z) (- (+ y x) (- z x))) (0 4 3)))
+;and
 ;(lambda (x) (* x x))
+;(apply (lambda (x y z) (* (+ y x) (+ z x))) (() 0 4 3))
+; compiled:
+; 0 4 3 start_fun rot dup >r swap >r + r> r> + * end_fun call
 
 
 ;storing the pointer to your function in a variable

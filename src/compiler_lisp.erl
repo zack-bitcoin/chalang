@@ -10,6 +10,7 @@
 -define(fun_end, 111).
 test() ->
     Files = [ 
+	      "fun_test4",
 	      "macro_basics",
 	      "flatten_test",
 	      "fun_test3",

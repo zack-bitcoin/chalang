@@ -15,8 +15,6 @@
        ;returns the length of list X at compile-time
        (cond (((= X ()) 0)
 	      (true (+ (_length (cdr X)) 1)))))
-
-
 (macro _replace (Vars Op)
        (cond (((= Vars ()) ())
 	      ((= Op (car Vars)) Op)
@@ -73,9 +71,6 @@
 	      (true 10))))
 ;(last_time_test3 y '(y x))
 
-;(macro and_test () (= (and 1 1) (and 1 1)))
-;(and (= 1 1) (= 1 1)))
-;(and_test)
 (macro depth (x l)
        (cond (((= x (car l)) (_length (cdr l)))
 	      (true (depth x (cdr l))))))
@@ -105,7 +100,7 @@
 			  (remove_nth N (cdr L)))))))
 (macro remove_nth_test ()
        (remove_nth 1 (1 2 3 4 5)))
-					;(remove_nth_test)
+;(remove_nth_test)
 (macro move_to_bottom2 (N L A)
        (++ (remove_nth N L) (cons A ())))
 (macro move_to_bottom_test (X)
@@ -120,7 +115,6 @@
        ))
 ;look up location of (car Goal) in Have -> N
 (macro setup_inputs2 (N Have X Goal)
-       ;if N = length NewHave and last_time = true, then return (setup_inpts (cdr Have) Goal)
        '(()
 	 ,(optimized_pick N)
 	 ,(cond (((last_time3 (cons X Goal))
@@ -130,7 +124,7 @@
 			  ,(setup_inputs3 (move_to_bottom2 N Have X) Goal))))))) ;move Nth to top of Have (bottom of the list)
 (macro to_r_times (N)
        (cond (((= N 0) ())
-	      (true '(()
+	     (true '(()
 		      >r
 		      ,(to_r_times (- N 1)))))))
 (macro setup_inputs (Have Goal)
@@ -165,26 +159,33 @@
 	  (from_r_var (x y) '(+ y x)))
 ;4 >r 5 >r
 ;(from_r_var_test)
-
-
 (macro lambda (Vars Code) ; define a new function
        '(()
 	 start_fun
-	 ,(setup_inputs (reverse Vars) (reverse (_order_needed Vars 'Code)))
-	 ,(from_r_var (reverse Vars) 'Code);for every var in code, replace the var with r>
+	 ,(setup_inputs Vars (reverse (_order_needed Vars 'Code)))
+	 ,(from_r_var Vars 'Code);for every var in code, replace the var with r>
 	 end_fun))
+
+;(macro delist (L)
+;       (cond (((= L ()) ())
+;	      (true '(() ,(car L) ,(delist (cdr L)))))))
+;(delist (1 2 3))
 
 ;define stores the 32-byte function id into a variable
 ;be careful with define, if a different function gets stored into the variable, then you could end up calling different code than you had expected. Make sure that it is impossible for an attacker to edit the variable after the function is defined.
 (macro define (Name Vars Code)
        '(! ,(lambda Vars Code) Name))
 (macro apply (Function Variables)
-       '(() Variables Function call))
+       (cons call
+	     (reverse (cons Function
+			    (reverse (cons () Variables))))))
+   ;    '(() 'Variables Function call))
+       ;'(() Variables Function call))
 (macro square () (lambda (x y) (- (+ y y) (+ x x))))
 (macro lambda_test1 ()
        (apply (square) (3 4)))
 ;(lambda_test1)
-(define square2 (x) (* x x))
+;(define square2 (x) (* x x))
 (macro lambda_test ()
        (apply (@ square2) (5)))
 ;(= 25 (lambda_test))
