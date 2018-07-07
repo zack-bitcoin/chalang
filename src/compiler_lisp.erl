@@ -10,6 +10,9 @@
 -define(fun_end, 111).
 test() ->
     Files = [ 
+	      "macro_basics",
+	      "flatten_test",
+	      "fun_test3",
 	      "enum_test",
 	      "append_test",
 	      "eqs_test",
@@ -57,16 +60,28 @@ doit(A) ->
     io:fwrite("rpn\n"),
     Tree35 = rpn(Tree3),%change to reverse polish notation.
     List = flatten(Tree35),
+    List1 = just_in_time(List),
     List2 = variables(List, {dict:new(), 1}),
     Funcs = dict:new(),
     List4 = to_ops(List2, Funcs),
     {List5, _} = lambdas(List4, []),
-    Forth = disassembler:doit(List5),
-    io:fwrite("VM\n"),
+    %disassembler:doit(List5),
     Gas = 10000,
     VM = chalang:vm(List5, Gas*100, Gas*10, Gas, Gas, []),
-    {{Tree1, Tree3, Tree35, List, List4, List5
+    {{%Tree1, Tree3, Tree35, 
+      List1%, List4, List5
       }, VM}.
+just_in_time(X) ->
+    X2 = just_in_time2(X),
+    if 
+	(X2 == X) -> X;
+	true -> just_in_time(X2)
+    end.
+just_in_time2([<<">r">>|[<<"r>">>|R]]) -> 
+    just_in_time2(R);
+just_in_time2([A|B]) ->
+    [A|just_in_time2(B)];
+just_in_time2(A) -> A.
 
 imports([<<"import">>, []], Done) -> {[], Done};
 imports([<<"import">>, [H|T]], Done) ->
@@ -121,6 +136,7 @@ macros([H|T], D) ->
 	{ok, {Vars, Code}} ->
 	    {T3, D2} = macros(T, D),
 	    T2 = apply_macro(Code, Vars, T3, D2),
+	    %T2 = apply_macro(Code, Vars, T, D),
 	    macros(T2, D2)
     end;
 macros(X, D) -> {X, D}.
@@ -144,6 +160,7 @@ replace([H|T], A, B) ->
 replace(A, A, B) -> B;
 replace(X, _, _) -> X.
 lisp_quote([[<<"unquote">>|T]|T2], D) -> 
+    %{A, _} = macros(T, D),
     [lisp(T, D)|
      lisp_quote(T2, D)];
 lisp_quote([H|T], D) -> 
@@ -243,6 +260,10 @@ lisp([<<"cons">>, A, B], F) ->
     C = lisp(A, F),
     D = lisp(B2, F),
     [C|D];
+lisp([<<"hd">>, A], F) ->
+    {A2, _} = macros(A, F),
+    C = lisp(A2, F),
+    hd(C);
 lisp([<<"car">>, A], F) ->
     {A2, _} = macros(A, F),
     C = lisp(A2, F),
@@ -270,10 +291,12 @@ bool_interpret(<<"false">>) -> false;
 bool_interpret([<<"false">>]) -> false;
 bool_interpret(false) -> false;
 bool_interpret(0) -> false;
+bool_interpret(<<0:32>>) -> false;
 bool_interpret(<<"true">>) -> true;
 bool_interpret([<<"true">>]) -> true;
 bool_interpret(true) -> true;
 bool_interpret(1) -> true;
+bool_interpret(<<1:32>>) -> true;
 bool_interpret(X) -> 
     io:fwrite("bad bool \n"),
     io:fwrite(X),
@@ -325,6 +348,7 @@ split_def(X, B, N) ->
 	    {<<A:N>>, T, N};
 	_ -> split_def(X, B, N+8)
     end.
+%after the first function definition, replace any repeated definition with the hash of the definition.
 lambdas(<<0, N:32, T/binary>>, Done) -> 
     {T2, Done2} = lambdas(T, Done),
     {<<0, N:32, T2/binary>>, Done2};

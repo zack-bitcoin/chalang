@@ -20,7 +20,8 @@ run_scripts([H|T], Gas, Loc) ->
     run_scripts(T, NewGas, Loc).
 test() -> test(?loc).
 test(Loc) ->
-    Scripts = [ "filter",
+    Scripts = [ "pickn",
+		"filter",
 		"merge_sort",
 		"function", "variable",
 		"macro", "case", "recursion", "map",

@@ -79,8 +79,11 @@
 					0))
 	     end_fun))
 ;define stores the 32-byte function id into a variable
+;be careful with define, if a different function gets stored into the variable, then you could end up calling different code than you had expected. Make sure that it is impossible for an attacker to edit the variable after the function is defined.
 (macro define (Name Vars Code)
        '(! ,(lambda Vars Code) Name))
+
+
 (macro execute (Function Variables)
        (cons call
 	     (reverse (cons Function

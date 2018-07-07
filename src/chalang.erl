@@ -313,8 +313,9 @@ run4(?ddup, D) ->
 run4(?tuckn, D) ->
     case D#d.stack of
         [N|[X|S]] ->
-            H = lists:sublist(S, 1, N),
-            T = lists:sublist(S, N+1, 100000000000000000),
+	    <<M:32>> = N,
+            H = lists:sublist(S, 1, M),
+            T = lists:sublist(S, M+1, 100000000000000000),
             Stack2 = H ++ [X|T],
             D#d{stack = Stack2,
                 op_gas = D#d.op_gas - 1};
@@ -323,8 +324,9 @@ run4(?tuckn, D) ->
 run4(?pickn, D) ->
     case D#d.stack of
         [N|S] ->
-            H = lists:sublist(S, 1, N - 1),
-            case lists:sublist(S, N, 100000000000000000) of
+	    <<M:32>> = N,
+            H = lists:sublist(S, 1, M),
+            case lists:sublist(S, M + 1, 100000000000000000) of
                 [X|T] ->
                     Stack2 = [X|(H ++ T)],
                     D#d{stack = Stack2,
