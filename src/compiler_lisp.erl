@@ -78,6 +78,17 @@ just_in_time(X) ->
 	(X2 == X) -> X;
 	true -> just_in_time(X2)
     end.
+%for every >r we should look ahead in the code to see if we actually need to use the r stack. maybe we can leave this variable on the main stack until it is needed.
+just_in_time2([<<"dup">>|[<<"rot">>|[<<"dup">>|R]]]) -> 
+    just_in_time2([<<"2dup">>|R]);
+just_in_time2([<<"rot">>|[<<"tuck">>|R]]) -> 
+    just_in_time2(R);
+just_in_time2([<<"tuck">>|[<<"rot">>|R]]) -> 
+    just_in_time2(R);
+just_in_time2([<<"swap">>|[<<"swap">>|R]]) -> 
+    just_in_time2(R);
+just_in_time2([<<"dup">>|[<<"drop">>|R]]) -> 
+    just_in_time2(R);
 just_in_time2([<<">r">>|[<<"r>">>|R]]) -> 
     just_in_time2(R);
 just_in_time2([A|B]) ->

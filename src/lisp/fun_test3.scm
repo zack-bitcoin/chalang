@@ -12,13 +12,17 @@
 
 					;using an anonymous function.
 ;(apply (lambda (b c a) (+ a (- b c)))
+					;       (7 3 2))
+;8 8 8
+
+;(apply (lambda (a b c) (+ b (- a c)))
 ;       (7 3 2))
-;(apply (lambda (b c a) (+ a (- b c)))
-;       (7 3 2))
-;(apply (lambda (c b a) (+ a (- b c)))
-;       (() 7 3 2))
-(apply (lambda (c b a) (+ (+ 0 a) (- b c)))
-       (0 3 2))
+
+;(apply (lambda (a b c) (+ a (- b c)))
+;       (() 7 2 3))
+;(apply (lambda (c b) (- b c))
+;       (() 3 2))
+1
 
 ;(2 4 3
 ;(= 1 (apply (lambda (x y z) (- (+ y x) (- z x))) (0 4 3)))

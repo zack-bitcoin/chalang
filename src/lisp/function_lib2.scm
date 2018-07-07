@@ -34,9 +34,9 @@
        ;what order should we put the Vars in the stack so that we can process Code
        (flatten (_order_needed2 Vars Code)))
 (macro foo ()
-       (= (x y y x)
-	  (_order_needed (x y)
-			  '(+ (+ x y) (* y x)))))
+       (= (a b c)
+	  (_order_needed (c b a)
+			  '(+ a (- b c)))))
 ;(foo)
 (macro last_time2 (A)
        (cond (((= A ()) 1)
@@ -82,16 +82,16 @@
 	      (true '(pickn N)))))
 (macro pick_test ()
        '(() 1 2 3 4 5 6 7
-	   ,(optimized_pick 0)))
+	   ,(optimized_pick 4)))
 ;       '(pickn 4 3 2 1))
 ;(pick_test)
-(macro optimized_tuck (N)
-       (cond (((= N 0) ())
-	      ((= N 1) 'swap)
-	      ((= N 2) 'tuck)
-	      (true '(tuckn N)))))
-(macro tuck_test ()
-       '(nop 1 2 3 4 5 6 7 ,(optimized_tuck 3)))
+;(macro optimized_tuck (N)
+;       (cond (((= N 0) ())
+;	      ((= N 1) 'swap)
+;	      ((= N 2) 'tuck)
+;	      (true '(tuckn N)))))
+;(macro tuck_test ()
+;       '(nop 1 2 3 4 5 6 7 ,(optimized_tuck 3)))
 	     ;(tuckn 4 3 2 1))
 ;(tuck_test)
 (macro remove_nth (N L)
@@ -128,7 +128,7 @@
 		      >r
 		      ,(to_r_times (- N 1)))))))
 (macro setup_inputs (Have Goal)
-       (cond (((= Have Goal) (to_r_times (_length Goal)))
+       (cond (((= Have (reverse Goal)) (to_r_times (_length Goal)))
 	      (true
 	       (setup_inputs2 (depth (car Goal) Have)
 			      Have (car Goal) (cdr Goal))))))
@@ -140,10 +140,22 @@
 ;(setup_inputs NewHave Goal)
 (macro setup_test (Vars Code)
 ;(setup_inputs (x y) (x y y x)))
-       (setup_inputs (reverse Vars) (reverse (_order_needed Vars Code))))
+       (setup_inputs Vars (reverse (_order_needed Vars Code))))
        ;(setup_inputs Vars (_order_needed Vars Code)))
-;4 3 2
+;8 7 6 5 4 3
 ;(setup_test (a b x) '(+ (a (+ b a)) (+ x x)))
+;(setup_test (a b c) '(+ a (+ b c)))
+;(setup_test (a b c) '(+ (- c b) a))
+;(setup_inputs (a b) (b a))
+;(setup_inputs (a b) (a b))
+;(setup_inputs (a b) (a b))
+;8 9 10
+;(setup_inputs (a b) (b a))
+;(setup_inputs2 1 (a b) a (b));good
+;(setup_inputs2 0 (a b) b (a))
+;8
+;(depth a (a b c c))
+;(depth a (b a c c))
 (macro in_list (X L)
        (cond (((= L ()) 0)
 	      ((= X (car L)) 1)
@@ -163,6 +175,7 @@
        '(()
 	 start_fun
 	 ,(setup_inputs Vars (reverse (_order_needed Vars 'Code)))
+;	 ,(setup_inputs Vars (_order_needed Vars 'Code))
 	 ,(from_r_var Vars 'Code);for every var in code, replace the var with r>
 	 end_fun))
 
@@ -179,8 +192,6 @@
        (cons call
 	     (reverse (cons Function
 			    (reverse (cons () Variables))))))
-   ;    '(() 'Variables Function call))
-       ;'(() Variables Function call))
 (macro square () (lambda (x y) (- (+ y y) (+ x x))))
 (macro lambda_test1 ()
        (apply (square) (3 4)))
