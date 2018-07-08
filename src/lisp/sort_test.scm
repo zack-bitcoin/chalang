@@ -1,4 +1,4 @@
-;(import (eqs_lib.scm function_lib.scm cond_lib.scm let_lib.scm tree_lib.scm))
+;(import (eqs_lib.scm function_lib2.scm cond_lib.scm let_lib.scm tree_lib.scm))
 (import (sort.scm))
 
 

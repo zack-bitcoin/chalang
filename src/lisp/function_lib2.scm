@@ -1,5 +1,8 @@
 (import (flatten.scm))
 ;this is a library for making functions at run-time.
+
+;This library is very efficient, but functions made with this library cannot have a cond statement.
+
 ;functions made with this library can have any number of inputs
 ;this version is does not use variables. Function inputs are all stored in the stack and r-stack.
 ; so a function like `(define square_plus (x y) (+ (* y y) x)` gets expanded to `swap >r dup >r >r r> r> * r> +`
@@ -190,6 +193,10 @@
 (macro define (Name Vars Code)
        '(! ,(lambda Vars Code) Name))
 (macro apply (Function Variables)
+       (cons call
+	     (reverse (cons Function
+			    (reverse (cons () Variables))))))
+(macro execute (Function Variables)
        (cons call
 	     (reverse (cons Function
 			    (reverse (cons () Variables))))))

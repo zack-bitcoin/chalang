@@ -23,7 +23,7 @@
 ;if there is nothing left to try, then fail.
 ;if the next thing to try doesn't fail, then return that.
 
-(import (eqs_lib.scm let_lib.scm function_lib.scm cond_lib.scm tree_lib.scm))
+(import (eqs_lib.scm let_lib.scm function_lib2.scm cond_lib.scm tree_lib.scm))
 
 (macro empty () '(cons 4294967295 nil));biggest number we can store in 4 bytes.
 (macro fail () '(cons 4294967294 nil));second biggest.

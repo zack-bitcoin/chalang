@@ -7,9 +7,8 @@
 ; time a function is called, and one thing is
 					; removed from r every time a function returns.
 
-; functions from this library can only have up to 2 inputs.
 
-(>r 500) ;start storing inputs to functions at 500, that way 1-499 are available for smart contract developers.
+(>r 50) ;start storing inputs to functions at 500, that way 1-499 are available for smart contract developers.
 
 (macro _pointer (X)
        ; look up a pointer to the xth variable being stored for the current function being processed
@@ -23,6 +22,22 @@
 			  ,(_load_inputs (cdr V) 1)))
 	      (true '(nop ,(_pointer N) !
 			  ,(_load_inputs (cdr V) (+ N 1)))))))
+;1 2 3
+;(_load_inputs (a) 0)
+(macro _old_variable* (Var Code N)
+       ;Replace each Var in Code with the input to the function
+       (cond (((= Code ()) ())
+	      (true
+	       (cond
+		(((is_list (car Code))
+		  (cons (_variable* Var (car Code) N)
+			(_variable* Var (cdr Code) N)))
+		 ((= (car Code) Var)
+		  (cons '(@ (_pointer N))
+			(_variable* Var (cdr Code) N)))
+		 (true
+		  (cons (car Code)
+			(_variable* Var (cdr Code) N)))))))))
 (macro _variable* (Var Code N)
        ;Replace each Var in Code with the input to the function
        (cond (((= Code ()) ())
@@ -43,7 +58,19 @@
 	      (true (_variables
 		     (cdr Vars)
 		     (_variable* (car Vars) Code N)
-		     ,(+ N 1))))))
+		     (+ N 1))))))
+;(import (eqs_lib.scm))
+;2 3
+;(_load_inputs (a b) 0)
+;(macro test ()
+;       (=
+;       '((+ 2 (@ r@)))
+;       (_variable* a '(+ 2 a) 0))
+;(test)
+;(_variable* a (_variable* b '(a b) 0) 1)
+;(_variables (b a) '(cons a b) 0)
+;(_variable* a '(+ a 1) 0)
+;0
 (macro _call_stack* (Many Code)
        ; functions need to be able to call other functions.
        ; if function A calls function B, then when our
@@ -75,10 +102,11 @@
        '(nop 
 	     start_fun
 	     ,(_load_inputs Vars 0)
-	     (_call_stack* ,(_length Vars)
-			   ,(_variables (reverse Vars)
-					(Code)
-					0))
+	     (_call_stack*
+	      ,(_length Vars)
+	      ,(_variables (reverse Vars)
+			   '(Code)
+			   0))
 	     end_fun))
 ;define stores the 32-byte function id into a variable
 ;be careful with define, if a different function gets stored into the variable, then you could end up calling different code than you had expected. Make sure that it is impossible for an attacker to edit the variable after the function is defined.
@@ -90,6 +118,14 @@
        (cons call
 	     (reverse (cons Function
 			    (reverse Variables)))))
+;3 4 5 6 7
+;(lambda (x y) (+ 1 (+ x y)))
+;(lambda (x y z) (+ x (+ z y )))
+;(_load_inputs (x y z) 0)
+;(_length (x y z))
+;(_variables (z y x) '(+ z (+ y x)) 0)
+					;0
+;1
 
 ;(1 2 3)
 ;(cons 1 (cons 2 (cons 3 ())))

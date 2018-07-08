@@ -2,8 +2,8 @@
 ; case.scm tests this out.
 
 (macro cond (X)
-       (cond (((= X ()) '(nop))
-	      (true '(nop
+       (cond (((= X ()) '(()))
+	      (true '(()
 		      ,(car (car X))
 		      if
 		      ,(car (cdr (car X)))

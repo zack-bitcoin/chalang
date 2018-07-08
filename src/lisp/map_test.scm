@@ -17,7 +17,6 @@
 
 and
 
-; this third map is being done at compile time again.
 ; but this time we use `define` to make the function.
 ; so that means that the 32-byte function id is being stored in a variable.
 ;e can read the variable with `@`

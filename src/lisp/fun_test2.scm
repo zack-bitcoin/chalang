@@ -1,4 +1,4 @@
-(import (eqs_lib.scm let_lib.scm function_lib.scm tree_lib.scm))
+(import (eqs_lib.scm let_lib.scm function_lib2.scm tree_lib.scm))
 
 
 % This is how you write the (32-byte binary pointer of the function definition) every time you want to call the function.

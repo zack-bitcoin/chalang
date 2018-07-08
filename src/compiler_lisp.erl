@@ -10,7 +10,9 @@
 -define(fun_end, 111).
 test() ->
     Files = [ 
+	%      "function_lib",
 	      "fun_test4",
+	      "fun_test",
 	      "macro_basics",
 	      "flatten_test",
 	      "fun_test3",
@@ -23,7 +25,7 @@ test() ->
 	      "primes", 
 	      "function", 
 	      "let", "gcf",
-	      "fun_test", "map_test",
+	      "map_test",
 	      "sort_test"
 	    ],
     test2(Files).
@@ -111,6 +113,20 @@ just_in_time2([<<"dup">>|[<<"drop">>|R]]) ->
     just_in_time2(R);
 just_in_time2([<<">r">>|[<<"r>">>|R]]) -> 
     just_in_time2(R);
+just_in_time2([<<"nop">>|R]) -> 
+    just_in_time2(R);
+just_in_time2([N|[M|[<<"+">>|R]]]) 
+  when ((is_integer(N)) and (is_integer(M))) ->
+    just_in_time2([(N + M)|R]);
+just_in_time2([N|[M|[<<"-">>|R]]]) 
+  when ((is_integer(N)) and (is_integer(M))) ->
+    just_in_time2([(N - M)|R]);
+just_in_time2([N|[M|[<<"*">>|R]]]) 
+  when ((is_integer(N)) and (is_integer(M))) ->
+    just_in_time2([(N * M)|R]);
+just_in_time2([N|[M|[<<"/">>|R]]]) 
+  when ((is_integer(N)) and (is_integer(M))) ->
+    just_in_time2([(N div M)|R]);
 %just_in_time2([<<">r">>|R]) ->
 %    R2 = r_collapse(R, 0, []),
 %    io:fwrite(R2),
@@ -322,6 +338,9 @@ lisp([<<"and">>, A, B], F) ->
 lisp([<<"not">>, A], F) ->
     {A2, _} = macros(A, F),
     not(bih(A2, F));
+lisp([<<"print">>|R], F) ->
+    io:fwrite(packer:pack(R)),
+    lisp(R, F);
 %lisp([<<"nil">>], F) ->
 %    [];
 lisp(X, _) -> X.
