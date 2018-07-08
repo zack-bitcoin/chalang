@@ -220,10 +220,10 @@ run2([<<Command:8, Script/binary>>|T], D)
   when ((Command == ?bool_and) or 
         (Command == ?bool_or) or 
         (Command == ?bool_xor)) ->
-    io:fwrite("run2 bool and/or/xor\n"),
+    %io:fwrite("run2 bool and/or/xor\n"),
     case D#d.stack of
         [<<A:32>>|[<<B:32>>|R]] ->
-            io:fwrite("bool combine\n"),
+            %io:fwrite("bool combine\n"),
             C = bool2(Command, A, B),
             D2 = D#d{stack = [<<C:32>>|R],
                      op_gas = D#d.op_gas - 1,

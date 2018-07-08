@@ -1,5 +1,6 @@
 (import (flatten.scm))
 ;this is a library for making functions at run-time.
+;functions made with this library can have any number of inputs
 ;this version is does not use variables. Function inputs are all stored in the stack and r-stack.
 ; so a function like `(define square_plus (x y) (+ (* y y) x)` gets expanded to `swap >r dup >r >r r> r> * r> +`
 

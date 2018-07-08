@@ -21,7 +21,14 @@ and
 (=
  (execute (@ Fun_1) (5))
  30)
-
 and
 
+(define SS (x) (* x x))
+;(define FF (A B C) (+ A (+ C B)))
+;(macro fun ()
+;       (lambda (x y z)
+;	 (y x z z z)))
+;(=
+ ;(execute (@ fun) (5 4 3))
+; (4 5 3 3 3))
 

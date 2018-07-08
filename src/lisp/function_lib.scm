@@ -5,7 +5,9 @@
 ; processing. So the r-stack is used as a function
 ; call stack, one additional thing is added to r every
 ; time a function is called, and one thing is
-; removed from r every time a function returns.
+					; removed from r every time a function returns.
+
+; functions from this library can only have up to 2 inputs.
 
 (>r 500) ;start storing inputs to functions at 500, that way 1-499 are available for smart contract developers.
 

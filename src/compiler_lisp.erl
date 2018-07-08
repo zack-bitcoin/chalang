@@ -62,7 +62,7 @@ doit(A) ->
     Tree35 = rpn(Tree3),%change to reverse polish notation.
     List = flatten(Tree35),
     List1 = just_in_time(List),
-    List2 = variables(List, {dict:new(), 1}),
+    List2 = variables(List1, {dict:new(), 1}),
     Funcs = dict:new(),
     List4 = to_ops(List2, Funcs),
     {List5, _} = lambdas(List4, []),
@@ -72,6 +72,25 @@ doit(A) ->
     {{%Tree1, Tree3, Tree35, 
       List1%, List4, List5
       }, VM}.
+r_collapse([], _, _) ->
+    false;
+%%    io:fwrite("unbalanced >r and r>\n"),
+%    ok;
+r_collapse([<<">r">>|T], _, A) ->
+    false;
+r_collapse([I|T], N, A) when is_integer(I) ->
+    r_collapse(T, N+1, A ++ [I]);
+r_collapse([<<"r>">>|T], 0, A) ->
+    A ++ T;%success
+r_collapse([<<"r>">>|T], _, A) ->
+    false;
+r_collapse(_, N, _) when (N < 0) -> false;
+r_collapse([Op|T], N, A) ->
+    {B, _, Take, Give} = is_op(Op),
+    if
+	B -> r_collapse(T, N+Give-Take, A++[Op]);
+	true -> false
+    end.
 just_in_time(X) ->
     X2 = just_in_time2(X),
     if 
@@ -79,8 +98,9 @@ just_in_time(X) ->
 	true -> just_in_time(X2)
     end.
 %for every >r we should look ahead in the code to see if we actually need to use the r stack. maybe we can leave this variable on the main stack until it is needed.
-just_in_time2([<<"dup">>|[<<"rot">>|[<<"dup">>|R]]]) -> 
-    just_in_time2([<<"2dup">>|R]);
+
+just_in_time2([<<"dup">>|[<<">r">>|[<<"dup">>|[<<"r>">>|R]]]]) -> 
+    [<<"dup">>|[<<"dup">>|just_in_time2(R)]];
 just_in_time2([<<"rot">>|[<<"tuck">>|R]]) -> 
     just_in_time2(R);
 just_in_time2([<<"tuck">>|[<<"rot">>|R]]) -> 
@@ -91,6 +111,13 @@ just_in_time2([<<"dup">>|[<<"drop">>|R]]) ->
     just_in_time2(R);
 just_in_time2([<<">r">>|[<<"r>">>|R]]) -> 
     just_in_time2(R);
+%just_in_time2([<<">r">>|R]) ->
+%    R2 = r_collapse(R, 0, []),
+%    io:fwrite(R2),
+%    case R2 of
+%	false -> [<<">r">>|just_in_time2(R)];
+%	_ -> just_in_time2(R2)
+%    end;
 just_in_time2([A|B]) ->
     [A|just_in_time2(B)];
 just_in_time2(A) -> A.
@@ -499,7 +526,6 @@ is_op(<<"++">>) -> {true, <<134>>, 2, 1};
 is_op(<<"split">>) -> {true, <<135>>, 2, 2};
 is_op(<<"reverse">>) -> {true, <<136>>, 1, 1};
 is_op(<<"is_list">>) -> {true, <<137, 22, 20>>, 1, 2};
-
 is_op(_) -> {false, not_an_op, 0, 0}.
 
 to_lists(Words) ->
