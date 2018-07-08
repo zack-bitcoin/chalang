@@ -1,7 +1,7 @@
 (import (flatten.scm))
 ;this is a library for making functions at run-time.
 
-;This library is very efficient, but functions made with this library cannot have a cond statement.
+;This library is very efficient, but functions made with this library cannot have a deep cond statment. variables are allowed in the first half of the first pair of inputs to the cond.
 
 ;functions made with this library can have any number of inputs
 ;this version is does not use variables. Function inputs are all stored in the stack and r-stack.

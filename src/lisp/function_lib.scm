@@ -24,20 +24,6 @@
 			  ,(_load_inputs (cdr V) (+ N 1)))))))
 ;1 2 3
 ;(_load_inputs (a) 0)
-(macro _old_variable* (Var Code N)
-       ;Replace each Var in Code with the input to the function
-       (cond (((= Code ()) ())
-	      (true
-	       (cond
-		(((is_list (car Code))
-		  (cons (_variable* Var (car Code) N)
-			(_variable* Var (cdr Code) N)))
-		 ((= (car Code) Var)
-		  (cons '(@ (_pointer N))
-			(_variable* Var (cdr Code) N)))
-		 (true
-		  (cons (car Code)
-			(_variable* Var (cdr Code) N)))))))))
 (macro _variable* (Var Code N)
        ;Replace each Var in Code with the input to the function
        (cond (((= Code ()) ())

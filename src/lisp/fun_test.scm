@@ -24,6 +24,7 @@ and
 
 (define SS (x) (* x x))
 (define FF (A B C) (+ A (+ C B)))
+;(execute (@ FF) (4 5 6))
 ;(define map (F X)
 ;  (cond (((= nil X) 7);nil)
 ;	 (true (cons

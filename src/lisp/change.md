@@ -1,2 +1,0 @@
-map.scm
-sort.scm

@@ -1,6 +1,10 @@
 compile-time and run-time syntax inconsistencies:
 nil ()
 
+We now have 2 ways of making functions, one is faster, and the other supports cond.
+We should make a master macro that checks whether a function will need cond, and decides which type of function to make.
+
+
 convert map.scm and sort.scm to use the new functions.
 find out how define has changed that is making it non-compatible.
 

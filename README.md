@@ -1,3 +1,18 @@
+Chalang development has moved here: https://github.com/zack-bitcoin/chalang-github-workaround
+This happened because Github customer service failed us.
+
+
+
+
+
+
+
+
+
+
+
+
+
 It is built for blockchain smart contracts.
 
 This is a language make for state channels.
