@@ -23,6 +23,7 @@
   (cond (((> 1 2) a)
 	 (true b))))
 ;(apply (@ func) (5 3))
+;0
 1
     
 

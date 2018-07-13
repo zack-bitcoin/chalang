@@ -3,6 +3,8 @@
 
 (macro cond (X)
        (cond (((= X ()) '(()))
+	      ((= (car (car X)) true)
+	       (cdr (car X)))
 	      (true '(()
 		      ,(car (car X))
 		      if

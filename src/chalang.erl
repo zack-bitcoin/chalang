@@ -233,7 +233,7 @@ run2([<<Command:8, Script/binary>>|T], D)
             io:fwrite("can only bool_and two 4 byte values\n"),
             {error, "can only bool_and two 4 byte values"};
         _ -> 
-            io:fwrite("stack undeflow\n"),
+            io:fwrite("stack underflow\n"),
             {error, "stack underflow"}
     end;
     
@@ -266,7 +266,7 @@ run4(?drop, D) ->
 	    D#d{stack = T,
 		ram_current = D#d.ram_current - memory(H) - 2,%drop leaves, and the list link is gone
 		op_gas = D#d.op_gas - 1};
-	_ -> {error, "stack underflow"}
+	_ -> {error, "drop stack underflow"}
     end;
 run4(?dup, D) ->
     case D#d.stack of
@@ -274,7 +274,7 @@ run4(?dup, D) ->
             D#d{stack = [H|[H|T]],
                 ram_current = D#d.ram_current + memory(H),
                 op_gas = D#d.op_gas - 1};
-        _ -> {error, "stack underflow"}
+        _ -> {error, "dup stack underflow"}
     end;
 run4(?swap, D) ->
     case D#d.stack of
@@ -282,7 +282,7 @@ run4(?swap, D) ->
             Stack2 = [B|[A|C]],
             D#d{stack = Stack2,
                 op_gas = D#d.op_gas - 1};
-        _ -> {error, "stack underflow"}
+        _ -> {error, "swap stack underflow"}
     end;
 run4(?tuck, D) ->
     case D#d.stack of
@@ -290,7 +290,7 @@ run4(?tuck, D) ->
             Stack2 = [B|[C|[A|E]]],
             D#d{stack = Stack2,
                 op_gas = D#d.op_gas - 1};
-        _ -> {error, "stack underflow"}
+        _ -> {error, "tuck stack underflow"}
     end;
 run4(?rot, D) ->
     case D#d.stack of
@@ -298,7 +298,7 @@ run4(?rot, D) ->
             Stack2 = [C|[A|[B|E]]],
             D#d{stack = Stack2,
                 op_gas = D#d.op_gas - 1};
-        _ -> {error, "stack underflow"}
+        _ -> {error, "rot stack underflow"}
     end;
 run4(?ddup, D) ->
     case D#d.stack of 
@@ -308,7 +308,7 @@ run4(?ddup, D) ->
                 ram_current = D#d.ram_current +
                 memory(A) + memory(B),
                 op_gas = D#d.op_gas - 1};
-        _ -> {error, "stack underflow"}
+        _ -> {error, "ddup stack underflow"}
     end;
 run4(?tuckn, D) ->
     case D#d.stack of
@@ -319,7 +319,7 @@ run4(?tuckn, D) ->
             Stack2 = H ++ [X|T],
             D#d{stack = Stack2,
                 op_gas = D#d.op_gas - 1};
-        _ -> {error, "stack underflow"}
+        _ -> {error, "tuckn stack underflow"}
     end;
 run4(?pickn, D) ->
     case D#d.stack of
@@ -333,7 +333,7 @@ run4(?pickn, D) ->
                         op_gas = D#d.op_gas - 1};
                 _ -> {error, "stack underflow"}
             end;
-        _ -> {error, "stack underflow"}
+        _ -> {error, "pickn stack underflow"}
     end;
 run4(?to_r, D) ->
     case D#d.stack of
@@ -341,7 +341,7 @@ run4(?to_r, D) ->
             D#d{stack = T,
                 op_gas = D#d.op_gas - 1,
                 alt = [H|D#d.alt]};
-        _ -> {error, "stack underflow"}
+        _ -> {error, "to_r stack underflow"}
     end;
 run4(?from_r, D) ->
     case D#d.alt of
@@ -363,7 +363,7 @@ run4(?hash, D) ->
         [H|T] ->
             D#d{stack = [hash:doit(H, D#d.hash_size)|T],
                 op_gas = D#d.op_gas - 20};
-        _ -> {error, "stack underflow"}
+        _ -> {error, "hash stack underflow"}
     end;
 run4(?verify_sig, D) ->
     case D#d.stack of
@@ -375,7 +375,7 @@ run4(?verify_sig, D) ->
                                   end,
             D#d{stack = [B2|T],
                 op_gas = D#d.op_gas - 20};
-        _ -> {error, "stack underflow"}
+        _ -> {error, "verify_sig stack underflow"}
     end;
 run4(X, D) when (X >= ?add) and (X < ?eq) ->
     case D#d.stack of
@@ -383,7 +383,7 @@ run4(X, D) when (X >= ?add) and (X < ?eq) ->
             D#d{stack = [arithmetic_chalang:doit(X, A, B)|C],
                 op_gas = D#d.op_gas - 1,
                 ram_current = D#d.ram_current - 2};
-        _ -> {error, "stack underflow"}
+        _ -> {error, "arithmetic stack underflow"}
     end;
 run4(?eq, D) ->
     case D#d.stack of
@@ -396,7 +396,7 @@ run4(?eq, D) ->
             D#d{stack = S, 
                 op_gas = D#d.op_gas - 1,
                 ram_current = D#d.ram_current + 1};
-        _ -> {error, "stack underflow"}
+        _ -> {error, "eq stack underflow"}
     end;
 run4(?bool_flip, D) ->
     D2 = D#d{op_gas = D#d.op_gas - 1},
@@ -404,7 +404,7 @@ run4(?bool_flip, D) ->
         [<<0:32>>|T] -> D2#d{stack = [<<1:32>>|T]};
         [<<_:32>>|T] -> D2#d{stack = [<<0:32>>|T]};
         [X|T] -> {error, "can only bool flip a 4 byte value"};
-        _ -> {error, "stack underflow"}
+        _ -> {error, "bool_flip stack underflow"}
     end;
 run4(?bin_and, D) ->
     case D#d.stack of
@@ -418,7 +418,7 @@ run4(?bin_and, D) ->
             D#d{op_gas = D#d.op_gas - E,
                 stack = [<<F:E>>|T],
                 ram_current = D#d.ram_current - min(B, D) - 1};
-        _ -> {error, "stack underflow"}
+        _ -> {error, "bin_and stack underflow"}
     end;
 run4(?bin_or, D) ->
     case D#d.stack of
@@ -432,7 +432,7 @@ run4(?bin_or, D) ->
             D#d{op_gas = D#d.op_gas - E,
                 stack = [<<F:E>>|T],
                 ram_current = D#d.ram_current - min(B, D) - 1};
-        _ -> {error, "stack underflow"}
+        _ -> {error, "bin_or stack underflow"}
     end;
 run4(?bin_xor, Data) ->
     case Data#d.stack of
@@ -446,7 +446,7 @@ run4(?bin_xor, Data) ->
             Data#d{op_gas = Data#d.op_gas - E,
                    stack = [<<F:E>>|T],
                    ram_current = Data#d.ram_current - min(B, D) - 1};
-        _ -> {error, "stack underflow"}
+        _ -> {error, "bin_xor stack underflow"}
     end;
 run4(?stack_size, D) ->
     S = D#d.stack,
@@ -486,7 +486,7 @@ run4(?set, D) ->
                         stack = T,
                         vars = Vars}
             end;
-        _ -> {error, "stack underflow"}
+        _ -> {error, "set stack underflow"}
     end;
 run4(?fetch, D) ->
     case D#d.stack of
@@ -503,7 +503,7 @@ run4(?fetch, D) ->
                         stack = [Value|T],
                         ram_current = D#d.ram_current + memory(Value) + 1}
             end;
-        _ -> {error, "stack underflow"}
+        _ -> {error, "fetch stack underflow"}
     end;
 run4(?cons, D) -> % ( A [B] -- [A, B] )
     case D#d.stack of
@@ -511,7 +511,7 @@ run4(?cons, D) -> % ( A [B] -- [A, B] )
             D#d{op_gas = D#d.op_gas - 1,
                 stack = [[B|A]|T],
                 ram_current = D#d.ram_current + 1};
-        _ -> {error, "stack underflow"}
+        _ -> {error, "cons stack underflow"}
     end;
 run4(?car, D) -> % ( [A, B] -- A [B] )
     case D#d.stack of
@@ -519,7 +519,7 @@ run4(?car, D) -> % ( [A, B] -- A [B] )
             D#d{op_gas = D#d.op_gas - 1,
                 stack = [A|[B|T]],
                 ram_current = D#d.ram_current - 1};
-        _ -> {error, "stack undeflow"}
+        _ -> {error, "car stack underflow"}
     end;
 run4(?nil, D) ->
     D#d{op_gas = D#d.op_gas - 1,
@@ -537,7 +537,7 @@ run4(?append, D) ->
             D#d{op_gas = D#d.op_gas - 1,
                 stack = [C|T],
                 ram_current = D#d.ram_current + 1};
-        _ -> {error, "stack underflow"}
+        _ -> {error, "append stack underflow"}
     end;
 run4(?split, D) ->
     case D#d.stack of
@@ -552,7 +552,7 @@ run4(?split, D) ->
                 true -> {error, "can only split binaries"}
             end;
         [_|[_|_]] -> {error, "need to use a 4-byte integer to say where to split the binary"};
-        _ -> {error, "stack underflow"}
+        _ -> {error, "split stack underflow"}
     end;
 run4(?reverse, D) ->
     case D#d.stack of
@@ -563,7 +563,7 @@ run4(?reverse, D) ->
                         stack = [lists:reverse(H)|T]};
                 true -> {error, "can only reverse a list"}
             end;
-        _ -> {error, "stack underflow"}
+        _ -> {error, "reverse stack underflow"}
     end;
 run4(?is_list, D) ->
     case D#d.stack of
@@ -575,7 +575,7 @@ run4(?is_list, D) ->
             D#d{op_gas = D#d.op_gas - 1,
                 stack = [G|[H|T]],
                 ram_current = D#d.ram_current - 1};
-        _ -> {error, "stack underflow"}
+        _ -> {error, "is_list stack underflow"}
     end;
 run4(?nop, D) -> D;
 run4(?fail, D) -> 

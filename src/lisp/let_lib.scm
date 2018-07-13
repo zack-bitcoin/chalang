@@ -6,7 +6,7 @@
 		 (let2 (car pairs) code))))))
 (macro let2 (pair code)
        (let3 (car pair)
-	      (car (cdr pair))
+	     (car (cdr pair))
 	     code))
 (macro let3 (ID Value Code)
        (cond (((= () Code) ())

@@ -6,3 +6,8 @@
        (= z (pass_var X)))
 (test z)
 
+(macro maker_test ()
+       (macro inner (x) (+ x x)))
+(maker_test)
+;(inner 2)
+

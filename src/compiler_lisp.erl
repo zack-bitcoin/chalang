@@ -9,7 +9,9 @@
 -define(define, 110).
 -define(fun_end, 111).
 test() ->
-    Files = [ 
+    Files = [ "roshambo",
+	      "let",
+	      "dice",
 	%      "function_lib",
 	      "fun_test4",
 	      "fun_test",
@@ -24,7 +26,7 @@ test() ->
 	      "first_macro", "square_each_macro", 
 	      "primes", 
 	      "function", 
-	      "let", "gcf",
+	      "gcf",
 	      "map_test",
 	      "sort_test"
 	    ],
@@ -61,6 +63,7 @@ doit(A) ->
     Tree2 = integers(Tree1),
     {Tree3, _} = macros(Tree2, dict:new()),
     io:fwrite("rpn\n"),
+    %io:fwrite(Tree3),
     Tree35 = rpn(Tree3),%change to reverse polish notation.
     List = flatten(Tree35),
     List1 = just_in_time(List),
@@ -72,7 +75,7 @@ doit(A) ->
     Gas = 10000,
     VM = chalang:vm(List5, Gas*100, Gas*10, Gas, Gas, []),
     {{%Tree1, Tree3, Tree35, 
-      List1%, List4, List5
+      List, List1%, List4, List5
       }, VM}.
 r_collapse([], _, _) ->
     false;
@@ -190,22 +193,22 @@ macros([H|T], D) ->
 	    {[H|T2], D2};
 	{ok, {Vars, Code}} ->
 	    {T3, D2} = macros(T, D),
-	    T2 = apply_macro(Code, Vars, T3, D2),
+	    T2 = apply_macro(H, Code, Vars, T3, D2),
 	    %T2 = apply_macro(Code, Vars, T, D),
 	    macros(T2, D2)
     end;
 macros(X, D) -> {X, D}.
    
-apply_macro(Code, [], [], D) ->
+apply_macro(_, Code, [], [], D) ->
     lisp(Code, D);
-apply_macro(Code, [V|Vars], [H|T], D) ->%D is a dict of the defined macros.
+apply_macro(Name, Code, [V|Vars], [H|T], D) ->%D is a dict of the defined macros.
     %V is the name given in the definition of the macro.
     %H is the name given when calling the macro in the code.
     Code2 = replace(Code, V, H),
-    apply_macro(Code2, Vars, T, D);
-apply_macro(C,_,_,_) ->
-    io:fwrite("\nwrong number of inputs to function "),
-    io:fwrite(C),
+    apply_macro(Name, Code2, Vars, T, D);
+apply_macro(Name,_,_,_,_) ->
+    io:fwrite("\nwrong number of inputs to macro "),
+    io:fwrite(Name),
     io:fwrite("\n"),
     C = -1.
 replace([], _, _) -> [];
@@ -236,7 +239,7 @@ lisp([<<"execute">>,[<<"quote">>, F],A], D) ->
 	{ok, {Vars, Code}} ->
 	    {T3, D2} = macros(A, D),
 	    T4 = lisp(T3, D2),
-	    T2 = apply_macro(Code, Vars, T4, D2),
+	    T2 = apply_macro(F, Code, Vars, T4, D2),
 	    lisp(T2, D2)
     end;
 lisp([<<"execute">>,F,A], D) ->
