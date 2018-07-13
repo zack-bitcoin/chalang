@@ -31,12 +31,6 @@ int_arithmetic(?lt, A, B) -> b2i(B < A);
 int_arithmetic(?pow, A, B) -> pow(B, A); 
 int_arithmetic(?remainder, A, B) -> 
     B rem A.
-doit(?eq, A, B) ->
-    C = if
-	    A == B -> 1;
-	    true -> 0
-	end,
-    <<C:?int_bits>>;
 doit(?remainder, <<A:?int_bits>>, B) ->
     C = size(B)*8,
     <<D:C>> = B,
@@ -44,7 +38,9 @@ doit(?remainder, <<A:?int_bits>>, B) ->
     <<E:?int_bits>>;
 doit(X, <<A:?int_bits>>, <<B:?int_bits>>) ->
     C = int_arithmetic(X, A, B),
-    <<C:?int_bits>>.
+    <<C:?int_bits>>;
+doit(_, _, _) ->
+    {error, "bad inputs to an arithmetic function"}.
 %doit(X, <<A:?int_bits>>, <<B:?int_bits, C:?int_bits>>) ->
 %    {f, E, D} = frac_arithmetic(X, {f, A, 1}, {f, B, C}),
 %    <<E:?int_bits, D:?int_bits>>;

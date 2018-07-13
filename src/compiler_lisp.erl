@@ -9,10 +9,9 @@
 -define(define, 110).
 -define(fun_end, 111).
 test() ->
-    Files = [ "roshambo",
+    Files = [ %"roshambo",
 	      "let",
 	      "dice",
-	%      "function_lib",
 	      "fun_test4",
 	      "fun_test",
 	      "macro_basics",

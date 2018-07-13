@@ -86,7 +86,7 @@ vm(Script, OpGas, RamGas, Funs, Vars, State) ->
 	{error, R} -> io:fwrite("chalang error "),
 		      io:fwrite(R),
 		      io:fwrite("\n"),
-		      1=2;
+		      [];
 	_ ->
 	    X#d.stack
     end.
@@ -129,13 +129,13 @@ run2(_, {error, S}) ->
     {error, S};
 run2(_, D) when D#d.op_gas < 0 ->
     io:fwrite("out of time"),
-    D = ok,
+    %D = ok,
     {error, "out of time"};
 run2(_, D) when D#d.ram_current > D#d.ram_limit ->
     io:fwrite("Out of space. Limit was: "),
     io:fwrite(integer_to_list(D#d.ram_limit)),
     io:fwrite("\n"),
-    D = ok,
+    %D = ok,
     {error, "out of space"};
 run2(A, D) when D#d.ram_current > D#d.ram_most ->
     run2(A, D#d{ram_most = D#d.ram_current});
@@ -380,9 +380,14 @@ run4(?verify_sig, D) ->
 run4(X, D) when (X >= ?add) and (X < ?eq) ->
     case D#d.stack of
         [A|[B|C]] ->
-            D#d{stack = [arithmetic_chalang:doit(X, A, B)|C],
-                op_gas = D#d.op_gas - 1,
-                ram_current = D#d.ram_current - 2};
+	    AR = arithmetic_chalang:doit(X, A, B),
+	    case AR of
+		{error, _} -> AR;
+		_ ->
+		    D#d{stack = [AR|C],
+			op_gas = D#d.op_gas - 1,
+			ram_current = D#d.ram_current - 2}
+	    end;
         _ -> {error, "arithmetic stack underflow"}
     end;
 run4(?eq, D) ->
@@ -409,44 +414,59 @@ run4(?bool_flip, D) ->
 run4(?bin_and, D) ->
     case D#d.stack of
         [G|[H|T]] ->
-            B = 8 * size(G),
-            D = 8 * size(H),
-            <<A:B>> = G,
-            <<C:D>> = H,
-            E = max(B, D),
-            F = A band C,
-            D#d{op_gas = D#d.op_gas - E,
-                stack = [<<F:E>>|T],
-                ram_current = D#d.ram_current - min(B, D) - 1};
+	    if
+		(is_binary(G) and is_binary(H)) ->
+		    B = 8 * size(G),
+		    D = 8 * size(H),
+		    <<A:B>> = G,
+		    <<C:D>> = H,
+		    E = max(B, D),
+		    F = A band C,
+		    D#d{op_gas = D#d.op_gas - E,
+			stack = [<<F:E>>|T],
+			ram_current = D#d.ram_current - min(B, D) - 1};
+		true ->
+		    {error, "can only bin_and binaries"}
+	    end;
         _ -> {error, "bin_and stack underflow"}
     end;
 run4(?bin_or, D) ->
     case D#d.stack of
         [G|[H|T]] ->
-            B = 8 * size(G),
-            D = 8 * size(H),
-            <<A:B>> = G,
-            <<C:D>> = H,
-            E = max(B, D),
-            F = A bor C,
-            D#d{op_gas = D#d.op_gas - E,
-                stack = [<<F:E>>|T],
-                ram_current = D#d.ram_current - min(B, D) - 1};
+	    if
+		(is_binary(G) and is_binary(H)) ->
+		    B = 8 * size(G),
+		    D = 8 * size(H),
+		    <<A:B>> = G,
+		    <<C:D>> = H,
+		    E = max(B, D),
+		    F = A bor C,
+		    D#d{op_gas = D#d.op_gas - E,
+			stack = [<<F:E>>|T],
+			ram_current = D#d.ram_current - min(B, D) - 1};
+		true ->
+		    {error, "can only bin_and binaries"}
+	    end;
         _ -> {error, "bin_or stack underflow"}
     end;
 run4(?bin_xor, Data) ->
     case Data#d.stack of
-    [G|[H|T]] ->
-            B = 8 * size(G),
-            D = 8 * size(H),
-            <<A:B>> = G,
-            <<C:D>> = H,
-            E = max(B, D),
-            F = A bxor C,
-            Data#d{op_gas = Data#d.op_gas - E,
-                   stack = [<<F:E>>|T],
-                   ram_current = Data#d.ram_current - min(B, D) - 1};
-        _ -> {error, "bin_xor stack underflow"}
+	[G|[H|T]] ->
+	    if
+		(is_binary(G) and is_binary(H)) ->
+		    B = 8 * size(G),
+		    D = 8 * size(H),
+		    <<A:B>> = G,
+		    <<C:D>> = H,
+		    E = max(B, D),
+		    F = A bxor C,
+		    Data#d{op_gas = Data#d.op_gas - E,
+			   stack = [<<F:E>>|T],
+			   ram_current = Data#d.ram_current - min(B, D) - 1};
+		true ->
+		    {error, "can only bin_and binaries"}
+	    end;
+	_ -> {error, "bin_xor stack underflow"}
     end;
 run4(?stack_size, D) ->
     S = D#d.stack,
@@ -486,7 +506,7 @@ run4(?set, D) ->
                         stack = T,
                         vars = Vars}
             end;
-        _ -> {error, "set stack underflow"}
+        _ -> {error, "set stack underflow, or invalid key"}
     end;
 run4(?fetch, D) ->
     case D#d.stack of
@@ -508,9 +528,13 @@ run4(?fetch, D) ->
 run4(?cons, D) -> % ( A [B] -- [A, B] )
     case D#d.stack of
         [A|[B|T]] ->
-            D#d{op_gas = D#d.op_gas - 1,
-                stack = [[B|A]|T],
-                ram_current = D#d.ram_current + 1};
+	    if
+		is_list(A) ->
+		    D#d{op_gas = D#d.op_gas - 1,
+			stack = [[B|A]|T],
+			ram_current = D#d.ram_current + 1};
+		true -> {error, "can only cond onto a list"}
+	    end;
         _ -> {error, "cons stack underflow"}
     end;
 run4(?car, D) -> % ( [A, B] -- A [B] )
@@ -532,11 +556,17 @@ run4(?append, D) ->
                     is_binary(A) and is_binary(B) ->
                         <<B/binary, A/binary>>;
                     is_list(A) and is_list(B) ->
-                        B ++ A
+                        B ++ A;
+		    true ->
+			error
                 end,
-            D#d{op_gas = D#d.op_gas - 1,
-                stack = [C|T],
-                ram_current = D#d.ram_current + 1};
+	    case C of
+		error -> {error, "can't append these things"};
+		_ ->
+		    D#d{op_gas = D#d.op_gas - 1,
+			stack = [C|T],
+			ram_current = D#d.ram_current + 1}
+	    end;
         _ -> {error, "append stack underflow"}
     end;
 run4(?split, D) ->
@@ -545,10 +575,16 @@ run4(?split, D) ->
             M = N * 8,
             if
                 is_binary(L) ->
-                    <<A:M, B/binary>> = L,
-                    D#d{op_gas = D#d.op_gas - 1,
-                        stack = [<<A:M>>|[B|T]],
-                        ram_current = D#d.ram_current - 1};
+		    Bool = size(L),
+		    if
+			Bool >= N ->
+			    <<A:M, B/binary>> = L,
+			    D#d{op_gas = D#d.op_gas - 1,
+				stack = [<<A:M>>|[B|T]],
+				ram_current = D#d.ram_current - 1};
+			true ->
+			    {error, "not big enough to split there"}
+		    end;
                 true -> {error, "can only split binaries"}
             end;
         [_|[_|_]] -> {error, "need to use a 4-byte integer to say where to split the binary"};
@@ -579,7 +615,9 @@ run4(?is_list, D) ->
     end;
 run4(?nop, D) -> D;
 run4(?fail, D) -> 
-    {error, "fail"}.
+    {error, "fail"};
+run4(_, _) ->
+    {error, "operation not defined in chalang:run4."}.
 
 memory(L) -> memory(L, 0).
 memory([], X) -> X+1;
