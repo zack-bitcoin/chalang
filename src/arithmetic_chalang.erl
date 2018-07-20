@@ -17,17 +17,18 @@ b2i(true) -> 1;
 b2i(false) -> 0.
 pow(B, 0) -> 0;
 pow(B, 1) -> B;
+pow(_, A) when (A > 31) -> {error, "exponent too big"};
 pow(B, A) when ((A rem 2) == 0) ->
-    pow(B*B, A div 2);
+    pow(B*B, A div 2) rem 4294967296;
 pow(B, A) ->
-    B * pow(B, A-1).
+    (B * pow(B, A-1)) rem 4294967296.
 int_arithmetic(?add, A, B) -> A+B;
 int_arithmetic(?subtract, A, B) -> B-A;
 int_arithmetic(?mul, A, B) -> A*B;
+int_arithmetic(?divide, 0, _) -> {error, "div zero error"};
 int_arithmetic(?divide, A, B) -> B div A;
 int_arithmetic(?gt, A, B) -> b2i(A < B);
 int_arithmetic(?lt, A, B) -> b2i(B < A);
-%int_arithmetic(?eq, A, B) -> b2i(A == B);
 int_arithmetic(?pow, A, B) -> pow(B, A); 
 int_arithmetic(?remainder, A, B) -> 
     B rem A.
@@ -38,7 +39,10 @@ doit(?remainder, <<A:?int_bits>>, B) ->
     <<E:?int_bits>>;
 doit(X, <<A:?int_bits>>, <<B:?int_bits>>) ->
     C = int_arithmetic(X, A, B),
-    <<C:?int_bits>>;
+    case C of
+	{error, R} -> {error, R};
+	_ -> (<<C:(?int_bits)>>)
+    end;
 doit(_, _, _) ->
     {error, "bad inputs to an arithmetic function"}.
 %doit(X, <<A:?int_bits>>, <<B:?int_bits, C:?int_bits>>) ->

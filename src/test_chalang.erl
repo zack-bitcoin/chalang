@@ -15,12 +15,20 @@ run_scripts([H|T], Gas, Loc) ->
     io:fwrite("\n"),
     X = run_script(H, Gas, Loc),
     %{d, NewGas, [<<1:32>>],_,_,_,_,_,_,_,_,_} = X,
-    NewGas = chalang:time_gas(X),
-    [<<1:32>>] = chalang:stack(X),
-    run_scripts(T, NewGas, Loc).
+    case X of
+	{error, R} -> 
+	    io:fwrite(R),
+	    io:fwrite("\n"),
+	    1=2;
+	_ ->
+	    [<<1:32>>] = chalang:stack(X),
+	    NewGas = chalang:time_gas(X),
+	    run_scripts(T, NewGas, Loc)
+    end.
+    
 test() -> test(?loc).
 test(Loc) ->
-    Scripts = [ "pickn",
+    Scripts = [ "tuckn_test", "if_test", "pickn",
 		"filter",
 		"merge_sort",
 		"function", "variable",

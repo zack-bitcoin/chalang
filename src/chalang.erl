@@ -129,13 +129,11 @@ run2(_, {error, S}) ->
     {error, S};
 run2(_, D) when D#d.op_gas < 0 ->
     io:fwrite("out of time"),
-    %D = ok,
     {error, "out of time"};
 run2(_, D) when D#d.ram_current > D#d.ram_limit ->
     io:fwrite("Out of space. Limit was: "),
     io:fwrite(integer_to_list(D#d.ram_limit)),
     io:fwrite("\n"),
-    %D = ok,
     {error, "out of space"};
 run2(A, D) when D#d.ram_current > D#d.ram_most ->
     run2(A, D#d{ram_most = D#d.ram_current});
@@ -144,12 +142,14 @@ run2([], D) -> D;
 run2([<<?binary:8, H:32, Script/binary>>|Tail], D) ->
     T = D#d.stack,
     X = H * 8,
-    <<Y:X, Script2/binary>> = Script,
-    NewD = D#d{stack = [<<Y:X>>|T],
-	       ram_current = D#d.ram_current + 1,%1 for the 1 list link added to ram.
-	       op_gas = D#d.op_gas - H},
-    %<<Temp:8, _/binary>> = Script2,
-    run2([Script2|Tail], NewD);
+    case Script of
+	<<Y:X, Script2/binary>> ->
+	    NewD = D#d{stack = [<<Y:X>>|T],
+		       ram_current = D#d.ram_current + 1,%1 for the 1 list link added to ram.
+		       op_gas = D#d.op_gas - H},
+	    run2([Script2|Tail], NewD);
+	true -> {error, "read binary underflow"}
+    end;
 run2([<<?int:8, V:?int_bits, Script/binary>>|T], D) ->
     NewD = D#d{stack = [<<V:?int_bits>>|D#d.stack],
 	       ram_current = D#d.ram_current + 1,
@@ -157,20 +157,26 @@ run2([<<?int:8, V:?int_bits, Script/binary>>|T], D) ->
     run2([Script|T], NewD);
 run2([<<?caseif:8, Script/binary>>|Tail], D) ->
     [<<B:32>>|NewStack] = D#d.stack,
-    {Case1, Rest, _} = split_if(?else, Script),
-    {Case2, Rest2, _} = split_if(?then, Rest),
-    Steps = size(Case1) + size(Case2),
-    {Case, SkippedSize} = 
-	case B of
-	    0 -> %false
-		{Case2, size(Case1)};
-	    _ ->
-		{Case1, size(Case2)}
-	end,
-    NewD = D#d{ stack = NewStack,
-		ram_current = D#d.ram_current - SkippedSize - 1, % +1 for new list link in Script. -2 for the else and then that are deleted.
-	       op_gas = D#d.op_gas - Steps},
-    run2([Case|[Rest2|Tail]], NewD);
+    case split_if(?else, Script) of
+	{error, R1} -> {error, R1};
+	{Case1, Rest, _} ->
+	    case split_if(?then, Rest) of
+		{error, R2} -> {error, R2};
+		{Case2, Rest2, _} ->
+		    Steps = size(Case1) + size(Case2),
+		    {Case, SkippedSize} = 
+			case B of
+			    0 -> %false
+				{Case2, size(Case1)};
+			    _ ->
+				{Case1, size(Case2)}
+			end,
+		    NewD = D#d{ stack = NewStack,
+				ram_current = D#d.ram_current - SkippedSize - 1, % +1 for new list link in Script. -2 for the else and then that are deleted.
+				op_gas = D#d.op_gas - Steps},
+		    run2([Case|[Rest2|Tail]], NewD)
+	    end
+    end;
 run2([<<?call:8, ?fun_end:8, Script/binary>>|Tail], D) ->
     run2([<<?call:8, Script/binary>>|Tail], D); %tail call optimization
 run2([<<?call:8>>|[<<?fun_end:8>>|Tail]], D) ->
@@ -192,27 +198,30 @@ run2([<<?call:8, Script/binary>>|Tail], D) ->
     end;
 run2([<<?define:8, Script/binary>>|T], D) ->
     %io:fwrite("run2 define\n"),
-    {Definition, Script2, _} = split(?fun_end, Script),
+    case split(?fun_end, Script) of
+	{error, R} -> {error, R};
+	{Definition, Script2, _} ->
     %true = balanced_r(Definition, 0),
-    B = hash:doit(Definition, chalang_constants:hash_size()),
+	    B = hash:doit(Definition, chalang_constants:hash_size()),
     %replace "recursion" in the definition with a pointer to this.
-    DSize = chalang_constants:hash_size(),
-    NewDefinition = replace(<<?recurse:8>>, <<2, DSize:32, B/binary>>, Definition),
+	    DSize = chalang_constants:hash_size(),
+	    NewDefinition = replace(<<?recurse:8>>, <<2, DSize:32, B/binary>>, Definition),
     %io:fwrite("chalang define function "),
     %compiler_chalang:print_binary(NewDefinition),
     %io:fwrite("\n"),
-    M = maps:put(B, NewDefinition, D#d.funs),
-    S = size(NewDefinition) + size(B),
-    MF = D#d.many_funs + 1,
-    if
-	MF > D#d.fun_limit ->
-	    {error, "too many functions"};
-	true ->
-	    NewD = D#d{op_gas = D#d.op_gas - S - 30,
-		       ram_current = D#d.ram_current + (2 * S),
-		       many_funs = MF,
+	    M = maps:put(B, NewDefinition, D#d.funs),
+	    S = size(NewDefinition) + size(B),
+	    MF = D#d.many_funs + 1,
+	    if
+		MF > D#d.fun_limit ->
+		    {error, "too many functions"};
+		true ->
+		    NewD = D#d{op_gas = D#d.op_gas - S - 30,
+			       ram_current = D#d.ram_current + (2 * S),
+			       many_funs = MF,
 		       funs = M},
-	    run2([Script2|T], NewD)
+		    run2([Script2|T], NewD)
+	    end
     end;
 run2([<<?return:8, _/binary>>|_], D) ->
     run2([<<>>], D);
@@ -312,19 +321,22 @@ run4(?ddup, D) ->
     end;
 run4(?tuckn, D) ->
     case D#d.stack of
-        [N|[X|S]] ->
-	    <<M:32>> = N,
-            H = lists:sublist(S, 1, M),
-            T = lists:sublist(S, M+1, 100000000000000000),
-            Stack2 = H ++ [X|T],
-            D#d{stack = Stack2,
-                op_gas = D#d.op_gas - 1};
+        [<<N:(?int_bits)>>|[X|S]] ->
+	    StackSize = length(S),
+	    if
+		N > StackSize -> {error, "tuckn stack underflow 2"};
+		true ->
+		    H = lists:sublist(S, 1, N),
+		    T = lists:sublist(S, N+1, 100000000000000000),
+		    Stack2 = H ++ [X|T],
+		    D#d{stack = Stack2,
+			op_gas = D#d.op_gas - 1}
+	    end;
         _ -> {error, "tuckn stack underflow"}
     end;
 run4(?pickn, D) ->
     case D#d.stack of
-        [N|S] ->
-	    <<M:32>> = N,
+        [<<M:(?int_bits)>>|S] ->
             H = lists:sublist(S, 1, M),
             case lists:sublist(S, M + 1, 100000000000000000) of
                 [X|T] ->
@@ -371,8 +383,8 @@ run4(?verify_sig, D) ->
             B = sign:verify_sig(Data, Sig, Pub),
             B2 = case B of
                      true -> <<1:(?int_bits)>>;
-                     false -> <<0:(?int_bits)>>
-                                  end,
+                     false -> (<<0:(?int_bits)>>)
+		 end,
             D#d{stack = [B2|T],
                 op_gas = D#d.op_gas - 20};
         _ -> {error, "verify_sig stack underflow"}
@@ -411,63 +423,31 @@ run4(?bool_flip, D) ->
         [X|T] -> {error, "can only bool flip a 4 byte value"};
         _ -> {error, "bool_flip stack underflow"}
     end;
-run4(?bin_and, D) ->
+run4(X, D) when
+  (((X == ?bin_and) or (X == ?bin_or)) or (X == ?bin_xor)) ->
     case D#d.stack of
         [G|[H|T]] ->
 	    if
 		(is_binary(G) and is_binary(H)) ->
 		    B = 8 * size(G),
-		    D = 8 * size(H),
+		    HS = 8 * size(H),
 		    <<A:B>> = G,
-		    <<C:D>> = H,
-		    E = max(B, D),
-		    F = A band C,
+		    <<C:HS>> = H,
+		    E = max(B, HS),
+		    F = case X of
+			    ?bin_and -> (A band C);
+			    ?bin_or -> (A bor C);
+			    ?bin_xor -> (A bxor C)
+			end,
 		    D#d{op_gas = D#d.op_gas - E,
 			stack = [<<F:E>>|T],
 			ram_current = D#d.ram_current - min(B, D) - 1};
 		true ->
-		    {error, "can only bin_and binaries"}
+		    {error, "can only bin_combine binaries"}
 	    end;
-        _ -> {error, "bin_and stack underflow"}
+        _ -> {error, "bin_combine stack underflow"}
     end;
-run4(?bin_or, D) ->
-    case D#d.stack of
-        [G|[H|T]] ->
-	    if
-		(is_binary(G) and is_binary(H)) ->
-		    B = 8 * size(G),
-		    D = 8 * size(H),
-		    <<A:B>> = G,
-		    <<C:D>> = H,
-		    E = max(B, D),
-		    F = A bor C,
-		    D#d{op_gas = D#d.op_gas - E,
-			stack = [<<F:E>>|T],
-			ram_current = D#d.ram_current - min(B, D) - 1};
-		true ->
-		    {error, "can only bin_and binaries"}
-	    end;
-        _ -> {error, "bin_or stack underflow"}
-    end;
-run4(?bin_xor, Data) ->
-    case Data#d.stack of
-	[G|[H|T]] ->
-	    if
-		(is_binary(G) and is_binary(H)) ->
-		    B = 8 * size(G),
-		    D = 8 * size(H),
-		    <<A:B>> = G,
-		    <<C:D>> = H,
-		    E = max(B, D),
-		    F = A bxor C,
-		    Data#d{op_gas = Data#d.op_gas - E,
-			   stack = [<<F:E>>|T],
-			   ram_current = Data#d.ram_current - min(B, D) - 1};
-		true ->
-		    {error, "can only bin_and binaries"}
-	    end;
-	_ -> {error, "bin_xor stack underflow"}
-    end;
+
 run4(?stack_size, D) ->
     S = D#d.stack,
     D#d{op_gas = D#d.op_gas - 1,
@@ -673,45 +653,45 @@ replace(Old, New, Binary, Pointer) ->
 split(X, B) ->
     split(X, B, 0).
 split(X, B, N) ->
-    <<_:N, Y:8, _C/binary>> = B,
-    case Y of
-	?int -> split(X, B, N+8+?int_bits);
-	?binary ->
-	    <<_:N, Y:8, H:32, _/binary>> = B,
-	    %J = H*8,
-	    %<<_:N, Y:8, H:8, _:H, _/binary>> = B,
-	    %split(X, B, N+16+(H*8));
+    case B of
+	<<_:N, ?binary:8, H:32, _/binary>> ->
 	    split(X, B, N+40+(H*8));
-	X ->
-	    <<A:N, Y:8, T/binary>> = B,
+	<<_:N, ?binary:8, _/binary>> ->
+	    {error, "binary underflow in function definition"};
+	<<_:N, ?int:8, _:(?int_bits), _/binary>> ->
+	    split(X, B, N+8+?int_bits);
+	<<_:N, ?int:8, _/binary>> ->
+	    {error, "integer underflow in function definition"};
+	<<A:N, X:8, T/binary>> ->
 	    {<<A:N>>, T, N};
-	_ -> split(X, B, N+8)
+	<<_:N, _:8, _/binary>> ->
+	    split(X, B, N+8);
+	_ -> {error, "no closing operation on a function"}
     end.
 split_if(X, B) ->
     split_if(X, B, 0).
 split_if(X, B, N) ->
-    <<_:N, Y:8, C/binary>> = B,
-    case Y of
-	?int -> split_if(X, B, N+8+?int_bits);
-	?binary ->
-	    <<_:N, Y:8, H:32, _/binary>> = B,
-	    %J = H*8,
-	    %<<_:N, Y:8, H:8, _:H, _/binary>> = B,
+    case B of
+	<<_:N, (?int):8, _:(?int_bits), _/binary>> ->
+	    split_if(X, B, N+8+?int_bits);
+	<<_:N, (?int):8, _/binary>> ->
+	    {error, "integer underflow in case statment"};
+	<<_:N, (?binary):8, H:32, _/binary>> ->
 	    split_if(X, B, N+40+(H*8));
-	?caseif ->
-	    {_, _Rest, M} = split_if(?then, C),
-	    split_if(X, B, N+M+16);
-	X ->
-	    <<A:N, Y:8, T/binary>> = B,
-	    {<<A:N>>, T, N};
-	_ -> split_if(X, B, N+8)
+	<<_:N, (?binary):8, _/binary>> ->
+	    {error, "binary underflow inside case statement"};
+	<<_:N, (?caseif):8, C/binary>> ->
+	    case split_if(?then, C) of
+		{_, _Rest, M} ->
+		    split_if(X, B, N+M+16);
+		_ -> {error, "if-else-then has no 'then'"}
+	    end;
+	<<A:N, X:8, C/binary>> ->
+	    {<<A:N>>, C, N};
+	<<A:N, _:8, C/binary>> ->
+	    split_if(X, B, N+8);
+	_ -> {error, "broken if-else-then statement"}
     end.
-%split_list(N, L) ->
-%    split_list(N, L, []).
-%split_list(0, A, B) ->
-%    {lists:reverse(B), A};
-%split_list(N, [H|T], B) ->
-%    split_list(N-1, T, [H|B]).
 print_stack(X) ->
     print_stack(12, X),
     io:fwrite("\n").
