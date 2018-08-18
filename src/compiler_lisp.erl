@@ -10,6 +10,7 @@
 -define(fun_end, 111).
 test() ->
     Files = [ %"roshambo",
+	      "new_oracle",
 	      "let",
 	      "dice",
 	      "fun_test4",

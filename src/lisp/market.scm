@@ -45,8 +45,8 @@
 
 (macro main (Type I1 I2)
        '(cond (((= Type 0) (no_publish))
-	      ((= Type 1) (match_order I1))
-	      ((= Type 2) (contradictory_prices I1 I2))
-	      ((= Type 3) (evidence I1))
-	      ((= Type 4) (unmatched I1)))))
+	       ((= Type 1) (match_order I1))
+	       ((= Type 2) (contradictory_prices I1 I2))
+	       ((= Type 3) (evidence I1))
+	       ((= Type 4) (unmatched I1)))))
        
