@@ -3,6 +3,14 @@
 
 ;<<height:32, price:16, portionMatched:16, market_id:256, signature/binary>>
 (macro extract (X)
+ ;( signed_price_declaration -- height price portion_matched )
+       '(40 split dup tuck Pubkey @ verify_sig or_die
+	     4 split 
+	     swap  
+	     2 split --AAA= swap ++ swap 
+	     2 split --AAA= swap ++ swap
+	     ))
+
 ;verify the signature.
 ;check that the price declaration was made after the bet, or at the same height.       
 ;return declaration_height, price and portion_matched

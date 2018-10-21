@@ -1,8 +1,12 @@
 ;(import (eqs_lib.scm function_lib.scm cond_lib.scm
 (import (map.scm tree_lib.scm))
 
+;[int ID, int Key, binary Size serialize(Oracle)]
+;<<id:256, result:8, ...>
+
 (define oracle_result (Proof)
-       '(() 32 split drop 1 split swap drop --AAAA swap ++ ))
+  '(() 32 split drop 1 split swap drop --AAAA swap ++ ))
+;true: 1, false: 2, bad_question: 3, unclosed: 0
 (define binary_converter2 (L N)
   (cond (((= nil L) N)
 	 (true (recurse
@@ -14,11 +18,14 @@
 
 (macro doit (L)
        '(binary_convert (execute (@ map) ((@ oracle_result) L))))
- 
+(macro num_to_price (B)
+       '(/ (* 10000 B) 256))
 
-(/ (* 10000 (binary_converter (tree (0 0 0 0 0 0 0 1))))
-   256)
-   
+;(/ (* 10000 (binary_converter (tree (0 0 0 0 0 0 0 1))))   256)
+(num_to_price (binary_converter (tree (0 0 0 0 0 0 0 1))))
+
+(define oracle_results (X)
+  (execute (@ map) ((@ oracle_result) X)))
 
 ;(macro bet2 (R)
 ;       '(cond (((= R 1);oracle returns True
