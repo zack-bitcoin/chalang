@@ -1,3 +1,11 @@
+The disassembler:
+* give functions some identifier that is smaller than the hash.
+* write the identifier next to the function definition.
+* write the identifier instead of the hash of the function in the code.
+
+
+
+
 compile-time and run-time syntax inconsistencies:
 nil ()
 
