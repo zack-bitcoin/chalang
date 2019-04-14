@@ -1,10 +1,11 @@
 -module(chalang).
--export([run5/2, data_maker/8, test/6, vm/6, replace/3, new_state/3, new_state/2, split/2, none_of/1, stack/1, time_gas/1]).
+-export([run5/2, data_maker/8, data_maker/9, test/6, vm/6, replace/3, new_state/3, new_state/2, split/2, none_of/1, stack/1, time_gas/1]).
 -record(d, {op_gas = 0, stack = [], alt = [],
 	    ram_current = 0, ram_most = 0, ram_limit = 0, 
 	    vars = {},  
 	    funs = {}, many_funs = 0, fun_limit = 0,
-	    state = [], hash_size = chalang_constants:hash_size()
+	    state = [], hash_size = chalang_constants:hash_size(),
+            verbose = false
 	   }).
 -record(state, {
 	  height, %how many blocks exist so far
@@ -97,11 +98,12 @@ test(Script, OpGas, RamGas, Funs, Vars, State) ->
 	   funs = #{},
 	   fun_limit = Funs,
 	   ram_current = size(Script), 
-	   state = State},
+	   state = State,
+           verbose = true},
     %compiler_chalang:print_binary(Script),
     %io:fwrite("\nrunning a script =============\n"),
     %disassembler:doit(Script),
-    run2([Script], D).
+    run1([Script], D).
     %io:fwrite("\n"),
 
 						%io:fwrite("oGas, stack, alt, ram_current, ram_most, ram_limit, vars, funs, many_funs, fun_limit\n"),
@@ -109,6 +111,8 @@ test(Script, OpGas, RamGas, Funs, Vars, State) ->
 
 %run takes a list of bets and scriptpubkeys. Each bet is processed seperately by the RUN2, and the results of each bet is accumulated together to find the net result of all the bets.
 data_maker(OpGas, RamGas, Vars, Funs, ScriptSig, SPK, State, HashSize) ->
+    data_maker(OpGas, RamGas, Vars, Funs, ScriptSig, SPK, State, HashSize, false).
+data_maker(OpGas, RamGas, Vars, Funs, ScriptSig, SPK, State, HashSize, Verbose) ->
     #d{op_gas = OpGas, 
        ram_limit = RamGas, 
        vars = make_tuple(e, Vars),
@@ -116,29 +120,42 @@ data_maker(OpGas, RamGas, Vars, Funs, ScriptSig, SPK, State, HashSize) ->
        fun_limit = Funs,%how many functions can be defined.
        ram_current = size(ScriptSig) + size(SPK),
        state = State, 
-       hash_size = HashSize}.
+       hash_size = HashSize,
+       verbose = Verbose}.
     
 %run2 processes a single opcode of the script. in comparison to run3/2, run2 is able to edit more aspects of the RUN2's state. run2 is used to define functions and variables. run3/2 is for all the other opcodes. 
 run5(A, D) ->
     true = balanced_f(A, 0),
-    run2([A], D).
-run2(_, {error, S}) ->
+    run1([A], D).
+run1(_, {error, S}) ->
     io:fwrite("had an error\n"),
     io:fwrite(S),
     io:fwrite("\n"),
     {error, S};
-run2(_, D) when D#d.op_gas < 0 ->
+run1(_, D) when D#d.op_gas < 0 ->
     io:fwrite("out of time"),
     {error, "out of time"};
-run2(_, D) when D#d.ram_current > D#d.ram_limit ->
+run1(_, D) when D#d.ram_current > D#d.ram_limit ->
     io:fwrite("Out of space. Limit was: "),
     io:fwrite(integer_to_list(D#d.ram_limit)),
     io:fwrite("\n"),
     {error, "out of space"};
-run2(A, D) when D#d.ram_current > D#d.ram_most ->
-    run2(A, D#d{ram_most = D#d.ram_current});
-run2([<<>>|T], D) -> run2(T, D);
-run2([], D) -> D;
+run1(A, D) when D#d.ram_current > D#d.ram_most ->
+    run1(A, D#d{ram_most = D#d.ram_current});
+run1([<<>>|T], D) -> run1(T, D);
+run1([], D) -> D;
+run1(A, B) -> 
+    if
+        B#d.verbose ->
+            [<<C:8, _/binary>>|_] = A,
+            print_stack(5, B#d.stack),
+            io:fwrite("opcode: "),
+            io:fwrite(disassembler:doit2(C)),
+            io:fwrite("\n"),
+            ok;
+        true -> ok
+    end,
+    run2(A, B).
 run2([<<?binary:8, H:32, Script/binary>>|Tail], D) ->
     T = D#d.stack,
     X = H * 8,
@@ -147,14 +164,14 @@ run2([<<?binary:8, H:32, Script/binary>>|Tail], D) ->
 	    NewD = D#d{stack = [<<Y:X>>|T],
 		       ram_current = D#d.ram_current + 1,%1 for the 1 list link added to ram.
 		       op_gas = D#d.op_gas - H},
-	    run2([Script2|Tail], NewD);
+	    run1([Script2|Tail], NewD);
 	true -> {error, "read binary underflow"}
     end;
 run2([<<?int:8, V:?int_bits, Script/binary>>|T], D) ->
     NewD = D#d{stack = [<<V:?int_bits>>|D#d.stack],
 	       ram_current = D#d.ram_current + 1,
 	       op_gas = D#d.op_gas - 1},
-    run2([Script|T], NewD);
+    run1([Script|T], NewD);
 run2([<<?caseif:8, Script/binary>>|Tail], D) ->
     [<<B:32>>|NewStack] = D#d.stack,
     case split_if(?else, Script) of
@@ -174,13 +191,13 @@ run2([<<?caseif:8, Script/binary>>|Tail], D) ->
 		    NewD = D#d{ stack = NewStack,
 				ram_current = D#d.ram_current - SkippedSize - 1, % +1 for new list link in Script. -2 for the else and then that are deleted.
 				op_gas = D#d.op_gas - Steps},
-		    run2([Case|[Rest2|Tail]], NewD)
+		    run1([Case|[Rest2|Tail]], NewD)
 	    end
     end;
 run2([<<?call:8, ?fun_end:8, Script/binary>>|Tail], D) ->
-    run2([<<?call:8, Script/binary>>|Tail], D); %tail call optimization
+    run1([<<?call:8, Script/binary>>|Tail], D); %tail call optimization
 run2([<<?call:8>>|[<<?fun_end:8>>|Tail]], D) ->
-    run2([<<?call>>|Tail], D); %tail call optimization
+    run1([<<?call>>|Tail], D); %tail call optimization
 run2([<<?call:8, Script/binary>>|Tail], D) ->
     case D#d.stack of 
         [H|T] ->
@@ -192,7 +209,7 @@ run2([<<?call:8, Script/binary>>|Tail], D) ->
                     NewD = D#d{op_gas = D#d.op_gas - S - 10,
                                ram_current = D#d.ram_current + S + 2,%-1 for call, +1 for fun_end, +2 for 2 new list links.
                                stack = T},
-                    run2([Definition|[<<?fun_end:8>>|[Script|Tail]]],NewD)
+                    run1([Definition|[<<?fun_end:8>>|[Script|Tail]]],NewD)
                 end;
         _ -> {error, "stack underflow"}
     end;
@@ -220,11 +237,11 @@ run2([<<?define:8, Script/binary>>|T], D) ->
 			       ram_current = D#d.ram_current + (2 * S),
 			       many_funs = MF,
 		       funs = M},
-		    run2([Script2|T], NewD)
+		    run1([Script2|T], NewD)
 	    end
     end;
 run2([<<?return:8, _/binary>>|_], D) ->
-    run2([<<>>], D);
+    run1([<<>>], D);
 run2([<<Command:8, Script/binary>>|T], D) 
   when ((Command == ?bool_and) or 
         (Command == ?bool_or) or 
@@ -237,7 +254,7 @@ run2([<<Command:8, Script/binary>>|T], D)
             D2 = D#d{stack = [<<C:32>>|R],
                      op_gas = D#d.op_gas - 1,
                      ram_current = D#d.ram_current - 2},
-            run2([Script|T], D2);
+            run1([Script|T], D2);
         [_|[_|_]] -> 
             io:fwrite("can only bool_and two 4 byte values\n"),
             {error, "can only bool_and two 4 byte values"};
@@ -253,7 +270,7 @@ run2([<<Command:8, Script/binary>>|T], D) ->
 	    %io:fwrite("run word "),
 	    %io:fwrite(integer_to_list(Command)),
 	    %io:fwrite("\n"),
-	    run2([Script|T], NewD)
+	    run1([Script|T], NewD)
     end.
 bool2(?bool_and, _, 0) -> 0;
 bool2(?bool_and, 0, _) -> 0;

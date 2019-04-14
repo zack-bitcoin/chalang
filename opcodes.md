@@ -161,7 +161,6 @@ only works with 4-byte integers. Results are 4-byte integers. 32-bits. The integ
 131 car % ( [X|Y] -- X Y )
 
 132 nil % ( -- [] ) this is the root of a list.
-
 134 ++ % ( X Y -- Z ) appends 2 lists or 2 binaries. Cannot append a list to a binary.
 
 135 split %( N Binary -- BinaryA BinaryB ) %Binary A has N*8 many bits. BinaryA appended to BinaryB makes Binary. 
