@@ -1,5 +1,5 @@
 -module(test_chalang).
--export([test/0, test/1, run_script/3]).
+-export([test/0, test/1, run_script/3, test_func/0]).
 
 -define(loc, "src/forth/").
 run_script(X, Gas, Loc) ->
@@ -25,6 +25,23 @@ run_scripts([H|T], Gas, Loc) ->
 	    NewGas = chalang:time_gas(X),
 	    run_scripts(T, NewGas, Loc)
     end.
+   
+test_func() -> 
+    %The purpose of this test is to show how much shorter the contract can be with our new tool for defining functions.
+
+    %A0 = <<" int 3 : square dup * ; square X ! X @ call X @ call ">>,
+    A0 = <<" int 3 : square dup * ; square call square call ">>,
+    A = <<" int 3 def square dup * ; dup >r call r> call ">>,
+    %A = <<" int 3 def square dup * ; X ! X @ call X @ call ">>,
+    B0 = compiler_chalang:doit(<<A0/binary>>),
+    B = compiler_chalang:doit(<<A/binary>>),
+    io:fwrite("test chalang sizes \n"),
+    io:fwrite(integer_to_list(size(B0))),
+    io:fwrite("\n"),
+    io:fwrite(integer_to_list(size(B))),
+    io:fwrite("\n"),
+    Gas = 10000,
+    chalang:test(B, Gas, Gas, Gas, Gas, []).
     
 test() -> test(?loc).
 test(Loc) ->

@@ -58,6 +58,7 @@ new_state(Height, Slash) ->
 -define(many_vars, 100).
 -define(many_funs, 101).
 -define(define, 110).
+-define(define2, 114).
 -define(fun_end, 111).
 -define(recurse, 112).
 -define(call, 113).
@@ -236,10 +237,46 @@ run2([<<?define:8, Script/binary>>|T], D) ->
 		    NewD = D#d{op_gas = D#d.op_gas - S - 30,
 			       ram_current = D#d.ram_current + (2 * S),
 			       many_funs = MF,
+                               %stack = [B|D#d.stack],
 		       funs = M},
 		    run1([Script2|T], NewD)
 	    end
     end;
+run2([<<?define2:8, Script/binary>>|T], D) ->
+    %io:fwrite("run2 define\n"),
+    case split(?fun_end, Script) of
+	{error, R} -> {error, R};
+	{Definition, Script2, _} ->
+    %true = balanced_r(Definition, 0),
+	    B = hash:doit(Definition, chalang_constants:hash_size()),
+    %replace "recursion" in the definition with a pointer to this.
+	    DSize = chalang_constants:hash_size(),
+	    NewDefinition = replace(<<?recurse:8>>, <<2, DSize:32, B/binary>>, Definition),
+    %io:fwrite("chalang define function "),
+    %compiler_chalang:print_binary(NewDefinition),
+    %io:fwrite("\n"),
+	    M = maps:put(B, NewDefinition, D#d.funs),
+	    S = size(NewDefinition) + size(B),
+	    MF = D#d.many_funs + 1,
+	    if
+		MF > D#d.fun_limit ->
+		    {error, "too many functions"};
+		true ->
+		    NewD = D#d{op_gas = D#d.op_gas - S - 30,
+			       ram_current = D#d.ram_current + (2 * S),
+			       many_funs = MF,
+                               stack = [B|D#d.stack],
+		       funs = M},
+		    run1([Script2|T], NewD)
+	    end
+    end;
+
+
+
+
+
+
+
 run2([<<?return:8, _/binary>>|_], D) ->
     run1([<<>>], D);
 run2([<<Command:8, Script/binary>>|T], D) 
@@ -625,6 +662,9 @@ balanced_f(<<>>, 1) -> false;
 balanced_f(<<?define:8, Script/binary>>, 0) ->
     balanced_f(Script, 1);
 balanced_f(<<?define:8, _/binary>>, 1) -> false;
+balanced_f(<<?define2:8, Script/binary>>, 0) ->
+    balanced_f(Script, 1);
+balanced_f(<<?define2:8, _/binary>>, 1) -> false;
 balanced_f(<<?fun_end:8, Script/binary>>, 1) ->
     balanced_f(Script, 0);
 balanced_f(<<?fun_end:8, _/binary>>, 0) -> false;
