@@ -532,6 +532,7 @@ is_op(<<"accounts">>) -> {true, <<101>>, 0, 1};
 is_op(<<"channels">>) -> {true, <<102>>, 0, 1};
 is_op(<<"verify_merkle">>) -> {true, <<103>>, 3, 2};
 is_op(<<"start_fun">>) -> {true, <<110>>, 3, 0};
+is_op(<<"def">>) -> {true, <<114>>, 3, 0};
 is_op(<<"end_fun">>) -> {true, <<111>>, 0, 0};
 is_op(<<"recurse">>) -> {true, <<112, 113>>, 0, 1};
 is_op(<<"call">>) -> {true, <<113>>, 1, 1};

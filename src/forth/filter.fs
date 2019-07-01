@@ -3,11 +3,12 @@ macro [ nil ;
 macro , swap cons ;
 macro ] swap cons reverse ;
 
-: check ( Int -- Bool )
+def _check ( Int -- Bool )
   int 27 >
 ;
+check !
 
-: filter2 ( NewList OldList -- List2 )
+def _filter2 ( NewList OldList -- List2 )
   nil ==
   if
     drop drop reverse
@@ -21,12 +22,13 @@ macro ] swap cons reverse ;
     recurse call
   then
 ;
+filter2 !
 macro filter ( List Fun -- NewList )
-  >r nil swap filter2 call r> drop
+  >r nil swap filter2 @ call r> drop
 ;
 
 macro test
-  [int 20, int 30, int 40, int 10] check filter
+  [int 20, int 30, int 40, int 10] check @ filter
   [int 30, int 40]
   == tuck drop drop
   %  int 0

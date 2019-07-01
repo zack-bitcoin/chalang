@@ -51,7 +51,8 @@ test(Loc) ->
 		"function", "variable",
 		"macro", "case", "recursion", "map",
 		"math", "hashlock", "case2", 
-		"case_binary", "binary_converter"
+		"case_binary", "binary_converter",
+                "function2"
 	      ],
     Gas = 100000,
     run_scripts(Scripts, Gas, Loc),
