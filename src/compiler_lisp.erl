@@ -73,7 +73,7 @@ doit(A) ->
     Funcs = dict:new(),
     List4 = to_ops(List2, Funcs),
     %{List5, _} = lambdas(List4, []),
-    io:fwrite("--------------------\n"),
+    %io:fwrite("--------------------\n"),
     disassembler:doit(List4),
     io:fwrite("===========================\n"),
     Gas = 10000,
@@ -140,29 +140,39 @@ no_rff(N, [X|T]) -> no_rff(N, T).
             
 just_in_time2([<<"dup">>,<<">r">>,<<"dup">>,<<"r>">>|R]) -> 
     [<<"dup">>,<<"dup">>|just_in_time2(R)];
-just_in_time2([<<"rot">>|[<<"tuck">>|R]]) -> 
+just_in_time2([<<"rot">>, <<"tuck">>|R]) -> 
     just_in_time2(R);
-just_in_time2([<<"tuck">>|[<<"rot">>|R]]) -> 
+just_in_time2([<<"tuck">>, <<"rot">>|R]) -> 
     just_in_time2(R);
-just_in_time2([<<"swap">>|[<<"swap">>|R]]) -> 
+just_in_time2([<<"swap">>, <<"swap">>|R]) -> 
     just_in_time2(R);
-just_in_time2([<<"dup">>|[<<"drop">>|R]]) -> 
+just_in_time2([<<"dup">>, <<"drop">>|R]) -> 
     just_in_time2(R);
-just_in_time2([<<">r">>|[<<"r>">>|R]]) -> 
+just_in_time2([<<">r">>, <<"r>">>|R]) -> 
     just_in_time2(R);
-just_in_time2([<<"r>">>|[<<">r">>|R]]) -> 
+just_in_time2([<<"r>">>, <<">r">>|R]) -> 
     just_in_time2(R);
-just_in_time2([<<"r@">>|[<<"@">>|[<<"r@">>|[<<"@">>|[<<"r@">>|[<<"@">>|R]]]]]]) -> 
-    %using the first function var three in a row
-    just_in_time2([<<"r@">>|[<<"@">>|[<<"dup">>|[<<"dup">>|R]]]]);
-just_in_time2([<<"r@">>|[<<"@">>|[<<"r@">>|[<<"@">>|R]]]]) -> 
-    %using the first function var twice in a row
+
+%we want to use the variables in last-in-first-out order if possible, since this often leads to more opportunities to optimize.
+just_in_time2([<<"r@">>, <<"@">>, <<"r@">>, N, <<"+">>, <<"@">>|R]) when is_integer(N)-> 
+    just_in_time2([<<"r@">>, N, <<"+">>, <<"@">>, <<"r@">>, <<"@">>, <<"swap">>|R]);
+just_in_time2([<<"r@">>, M, <<"+">>, <<"@">>, <<"r@">>, N, <<"+">>, <<"@">>|R]) when ((is_integer(N) and is_integer(M)) and (M < N))-> 
+    just_in_time2([<<"r@">>, N, <<"+">>, <<"@">>, <<"r@">>, M, <<"+">>, <<"@">>, <<"swap">>|R]);
+
+%using the first function var three in a row
+just_in_time2([<<"r@">>, <<"@">>, <<"r@">>, <<"@">>, <<"r@">>, <<"@">>|R]) -> 
+    just_in_time2([<<"r@">>, <<"@">>, <<"dup">>, <<"dup">>|R]);
+%using the first function var twice in a row
+just_in_time2([<<"r@">>, <<"@">>, <<"r@">>, <<"@">>|R]) -> 
     just_in_time2([<<"r@">>|[<<"@">>|[<<"dup">>|R]]]);
+
+
+%using the Nth first function var twice in a row
 just_in_time2([<<"r@">>|[N|[<<"+">>|[<<"@">>|[<<"r@">>|[N|[<<"+">>|[<<"@">>|R]]]]]]]]) when is_integer(N)-> 
-    %using the Nth first function var twice in a row
     just_in_time2([<<"r@">>|[N|[<<"+">>|[<<"@">>|[<<"dup">>|R]]]]]);
 
 %for the symmetric functions +, *, and =, we should try and push variables to the left and constants to the right so that we can simplify the function definitions.
+%there are more symmetric functions we might want to do this with: and or xor band bor bxor
 just_in_time2([N,<<"r@">>,M,<<"+">>,<<"@">>,<<"===">>|R]) when (((N== <<"nil">>) or (is_integer(N))) and is_integer(M))->
     just_in_time2([<<"r@">>,M,<<"+">>,<<"@">>,N,<<"===">>|R]);
 just_in_time2([N,<<"r@">>,M,<<"+">>,<<"@">>,<<"*">>|R]) when (is_integer(N) and is_integer(M))->
@@ -176,12 +186,22 @@ just_in_time2([N,<<"r@">>,<<"@">>,<<"*">>|R]) when is_integer(N)->
 just_in_time2([N,<<"r@">>,<<"@">>,<<"+">>|R]) when is_integer(N)->
     just_in_time2([<<"r@">>, <<"@">>,N,<<"+">>|R]);
 
+%try to keep constants to the right, and variables to the left
+just_in_time2([N, <<"r@">>, <<"@">>|R]) when ((N == <<"nil">>) or (is_integer(N)))->
+    just_in_time2([<<"r@">>, <<"@">>, N, <<"swap">>|R]);
+just_in_time2([N, <<"r@">>, M, <<"+">>, <<"@">>|R]) when (((N == <<"nil">>) or (is_integer(N))) and (is_integer(M))) ->
+    just_in_time2([<<"r@">>, M, <<"+">>, <<"@">>, N, <<"swap">>|R]);
+%multiplying by 1 is the same as doing nothing
 just_in_time2([1|[<<"*">>|R]]) -> 
     just_in_time2(R);
+%adding 0 is the same as doing nothing
 just_in_time2([0|[<<"+">>|R]]) -> 
     just_in_time2(R);
+%the nop operation does nothing, so we can delete it.
 just_in_time2([<<"nop">>|R]) -> 
     just_in_time2(R);
+
+%if we are doing math with 2 constants, this is something that can be done at compile time.
 just_in_time2([N|[M|[<<"+">>|R]]]) 
   when ((is_integer(N)) and (is_integer(M))) ->
     just_in_time2([(N + M)|R]);
@@ -207,8 +227,8 @@ just_in_time2(A) -> A.
 
 imports([<<"import">>, []], Done) -> {[], Done};
 imports([<<"import">>, [H|T]], Done) ->
-    io:fwrite("importing "),
-    io:fwrite(H),
+    %io:fwrite("importing "),
+    %io:fwrite(H),
     B = is_in(H, Done),
     {Tree, Done2} = 
 	if

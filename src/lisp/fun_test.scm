@@ -4,6 +4,7 @@
 ;This shows how to package a function so it can be imported and used in other pages of lisp.
 
 ;using a macro to hard-code a pointer to your function
+;not recommended.
 (macro square () (lambda (x) (* x x)))
 (= 16
    (execute (square) ((execute (square) ( 2)))))
