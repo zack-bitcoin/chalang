@@ -9,8 +9,7 @@
 					; removed from r every time a function returns.
 
 
-(>r 500) ;start storing inputs to functions at 500, that way 1-499 are available for smart contract developers.
-
+(>r 50) ;start storing inputs to functions at 50, that way 1-49 are available for smart contract developers.
 (macro _pointer (X)
        ; look up a pointer to the xth variable being stored for the current function being processed
        (cond (((= X 0) '(r@))

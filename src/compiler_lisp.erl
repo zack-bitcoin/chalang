@@ -72,10 +72,12 @@ doit(A) ->
     List2 = variables(List1, {dict:new(), 1}),
     Funcs = dict:new(),
     List4 = to_ops(List2, Funcs),
-    {List5, _} = lambdas(List4, []),
-    %disassembler:doit(List5),
+    %{List5, _} = lambdas(List4, []),
+    io:fwrite("--------------------\n"),
+    disassembler:doit(List4),
+    io:fwrite("===========================\n"),
     Gas = 10000,
-    VM = chalang:vm(List5, Gas*100, Gas*10, Gas, Gas, []),
+    VM = chalang:vm(List4, Gas*100, Gas*10, Gas, Gas, []),
     {{%Tree1, Tree3, Tree35, 
       List, List1%, List4, List5
       }, VM}.
@@ -98,16 +100,46 @@ r_collapse([Op|T], N, A) ->
 	B -> r_collapse(T, N+Give-Take, A++[Op]);
 	true -> false
     end.
-just_in_time(X) ->
-    X2 = just_in_time2(X),
+just_in_time(X0) ->
+    %io:fwrite(X0),
+    %io:fwrite("\n"),
+    %io:fwrite("\n"),
+    X1 = just_in_time2(X0),
+    X2 = func_input_simplify(X1),
     if 
-	(X2 == X) -> X;
+	(X2 == X0) -> X2;
 	true -> just_in_time(X2)
     end.
 %for every >r we should look ahead in the code to see if we actually need to use the r stack. maybe we can leave this variable on the main stack until it is needed.
+func_input_simplify([<<"r@">>,N,<<"+">>,<<"!">>,<<"r@">>,N,<<"+">>,<<"@">>|R]) when is_integer(N)->
+    B = no_rff(N, R),
+    X = if
+        B -> [];
+        true -> [<<"dup">>,<<"r@">>,N,<<"+">>,<<"!">>]
+    end,
+    X ++ func_input_simplify(R);
+func_input_simplify([<<"r@">>,<<"!">>,<<"r@">>,<<"@">>|R]) ->
+    %if there is only one `r@ @` until the function ends, then there must be a way to just leave it on the stack.
+    B = no_rff0(R),
+    %B = false,
+    X = if
+            B -> [];
+            true -> [<<"dup">>,<<"r@">>,<<"!">>]
+        end,
+    X ++ func_input_simplify(R);
+func_input_simplify([X|T]) ->
+    [X|func_input_simplify(T)];
+func_input_simplify([]) -> [].
+no_rff0([<<"end_fun">>|_]) -> true;
+no_rff0([<<"r@">>,<<"@">>|_]) -> false;
+no_rff0([X|T]) -> no_rff0(T).
 
-just_in_time2([<<"dup">>|[<<">r">>|[<<"dup">>|[<<"r>">>|R]]]]) -> 
-    [<<"dup">>|[<<"dup">>|just_in_time2(R)]];
+no_rff(_, [<<"end_fun">>|_]) -> true;
+no_rff(N, [<<"r@">>,N,<<"+">>,<<"@">>|_]) -> false;
+no_rff(N, [X|T]) -> no_rff(N, T).
+            
+just_in_time2([<<"dup">>,<<">r">>,<<"dup">>,<<"r>">>|R]) -> 
+    [<<"dup">>,<<"dup">>|just_in_time2(R)];
 just_in_time2([<<"rot">>|[<<"tuck">>|R]]) -> 
     just_in_time2(R);
 just_in_time2([<<"tuck">>|[<<"rot">>|R]]) -> 
@@ -117,6 +149,36 @@ just_in_time2([<<"swap">>|[<<"swap">>|R]]) ->
 just_in_time2([<<"dup">>|[<<"drop">>|R]]) -> 
     just_in_time2(R);
 just_in_time2([<<">r">>|[<<"r>">>|R]]) -> 
+    just_in_time2(R);
+just_in_time2([<<"r>">>|[<<">r">>|R]]) -> 
+    just_in_time2(R);
+just_in_time2([<<"r@">>|[<<"@">>|[<<"r@">>|[<<"@">>|[<<"r@">>|[<<"@">>|R]]]]]]) -> 
+    %using the first function var three in a row
+    just_in_time2([<<"r@">>|[<<"@">>|[<<"dup">>|[<<"dup">>|R]]]]);
+just_in_time2([<<"r@">>|[<<"@">>|[<<"r@">>|[<<"@">>|R]]]]) -> 
+    %using the first function var twice in a row
+    just_in_time2([<<"r@">>|[<<"@">>|[<<"dup">>|R]]]);
+just_in_time2([<<"r@">>|[N|[<<"+">>|[<<"@">>|[<<"r@">>|[N|[<<"+">>|[<<"@">>|R]]]]]]]]) when is_integer(N)-> 
+    %using the Nth first function var twice in a row
+    just_in_time2([<<"r@">>|[N|[<<"+">>|[<<"@">>|[<<"dup">>|R]]]]]);
+
+%for the symmetric functions +, *, and =, we should try and push variables to the left and constants to the right so that we can simplify the function definitions.
+just_in_time2([N,<<"r@">>,M,<<"+">>,<<"@">>,<<"===">>|R]) when (((N== <<"nil">>) or (is_integer(N))) and is_integer(M))->
+    just_in_time2([<<"r@">>,M,<<"+">>,<<"@">>,N,<<"===">>|R]);
+just_in_time2([N,<<"r@">>,M,<<"+">>,<<"@">>,<<"*">>|R]) when (is_integer(N) and is_integer(M))->
+    just_in_time2([<<"r@">>,M,<<"+">>,<<"@">>,N,<<"*">>|R]);
+just_in_time2([N,<<"r@">>,M,<<"+">>,<<"@">>,<<"+">>|R]) when is_integer(N)->
+    just_in_time2([<<"r@">>, M,<<"+">>, <<"@">>,N,<<"+">>|R]);
+just_in_time2([N,<<"r@">>,<<"@">>,<<"===">>|R]) when ((N == <<"nil">>) or (is_integer(N)))->
+    just_in_time2([<<"r@">>, <<"@">>,N,<<"===">>|R]);
+just_in_time2([N,<<"r@">>,<<"@">>,<<"*">>|R]) when is_integer(N)->
+    just_in_time2([<<"r@">>, <<"@">>,N,<<"*">>|R]);
+just_in_time2([N,<<"r@">>,<<"@">>,<<"+">>|R]) when is_integer(N)->
+    just_in_time2([<<"r@">>, <<"@">>,N,<<"+">>|R]);
+
+just_in_time2([1|[<<"*">>|R]]) -> 
+    just_in_time2(R);
+just_in_time2([0|[<<"+">>|R]]) -> 
     just_in_time2(R);
 just_in_time2([<<"nop">>|R]) -> 
     just_in_time2(R);
@@ -381,65 +443,65 @@ lisp_cond([[Bool, Code]|T], D) ->
 	X -> X
     end.
 
-print_binary({error, R}) ->
-    io:fwrite("error! \n"),
-    io:fwrite(R),
-    io:fwrite("\n"); 
-print_binary(<<A:8, B/binary>>) ->
-    io:fwrite(integer_to_list(A)),
-    io:fwrite("\n"),
-    print_binary(B);
-print_binary(<<>>) -> ok.
-split_def(B) ->
-    split_def(B, 0).
-split_def(B, N) ->
-    <<Prev:N, Y:8, C/binary>> = B,
-    case Y of
-	?int -> split_def(B, N+8+?int_bits);
-	?binary ->
-	    <<_:N, Y:8, H:32, _/binary>> = B,
-	    split_def(B, N+40+(H*8));
-	?define ->
-	    <<_:N, _D/binary>> = C,
-	    {Func, T} = split_def(C),
-	    Hash = hash:doit(Func, chalang_constants:hash_size()),
-	    DSize = chalang_constants:hash_size(),
-	    B2 = <<Prev:N, 2, DSize:32, Hash/binary, T/binary>>,
-	    split_def(B2, N+40+(DSize*8));
-	?fun_end ->
-	    <<A:N, Y:8, T/binary>> = B,
-	    {<<A:N>>, T};
-	_ -> split_def(B, N+8)
-    end.
+%print_binary({error, R}) ->
+%    io:fwrite("error! \n"),
+%    io:fwrite(R),
+%    io:fwrite("\n"); 
+%print_binary(<<A:8, B/binary>>) ->
+%    io:fwrite(integer_to_list(A)),
+%    io:fwrite("\n"),
+%    print_binary(B);
+%print_binary(<<>>) -> ok.
+%split_def(B) ->
+%    split_def(B, 0).
+%split_def(B, N) ->
+%    <<Prev:N, Y:8, C/binary>> = B,
+%    case Y of
+%	?int -> split_def(B, N+8+?int_bits);
+%	?binary ->
+%	    <<_:N, Y:8, H:32, _/binary>> = B,
+%	    split_def(B, N+40+(H*8));
+%	?define ->
+%	    <<_:N, _D/binary>> = C,
+%	    {Func, T} = split_def(C),
+%	    Hash = hash:doit(Func, chalang_constants:hash_size()),
+%	    DSize = chalang_constants:hash_size(),
+%	    B2 = <<Prev:N, 2, DSize:32, Hash/binary, T/binary>>,
+%	    split_def(B2, N+40+(DSize*8));
+%	?fun_end ->
+%	    <<A:N, Y:8, T/binary>> = B,
+%	    {<<A:N>>, T};
+%	_ -> split_def(B, N+8)
+%    end.
 %after the first function definition, replace any repeated definition with the hash of the definition.
-lambdas(<<0, N:32, T/binary>>, Done) -> 
-    {T2, Done2} = lambdas(T, Done),
-    {<<0, N:32, T2/binary>>, Done2};
-lambdas(<<2, N:32, T/binary>>, Done) ->
-    M = N * 8,
-    <<X:M, T2/binary>> = T,
-    {T3, Done2} = lambdas(T2, Done),
-    {<<2, N:32, X:M, T3/binary>>, Done2};
+%lambdas(<<0, N:32, T/binary>>, Done) -> 
+%    {T2, Done2} = lambdas(T, Done),
+%    {<<0, N:32, T2/binary>>, Done2};
+%lambdas(<<2, N:32, T/binary>>, Done) ->
+%    M = N * 8,
+%    <<X:M, T2/binary>> = T,
+%    {T3, Done2} = lambdas(T2, Done),
+%    {<<2, N:32, X:M, T3/binary>>, Done2};
     
-lambdas(<<110, T/binary>>, Done) ->
-    {Func, T2} = split_def(T),
-    Hash = hash:doit(Func, chalang_constants:hash_size()),
-    Bool = is_in(Hash, Done),
-    {Bin, Done2} = 
-	if 
-	    Bool -> 
-		{<<>>, Done};
-	    true -> 
-		{<<110, Func/binary, 111>>, [Hash|Done]}
-	end,
-    {T3, Done3} = lambdas(T2, Done2),
-    DSize = chalang_constants:hash_size(),
+%lambdas(<<110, T/binary>>, Done) ->
+%    {Func, T2} = split_def(T),
+%    Hash = hash:doit(Func, chalang_constants:hash_size()),
+%    Bool = is_in(Hash, Done),
+%    {Bin, Done2} = 
+%	if 
+%	    Bool -> 
+%		{<<>>, Done};
+%	    true -> 
+%		{<<110, Func/binary, 111>>, [Hash|Done]}
+%	end,
+%    {T3, Done3} = lambdas(T2, Done2),
+%    DSize = chalang_constants:hash_size(),
     %{<<Bin/binary, 2, DSize:32, Hash/binary, T3/binary>>, Done3};
-    {<<Bin/binary, 2, DSize:32, Hash/binary, T3/binary>>, Done3};
-lambdas(<<X, T/binary>>, Done) -> 
-    {T2, Done2} = lambdas(T, Done),
-    {<<X, T2/binary>>, Done2};
-lambdas(<<>>, D) -> {<<>>, D}.
+%    {<<Bin/binary, 2, DSize:32, Hash/binary, T3/binary>>, Done3};
+%lambdas(<<X, T/binary>>, Done) -> 
+%    {T2, Done2} = lambdas(T, Done),
+%    {<<X, T2/binary>>, Done2};
+%lambdas(<<>>, D) -> {<<>>, D}.
     
 to_ops([], _) -> <<>>;
 to_ops([H|T], F) -> 

@@ -1,4 +1,4 @@
-(import (function_lib2.scm eqs_lib.scm let_lib.scm cond_lib.scm))
+(import (function_lib3.scm eqs_lib.scm let_lib.scm cond_lib.scm))
 
 ;(define fun (y x) (- x y))
 ;(apply (@ fun) (() 6 5))
