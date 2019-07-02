@@ -1,4 +1,4 @@
-(import (eqs_lib.scm let_lib.scm function_lib2.scm))
+(import (eqs_lib.scm let_lib.scm function_lib3.scm))
 (and 
  (= 6 
     (execute (lambda (x) (+ x x)) ; anonymous function

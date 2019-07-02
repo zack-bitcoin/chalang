@@ -1,4 +1,4 @@
-(import (cond_lib.scm eqs_lib.scm function_lib.scm))
+(import (cond_lib.scm eqs_lib.scm function_lib3.scm))
 
 ;classic game of rock paper scissors.
 ;if there is a draw, then it starts a new round recursively, until someone wins.

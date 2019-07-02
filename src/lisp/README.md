@@ -3,7 +3,7 @@
 These libraries implement parts of the lisp language:
 cond_lib.scm
 eqs_lib.scm
-function_lib.scm
+function_lib3.scm
 let_lib.scm
 
 

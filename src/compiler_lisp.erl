@@ -7,12 +7,14 @@
 -define(int, 0).
 -define(binary, 2).
 -define(define, 110).
+-define(define2, 114).
 -define(fun_end, 111).
 test() ->
     Files = [ %"roshambo",
 	      %"new_oracle",
+              "fun_test5",
 	      "let",
-	      "dice",
+              "dice",
 	      "fun_test4",
 	      "fun_test",
 	      "macro_basics",
@@ -388,26 +390,26 @@ print_binary(<<A:8, B/binary>>) ->
     io:fwrite("\n"),
     print_binary(B);
 print_binary(<<>>) -> ok.
-split_def(X, B) ->
-    split_def(X, B, 0).
-split_def(X, B, N) ->
+split_def(B) ->
+    split_def(B, 0).
+split_def(B, N) ->
     <<Prev:N, Y:8, C/binary>> = B,
     case Y of
-	?int -> split_def(X, B, N+8+?int_bits);
+	?int -> split_def(B, N+8+?int_bits);
 	?binary ->
 	    <<_:N, Y:8, H:32, _/binary>> = B,
-	    split_def(X, B, N+40+(H*8));
+	    split_def(B, N+40+(H*8));
 	?define ->
 	    <<_:N, _D/binary>> = C,
-	    {Func, T, _P} = split_def(?fun_end, C),
+	    {Func, T} = split_def(C),
 	    Hash = hash:doit(Func, chalang_constants:hash_size()),
 	    DSize = chalang_constants:hash_size(),
 	    B2 = <<Prev:N, 2, DSize:32, Hash/binary, T/binary>>,
-	    split_def(X, B2, N+40+(DSize*8));
-	X ->
+	    split_def(B2, N+40+(DSize*8));
+	?fun_end ->
 	    <<A:N, Y:8, T/binary>> = B,
-	    {<<A:N>>, T, N};
-	_ -> split_def(X, B, N+8)
+	    {<<A:N>>, T};
+	_ -> split_def(B, N+8)
     end.
 %after the first function definition, replace any repeated definition with the hash of the definition.
 lambdas(<<0, N:32, T/binary>>, Done) -> 
@@ -418,8 +420,9 @@ lambdas(<<2, N:32, T/binary>>, Done) ->
     <<X:M, T2/binary>> = T,
     {T3, Done2} = lambdas(T2, Done),
     {<<2, N:32, X:M, T3/binary>>, Done2};
+    
 lambdas(<<110, T/binary>>, Done) ->
-    {Func, T2, _} = split_def(111, T),
+    {Func, T2} = split_def(T),
     Hash = hash:doit(Func, chalang_constants:hash_size()),
     Bool = is_in(Hash, Done),
     {Bin, Done2} = 
@@ -431,6 +434,7 @@ lambdas(<<110, T/binary>>, Done) ->
 	end,
     {T3, Done3} = lambdas(T2, Done2),
     DSize = chalang_constants:hash_size(),
+    %{<<Bin/binary, 2, DSize:32, Hash/binary, T3/binary>>, Done3};
     {<<Bin/binary, 2, DSize:32, Hash/binary, T3/binary>>, Done3};
 lambdas(<<X, T/binary>>, Done) -> 
     {T2, Done2} = lambdas(T, Done),

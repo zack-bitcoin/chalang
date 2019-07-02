@@ -1,3 +1,4 @@
+
 ; this is a library for making functions at run-time.
 
 ; uses the r-stack to store the memory locations
@@ -86,7 +87,7 @@
 (macro lambda (Vars Code)
        ; define a new function
        '(nop 
-	     start_fun
+	     def
 	     ,(_load_inputs Vars 0)
 	     (_call_stack*
 	      ,(_length Vars)
@@ -127,5 +128,4 @@
 ;(_call_stack* 3 '(+ (+ a b) c))
 
 ;3 (_load_inputs (x) 0)
-
 

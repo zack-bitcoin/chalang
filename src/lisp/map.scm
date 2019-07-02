@@ -1,4 +1,4 @@
-(import (eqs_lib.scm function_lib.scm cond_lib.scm))
+(import (eqs_lib.scm function_lib3.scm cond_lib.scm))
 
 ; the map is happening completely at run-time
 

@@ -271,12 +271,6 @@ run2([<<?define2:8, Script/binary>>|T], D) ->
 	    end
     end;
 
-
-
-
-
-
-
 run2([<<?return:8, _/binary>>|_], D) ->
     run1([<<>>], D);
 run2([<<Command:8, Script/binary>>|T], D) 

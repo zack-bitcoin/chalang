@@ -1,4 +1,4 @@
-(import (eqs_lib.scm function_lib.scm cond_lib.scm let_lib.scm tree_lib.scm))
+(import (eqs_lib.scm function_lib3.scm cond_lib.scm let_lib.scm tree_lib.scm))
 
 ; merge-sort
 
@@ -66,3 +66,30 @@
        '(execute (@ rt_sort2)
 		 ((execute (@ rt_setup) (l)))))
 
+
+; this is the chalang code that gets generated from the run-time lisp functions above.
+
+; 500 >r % this is from function_lib3.scm
+
+; def r@ ! r@ 1 + ! nil r@ 1 + @ = tuck drop drop
+;   if r@ @
+;   else nil r@ @ = tuck drop drop
+;     if r@ 1 + @
+;     else r@ 1 + @ car drop r@ @ car drop >
+;       if r@ @ car drop r@ 1 + @ r@ @ car swap drop recurse call cons
+;       else r@ 1 + @ car drop r@ 1 + @ car swap drop r@ @ recurse call cons then
+;     then
+;   then
+; 1 !
+
+; def r@ ! nil r@ @ car swap drop = tuck drop drop
+;   if r@ @ car drop
+;   else r@ @ car drop r@ @ car swap drop car drop 1 @ r@ 1 + >r call r> drop r@ @ car swap drop car swap drop reverse cons reverse recurse call then
+; 2 !
+
+; def r@ ! nil r@ @ = tuck drop drop
+;   if nil
+;   else r@ @ car drop nil cons r@ @ car swap drop recurse call cons then
+; 3 !
+
+;1 3 1 5 3 9 20 4 8 nil cons cons cons cons cons cons cons cons 3 @ call 2 @ call 1 3 3 4 5 8 9 20 nil cons cons cons cons cons cons cons cons = tuck drop drop and
