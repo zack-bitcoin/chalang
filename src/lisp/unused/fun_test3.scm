@@ -1,5 +1,5 @@
 ;(import (eqs_lib.scm let_lib.scm))
-(import (function_lib2.scm eqs_lib.scm))
+(import (function_lib3.scm eqs_lib.scm))
 
 ;This shows how to package a function so it can be imported and used in other pages of lisp.
 

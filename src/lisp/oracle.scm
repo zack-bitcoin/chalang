@@ -1,4 +1,4 @@
-(import (eqs_lib.scm function_lib.scm cond_lib.scm tree_lib.scm))
+(import (eqs_lib.scm function_lib3.scm cond_lib.scm tree_lib.scm))
 
 (macro oracle_result (Proof)
   '(() 32 split drop 1 split swap drop --AAAA swap ++ )

@@ -3,12 +3,12 @@
 
 -module(compiler_lisp).
 -export([doit/1, test/0]).
--define(int_bits, 32).
--define(int, 0).
--define(binary, 2).
--define(define, 110).
--define(define2, 114).
--define(fun_end, 111).
+%-define(int_bits, 32).
+%-define(int, 0).
+%-define(binary, 2).
+%-define(define, 110).
+%-define(define2, 114).
+%-define(fun_end, 111).
 test() ->
     Files = [ %"roshambo",
 	      %"new_oracle",
@@ -19,7 +19,7 @@ test() ->
 	      "fun_test",
 	      "macro_basics",
 	      "flatten_test",
-	      "fun_test3",
+	      %"fun_test3",
 	      "enum_test",
 	      "append_test",
 	      "eqs_test",

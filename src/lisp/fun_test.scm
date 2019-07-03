@@ -1,4 +1,3 @@
-;(import (eqs_lib.scm let_lib.scm function_lib.scm cond_lib.scm))
 (import (eqs_lib.scm let_lib.scm function_lib3.scm cond_lib.scm))
 
 ;This shows how to package a function so it can be imported and used in other pages of lisp.
