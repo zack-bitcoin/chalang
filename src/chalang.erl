@@ -114,7 +114,7 @@ test(Script, OpGas, RamGas, Funs, Vars, State) ->
 
 %run takes a list of bets and scriptpubkeys. Each bet is processed seperately by the RUN2, and the results of each bet is accumulated together to find the net result of all the bets.
 data_maker(OpGas, RamGas, Vars, Funs, ScriptSig, SPK, State, HashSize, Version) ->
-    data_maker(OpGas, RamGas, Vars, Funs, ScriptSig, SPK, State, HashSize, false).
+    data_maker(OpGas, RamGas, Vars, Funs, ScriptSig, SPK, State, HashSize, Version, false).
 data_maker(OpGas, RamGas, Vars, Funs, ScriptSig, SPK, State, HashSize, Version, Verbose) ->
     #d{op_gas = OpGas, 
        ram_limit = RamGas, 
