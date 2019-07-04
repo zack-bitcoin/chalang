@@ -102,7 +102,7 @@ test(Script, OpGas, RamGas, Funs, Vars, State) ->
 	   ram_current = size(Script), 
 	   state = State,
            version = 1,
-           verbose = true},
+           verbose = false},
     %compiler_chalang:print_binary(Script),
     %io:fwrite("\nrunning a script =============\n"),
     %disassembler:doit(Script),

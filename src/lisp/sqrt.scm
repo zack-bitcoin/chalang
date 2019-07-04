@@ -15,7 +15,7 @@
 ;                          (ex (makerat 2 1))))
 ;             (ex (makerat 2 1))))
                  
-(define good_enough (guess x)
+(define good_enough (guess x);unused
   (ex (<rat (ex (pos_diff_rat
                  (ex (square_rat guess))
                  x))
@@ -23,19 +23,10 @@
 ;(ex (good_enough (ex (makerat 20001 10000))
 ;                  (ex (makerat 4 1))))
 
+(macro sqrt_h (x g) (ex (improve x g)))
+(macro sqrt_h2 (x g) (sqrt_h x (sqrt_h x g)))
 (define sqrt2 (guess x)
-  (ex (improve
-       x
-       (ex (improve
-            x
-            (ex (improve
-                 x
-                 (ex (improve
-                      x
-                      (ex (improve
-                           x
-                           (ex (improve x guess)))))))))))))
-
+  (sqrt_h2 x (sqrt_h2 x (sqrt_h2 x guess))))
 (define sqrt (x);works
   (ex (sqrt2 x x)))
 
