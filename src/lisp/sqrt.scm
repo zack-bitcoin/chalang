@@ -9,12 +9,6 @@
   (ex (average guess (ex (div_rat x guess)))))
 ;(ex (improve (ex (makerat 2 1))
 ;             (ex (makerat 2 1))))
-
-;(ex (improve (ex (improve (ex (improve (ex (makerat 2 1))
-;                                       (ex (makerat 2 1))))
-;                          (ex (makerat 2 1))))
-;             (ex (makerat 2 1))))
-                 
 (define good_enough (guess x);unused
   (ex (<rat (ex (pos_diff_rat
                  (ex (square_rat guess))
@@ -23,9 +17,9 @@
 ;(ex (good_enough (ex (makerat 20001 10000))
 ;                  (ex (makerat 4 1))))
 
-(macro sqrt_h (x g) (ex (improve x g)))
-(macro sqrt_h2 (x g) (sqrt_h x (sqrt_h x g)))
-(define sqrt2 (guess x)
+(macro sqrt_h (x g) (ex (improve x g)));one improve
+(macro sqrt_h2 (x g) (sqrt_h x (sqrt_h x g)));two improves
+(define sqrt2 (guess x);six improves
   (sqrt_h2 x (sqrt_h2 x (sqrt_h2 x guess))))
 (define sqrt (x);works
   (ex (sqrt2 x x)))
@@ -33,18 +27,18 @@
 ;(ex (sqrt (ex (makerat 144 100))))
 
 
-(define sqrt_times (N guess x);broken
-  (cond (((< N 1) guess)
-         (true (ex (sqrt_times (- N 1)
-                               (ex (improve x guess))
-                               x
-                               ))))))
+;(define sqrt_times (N guess x);broken
+;  (cond (((< N 1) guess)
+;         (true (ex (sqrt_times (- N 1)
+;                               (ex (improve x guess))
+;                               x
+;                               ))))))
 
-(define sqrt3 (x guess);broken
-  (cond (((good_enough guess x) guess)
-         (true (ex (sqrt3 x
-                          (ex (improve x guess))
-                          ))))))
+;(define sqrt3 (x guess);broken
+;  (cond (((good_enough guess x) guess)
+;         (true (ex (sqrt3 x
+;                          (ex (improve x guess))
+;                          ))))))
 ;(ex (sqrt3 (ex (makerat 4 1))
 ;           (ex (makerat 2 1))))
 1                

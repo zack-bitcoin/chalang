@@ -1,6 +1,5 @@
 (import (function_lib3.scm cond_lib.scm))
 
-
 (define makerat (a b)
   (cons a (cons b nil)))
 (define divisor (r)
