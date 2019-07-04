@@ -64,14 +64,15 @@ doit(A) ->
     %io:fwrite("\n"),
     %Tree1 = quote_list(Tree),
     io:fwrite("Macros\n"),
-    Tree2 = integers(Tree1),
+    Tree2_0 = integers(Tree1),
+    Tree2 = macro_names(Tree2_0),
     {Tree3, _} = macros(Tree2, dict:new()),
     io:fwrite("rpn\n"),
     %io:fwrite(Tree3),
     Tree35 = rpn(Tree3),%change to reverse polish notation.
     List = flatten(Tree35),
     List1 = just_in_time(List),
-    List2 = variables(List1, {dict:new(), 1}),
+    List2 = variables(List, {dict:new(), 1}),
     Funcs = dict:new(),
     List4 = to_ops(List2, Funcs),
     %{List5, _} = lambdas(List4, []),
@@ -204,7 +205,7 @@ just_in_time2([<<"nop">>|R]) ->
     just_in_time2(R);
 
 %if we are doing math with 2 constants, this is something that can be done at compile time.
-just_in_time2([N|[M|[<<"+">>|R]]]) 
+just_in_time2([N, M, <<"+">>|R]) 
   when ((is_integer(N)) and (is_integer(M))) ->
     just_in_time2([(N + M)|R]);
 just_in_time2([N|[M|[<<"-">>|R]]]) 
@@ -258,7 +259,27 @@ integers(A) ->
 	B -> list_to_integer(binary_to_list(A));
 	true -> A
     end.
-
+macro_names([<<"macro">>, Name, Vars, Code]) ->
+    Vars2 = macro_unique_vars(Name, Vars, Vars),
+    Code2 = macro_unique_vars(Name, Vars, Code),
+    [<<"macro">>, Name, Vars2, Code2];
+macro_names([H|T]) when is_list(H) ->
+    [macro_names(H)|macro_names(T)];
+macro_names([H|T]) ->
+    [H|macro_names(T)];
+macro_names([]) -> [].
+macro_unique_vars(Name, [], Code) -> Code;
+macro_unique_vars(Name, [H|T], Code) ->
+    macro_unique_vars(Name, T, macro_unique_vars2(Name, H, Code)).
+macro_unique_vars2(Name, Var, []) -> [];
+macro_unique_vars2(Name, Var, [H|T]) ->
+    [macro_unique_vars2(Name, Var, H)|
+     macro_unique_vars2(Name, Var, T)];
+macro_unique_vars2(Name, Var, Var) ->
+    <<Var/binary, Name/binary>>;
+macro_unique_vars2(Name, Var, H) ->
+    H.
+    
 macros([<<"macro">>, Name, Vars, Code], D) ->
     D2 = dict:store(Name, {Vars, Code}, D),
     {[], D2};

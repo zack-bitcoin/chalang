@@ -1,4 +1,4 @@
-(import (function_lib3.scm cond_lib.scm))
+(import (function_lib3.scm cond_lib.scm eqs_lib.scm))
 
 
 ;(define identity (x) x)
@@ -21,12 +21,20 @@
 ;(define F3 (R)
 ;  (ex (Sum
 ;       (ex (Sum 0 0))
-;       (ex (Sum 0 R)))))
+                                        ;       (ex (Sum 0 R)))))
 
 (define to_zero (N M X)
-  (cond (((< N 1) M)
-         (true (ex (to_zero (- N 1)
-                            M X))))))
+  (cond (((< N 1) M);M is 1, X is 5
+         (true (recurse (- N 1)
+                        M
+                        X)))))
+(define F_zero (A B C)
+  (cond (((< A 1) B);B is 1, C is 5
+         (true (recurse (- A 1)
+                        B
+                        C)))))
+;(ex (F_zero 3 6 5))
+;(ex (to_zero 3 6 5))
 ;(ex (Sum M 1))))))))
 
 ;(ex (to_zero 5 (cons 7 nil) 5))

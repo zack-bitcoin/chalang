@@ -1,4 +1,3 @@
-
 ; this is a library for making functions at run-time.
 
 ; uses the r-stack to store the memory locations
@@ -8,12 +7,15 @@
 ; time a function is called, and one thing is
 					; removed from r every time a function returns.
 
-
-(>r 50) ;start storing inputs to functions at 50, that way 1-49 are available for smart contract developers.
+(>r 500) ;start storing inputs to functions at 50, that way 1-49 are available for smart contract developers.
 (macro _pointer (X)
        ; look up a pointer to the xth variable being stored for the current function being processed
        (cond (((= X 0) '(r@))
 	      (true '(+ r@ X)))))
+;(macro pointer_test ()
+;       '(@ (_pointer 3)))
+;(pointer_test)
+
 (macro _load_inputs (V N)
        ; store the inputs of the function into variables,
        ; the top of the r stack points to these variables.
@@ -33,9 +35,10 @@
 		 (((is_list (car Code))
 		   (_variable* Var (car Code) N))
 		  ((= (car Code) Var)
-		   '(@ (_pointer N)))
+		   '(@ ,(_pointer N)))
 		  (true (car Code))))
 		(_variable* Var (cdr Code) N))))))
+;(_variable* zack '(nop 0 zack) 1)
 (macro _variables (Vars Code N)
        ; repeatedly use _variable* to replace
        ; each Var in Code with the inputs to the function,
@@ -45,6 +48,7 @@
 		     (cdr Vars)
 		     (_variable* (car Vars) Code N)
 		     (+ N 1))))))
+;(_variables (reverse (a b c)) '(nop b) 0)
 ;(import (eqs_lib.scm))
 ;2 3
 ;(_load_inputs (a b) 0)
@@ -72,14 +76,15 @@
 	 ((is_list (car Code))
 	  (cons (_call_stack* Many (car Code))
 		(_call_stack* Many (cdr Code))))
-	  ((= (car Code) call)
+         ((= (car Code) call)
 	   ;'(nop ,(cdr Code) (+ r@ Many) >r
-	   '(nop ,(_call_stack* Many (cdr Code)) (+ r@ Many) >r
+	   ;'(nop ,(_call_stack* Many (cdr Code)) (+ r@ Many) >r
+	   '(nop ,(_call_stack* Many (cdr Code)) ,(_pointer Many) >r
                  call
                  r> drop))
                  ;,(_call_stack* Many (cdr Code))))
-	  (true 
-	   (cons (car Code)
+         (true 
+          (cons (car Code)
 		 (_call_stack* Many (cdr Code)))))))
 (macro _length (X)
        ;returns the length of list X at compile-time
@@ -96,6 +101,7 @@
 			   '(Code)
 			   0))
 	     end_fun))
+;(ex (lambda (a b c) '(nop b))
 ;define stores the 32-byte function id into a variable
 ;be careful with define, if a different function gets stored into the variable, then you could end up calling different code than you had expected. Make sure that it is impossible for an attacker to edit the variable after the function is defined.
 (macro define (Name Vars Code)
@@ -106,8 +112,8 @@
        (cons call
 	     (reverse (cons Function
                             (reverse Variables)))))
-(macro execute (F Vars)
-       '(call ,(cons nop Vars) F))
+(macro execute (F V)
+       '(call ,(cons nop V) F))
 
 (macro exec (Name Vars)
 ;       (cons call
