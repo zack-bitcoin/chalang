@@ -32,32 +32,7 @@
                  (int_limit))
                 1))
        R)))
-(define test (R)
-  (ex (simplify_more
-       (ex (max (/ (ex (bigger R))
-                   (int_limit))
-                1))
-       (ex (makerat 100000 200000)))))
-       ;R)))
-;       (ex (makerat 100000 200000)))))
-;(ex (test (ex (makerat 100000 200000))))
-;(ex (test (ex (makerat 100000 200000))))
 ;(ex (simplify (ex (makerat 100000 200000))))
-         
-;(ex (simplify (ex (makerat 100000 200000))))
-
-
-;(ex (max
-;     (/ (ex (bigger (ex (makerat 10 20))))
-;        (int_limit))
-;     1))
-;(ex (max (/
-;          (ex (bigger (ex (makerat 10 20))))
-;          (int_limit))
-;         1))
-;(ex (max (/ (ex (bigger (ex (makerat 10 200000))))
-;            (int_limit))
-;         1))
 (define add_rat (a b)
    (ex (simplify
         (ex (makerat
@@ -73,7 +48,7 @@
   (ex (makerat
        (- 0 (ex (numerator r)))
        (ex (divisor r)))))
-;(ex (inverse_rat (ex (makerat 5 6))))
+;(ex (additive_inverse_rat (ex (makerat 5 6))))
 (define sub_rat (a b)
   (ex (add_rat a (ex (additive_inverse_rat b)))))
 ;(ex (sub_rat (ex (makerat 5 4)) (ex (makerat 1 10))))
