@@ -102,7 +102,7 @@ test(Script, OpGas, RamGas, Funs, Vars, State) ->
 	   ram_current = size(Script), 
 	   state = State,
            version = 1,
-           verbose = false},
+           verbose = true},
     %compiler_chalang:print_binary(Script),
     %io:fwrite("\nrunning a script =============\n"),
     %disassembler:doit(Script),
@@ -565,7 +565,7 @@ run4(?cons, D) -> % ( A [B] -- [A, B] )
 		    D#d{op_gas = D#d.op_gas - 1,
 			stack = [[B|A]|T],
 			ram_current = D#d.ram_current + 1};
-		true -> {error, "can only cond onto a list"}
+		true -> {error, "can only cons onto a list"}
 	    end;
         _ -> {error, "cons stack underflow"}
     end;

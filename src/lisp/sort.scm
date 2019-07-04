@@ -12,7 +12,7 @@
 		     (ct_merge a (cdr b))))
 	      (true (cons (car a)
 			  (ct_merge (cdr a) b))))))
-;(tree (ct_merge (1 3 5) (2 3 6)))
+;(ct_merge (1 3 5) (2 3 6)) -> (1 2 3 3 5 6)
 (macro ct_setup (l)
        (cond (((= l ()) ())
 	      (true (cons (cons (car l) ())
@@ -69,7 +69,7 @@
 
 ; this is the chalang code that gets generated from the run-time lisp functions above.
 
-; 500 >r % this is from function_lib3.scm
+; 50 >r % this is from function_lib3.scm
 
 ; def r@ ! r@ 1 + ! nil r@ 1 + @ = tuck drop drop
 ;   if r@ @

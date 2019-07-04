@@ -5,7 +5,7 @@
        (cond (((= X ()) '(()))
 	      ((= (car (car X)) true)
 	       (cdr (car X)))
-	      (true '(()
+	      (true '(nop
 		      ,(car (car X))
 		      if
 		      ,(car (cdr (car X)))

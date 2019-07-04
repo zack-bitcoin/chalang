@@ -2,10 +2,10 @@
 (import (map.scm tree_lib.scm))
 
 ; the first map is happening completely at run-time
-(macro double () (lambda (x) (* 2 x)))
-(=
-  (execute (@ map) ((double) (tree (2 3 4 5))))
-  (tree (4 6 8 10)))
+;(macro double () (lambda (x) (* 2 x)))
+;(=
+;  (execute (@ map) ((double) (tree (2 3 4 5))))
+;  (tree (4 6 8 10)))
 
 ; this second map is happening completely at compile time
 (macro double2 (x) (* 2 x) )
@@ -13,9 +13,9 @@
        (=
 	(map2 'double2 (2 3 4 5))
 	(4 6 8 10)))
-(test3)
+;(test3)
 
-and
+;and
 
 ; but this time we use `define` to make the function.
 ; so that means that the 32-byte function id is being stored in a variable.
@@ -26,4 +26,4 @@ and
  (execute (@ map) ((@ double3) (tree (2 3 4))))
  (tree (4 6 8)))
 
-and
+;and

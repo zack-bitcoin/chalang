@@ -10,16 +10,15 @@
 %-define(define2, 114).
 %-define(fun_end, 111).
 test() ->
-    Files = [ %"roshambo",
-	      %"new_oracle",
-              "fun_test5",
+    Files = [ 
+              %"rationals",
+              %"fun_test5",
 	      "let",
-              "dice",
+              %"dice",
 	      "fun_test4",
 	      "fun_test",
 	      "macro_basics",
 	      "flatten_test",
-	      %"fun_test3",
 	      "enum_test",
 	      "append_test",
 	      "eqs_test",
@@ -27,10 +26,13 @@ test() ->
 	      "hashlock",
 	      "first_macro", "square_each_macro", 
 	      "primes", 
-	      "function", 
 	      "gcf",
 	      "map_test",
-	      "sort_test"
+	      "sort_test",
+
+              "rat_test",
+              %"rationals",
+              "sqrt"
 	    ],
     test2(Files).
 test2([]) -> success;
@@ -79,7 +81,7 @@ doit(A) ->
     Gas = 10000,
     VM = chalang:vm(List4, Gas*100, Gas*10, Gas, Gas, []),
     {{%Tree1, Tree3, Tree35, 
-      List, List1%, List4, List5
+      List %List1, List4, List5
       }, VM}.
 r_collapse([], _, _) ->
     false;

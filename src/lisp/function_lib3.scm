@@ -73,9 +73,11 @@
 	  (cons (_call_stack* Many (car Code))
 		(_call_stack* Many (cdr Code))))
 	  ((= (car Code) call)
-	   '(nop ,(cdr Code) (+ r@ Many) >r
-		 call
-		 r> drop))
+	   ;'(nop ,(cdr Code) (+ r@ Many) >r
+	   '(nop ,(_call_stack* Many (cdr Code)) (+ r@ Many) >r
+                 call
+                 r> drop))
+                 ;,(_call_stack* Many (cdr Code))))
 	  (true 
 	   (cons (car Code)
 		 (_call_stack* Many (cdr Code)))))))
@@ -88,9 +90,9 @@
        '(nop 
 	     def
 	     ,(_load_inputs Vars 0)
-	     (_call_stack*
-	      ,(_length Vars)
-	      ,(_variables (reverse Vars)
+	     ,(_call_stack*
+               (_length Vars)
+               (_variables (reverse Vars)
 			   '(Code)
 			   0))
 	     end_fun))
@@ -100,10 +102,25 @@
        '(! ,(lambda Vars Code) Name))
 
 
-(macro execute (Function Variables)
+(macro execute_old (Function Variables)
        (cons call
 	     (reverse (cons Function
-			    (reverse Variables)))))
+                            (reverse Variables)))))
+(macro execute (F Vars)
+       '(call ,(cons nop Vars) F))
+
+(macro exec (Name Vars)
+;       (cons call
+;	     (reverse (cons Name
+                                        ;			    (reverse Vars)))))
+       '(execute (@ Name) Vars))
+(macro ex (Vars)
+       '(execute (@ ,(car Vars)) ,(cdr Vars)))
+
+;(define square (x)
+;  (* x x))
+;(ex (square 5))
+
 ;3 4 5 6 7
 ;(lambda (x y) (+ 1 (+ x y)))
 ;(lambda (x y z) (+ x (+ z y )))
