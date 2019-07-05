@@ -29,10 +29,10 @@ test() ->
 	      "gcf",
 	      "map_test",
 	      "sort_test",
-
               "rat_test",
               %"rationals",
-              "sqrt"
+              %"sqrt",%slow to compile
+              "binary_convert"
 	    ],
     test2(Files).
 test2([]) -> success;
