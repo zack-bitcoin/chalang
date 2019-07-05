@@ -34,7 +34,7 @@
 
 ;;;;;; next at run-time
 
-(define rt_merge (a b)
+(define (rt_merge a b)
   (cond (((= nil a) b)
 	 ((= nil b) a)
 	 ((> (car a) (car b))
@@ -45,7 +45,7 @@
 
 ;(rt_merge (tree (2 4 6)) (tree (3 5 6)))
 
-(define rt_sort2 (l)
+(define (rt_sort2 l)
   (cond (((= nil (cdr l)) (car l))
 	 (true
 	  (recurse
@@ -56,7 +56,7 @@
 	     (reverse (cdr (cdr l))))))))))
 ;(execute (@ rt_sort2) ((tree ((5)(2)(6)(1)(3)))))
 
-(define rt_setup (l)
+(define (rt_setup l)
   (cond (((= nil l) nil)
 	 (true (cons (cons (car l) nil)
 		     (recurse (cdr l)))))))

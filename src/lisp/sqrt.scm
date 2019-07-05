@@ -26,14 +26,14 @@
 ;(sqrt6 (makerat 144 100))))
 
 
-(define (sqrt_times_helper N guess x)
+(define (sqrt_times_h N guess x)
   (cond (((< N 1) guess)
-         (true (sqrt_times_helper (- N 1)
+         (true (sqrt_times_h (- N 1)
                                (improve x guess)
                                x
                                )))))
 (define (sqrt_times N X);this is so you can choose to do more any number of iterations
-  (sqrt_times_helper N X X))
+  (sqrt_times_h N X X))
 ;(sqrt_times 4 (makerat 2 1))
                 
 

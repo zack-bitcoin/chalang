@@ -11,7 +11,7 @@
 %-define(fun_end, 111).
 test() ->
     Files = [ 
-	      "tests/let",
+	      "tests/let_test",
 	      "tests/fun_test",
 	      "tests/fun_test4",
 	      "tests/fun_test5",
@@ -141,6 +141,7 @@ func_input_simplify([X|T]) ->
     [X|func_input_simplify(T)];
 func_input_simplify([]) -> [].
 no_rff0([<<"end_fun">>|_]) -> true;
+no_rff0([]) -> true;
 no_rff0([<<"r@">>,<<"@">>|_]) -> false;
 no_rff0([X|T]) -> no_rff0(T).
 
@@ -150,6 +151,8 @@ no_rff(N, [X|T]) -> no_rff(N, T).
           
 used_r([]) -> false;
 used_r([<<"end_fun">>|_]) -> false;
+used_r([<<"if">>|T]) ->
+    used_r(skip_next_else(T));
 used_r([<<"else">>|T]) ->
     used_r(skip_to_then(T));
 used_r([<<"r@">>|_]) -> true;
@@ -158,6 +161,10 @@ used_r([_|T]) -> used_r(T).
 skip_to_then([<<"then">>|T]) -> T;
 skip_to_then([_|T]) -> skip_to_then(T);
 skip_to_then([]) -> [].
+skip_next_else([<<"else">>|T]) ->
+    T;
+skip_next_else([H|T]) ->
+    [H|skip_next_else(T)].
     
 %tail call optimizations
 just_in_time2([F, <<"@">>, <<"r@">>, <<">r">>, <<"call">>, <<"r>">>, <<"drop">>|T]) ->
@@ -175,15 +182,29 @@ just_in_time2([F, <<"@">>, <<"r@">>, N, <<"+">>, <<">r">>, <<"call">>, <<"r>">>,
         end,
     C ++ just_in_time2(T);
 
-%if we repeatedly call functions, we don't have to restore variables for parent function in between.
+%if we repeatedly call functions, we don't have to restore variables for parent function in between. This is a kind of tail call optimization.
 just_in_time2([<<"call">>,<<"r>">>,<<"drop">>,N,<<"@">>,<<"r@">>,M,<<"+">>,<<">r">>|R]) -> 
     [<<"call">>,N,<<"@">>|just_in_time2(R)];
 just_in_time2([<<"call">>,<<"r>">>,<<"drop">>,N,<<"@">>,<<"r@">>,<<">r">>|R]) -> 
     [<<"call">>,N,<<"@">>|just_in_time2(R)];
 
+%car/cdr repeat optimization
+% first for the 0th input of the function
+just_in_time2([<<"r@">>, <<"@">>, P, <<"r@">>, <<"@">>, P|R]) when ((P == <<"car">>) or (P == <<"cdr">>))->
+    [<<"r@">>, <<"@">>, <<P>>, <<"dup">>|just_in_time2(R)];
+just_in_time2([<<"r@">>, <<"@">>, <<"car">>, <<"r@">>, <<"@">>, <<"cdr">>|R]) ->
+    [<<"r@">>, <<"@">>, <<"car@">>|just_in_time2(R)];
+just_in_time2([<<"r@">>, <<"@">>, <<"cdr">>, <<"r@">>, <<"@">>, <<"car">>|R]) ->
+    [<<"r@">>, <<"@">>, <<"car@">>, <<"swap">>|just_in_time2(R)];
+% now the nth interval for n > 0.
+just_in_time2([<<"r@">>, N, <<"+">>, <<"@">>, P, <<"r@">>, N, <<"+">>, <<"@">>, P|R]) when ((P == <<"car">>) or (P == <<"cdr">>))->
+    [<<"r@">>, N, <<"+">>, <<"@">>, <<P>>, <<"dup">>|just_in_time2(R)];
+just_in_time2([<<"r@">>, N, <<"+">>, <<"@">>, <<"car">>, <<"r@">>, N, <<"+">>, <<"@">>, <<"cdr">>|R]) ->
+    [<<"r@">>, N, <<"+">>, <<"@">>, <<"car@">>|just_in_time2(R)];
+just_in_time2([<<"r@">>, N, <<"+">>, <<"@">>, <<"cdr">>, <<"r@">>, N, <<"+">>, <<"@">>, <<"car">>|R]) ->
+    [<<"r@">>, N, <<"+">>, <<"@">>, <<"car@">>, <<"swap">>|just_in_time2(R)];
 
-just_in_time2([<<"dup">>,<<">r">>,<<"dup">>,<<"r>">>|R]) -> 
-    [<<"dup">>,<<"dup">>|just_in_time2(R)];
+
 
 %common combinations of opcodes that cancel to nothing
 just_in_time2([<<"rot">>, <<"tuck">>|R]) -> 
@@ -198,6 +219,8 @@ just_in_time2([<<">r">>, <<"r>">>|R]) ->
     just_in_time2(R);
 just_in_time2([<<"r>">>, <<">r">>|R]) -> 
     just_in_time2(R);
+just_in_time2([<<"dup">>,<<">r">>,<<"dup">>,<<"r>">>|R]) -> 
+    [<<"dup">>,<<"dup">>|just_in_time2(R)];
 
 %we want to use the variables in last-in-first-out order if possible, since this often leads to more opportunities to optimize.
 %just_in_time2([<<"r@">>, <<"@">>, <<"r@">>, N, <<"+">>, <<"@">>|R]) when is_integer(N)-> 

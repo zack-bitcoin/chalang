@@ -1,6 +1,4 @@
-; T is a list computed at compile-time.
-; T possibly contains other lists.
-; tree converts T into a list available at run-time.
+;This macro converts nested lists from a compile-time data structure to a run-time data structure.
 
 (macro tree (T)
        (cond (((= T ()) '(nil))

@@ -21,7 +21,7 @@
 ; so that means that the 32-byte function id is being stored in a variable.
 ;e can read the variable with `@`
 
-(define double3 (x) (* 2 x) )
+(define (double3 x) (* 2 x) )
 ;(=
  ;(execute (@ map) ((@ double3) (tree (2 3 4))))
 ; (map '(@ 'double3) (tree (2 3 4)))
