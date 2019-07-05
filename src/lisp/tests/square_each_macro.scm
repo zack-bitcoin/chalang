@@ -1,4 +1,4 @@
-(import (eqs_lib.scm))
+(import (core/eqs.scm))
 
 (macro square (X) (* X X))
 ;(macro eqs (A B)

@@ -1,5 +1,5 @@
 
-(import (map.scm tree_lib.scm))
+(import (core/map.scm))
 
 ; the first map is happening completely at run-time
 ;(macro double () (lambda (x) (* 2 x)))
@@ -11,9 +11,9 @@
 (macro double2 (x) (* 2 x) )
 (macro test3 ()
        (=
-	(map2 'double2 (2 3 4 5))
+	(map_ct 'double2 (2 3 4 5))
 	(4 6 8 10)))
-;(test3)
+(test3)
 
 ;and
 
@@ -31,4 +31,4 @@
  (tree (4 6 8)))
 ;(tree (2 3 4))
 
-;and
+and

@@ -1,4 +1,4 @@
-(import (function_lib3.scm cond_lib.scm))
+(import (core/math.scm))
 
 (define makerat (a b)
   (cons a (cons b nil)))
@@ -10,13 +10,6 @@
 
 (macro int_limit () 16384)
 
-(define max (a b)
-  (cond (((> a b) a)
-         (true b))))
-(define min (a b)
-  (cond (((< a b) a)
-         (true b))))
-;(max 6 5)
 (define bigger (r)
   ((max (numerator r) (divisor r))))
 ;(bigger (makerat 4 5))

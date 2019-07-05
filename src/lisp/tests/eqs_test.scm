@@ -1,4 +1,4 @@
-(import (eqs_lib.scm))
+(import (core/eqs.scm))
 
 					; compile time
 (macro A () (= 5 5))

@@ -1,4 +1,4 @@
-(import (eqs_lib.scm rationals.scm cond_lib.scm))
+(import (rationals.scm))
 
 (define (average x y)
   (mul_rat (add_rat x y)

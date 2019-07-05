@@ -1,5 +1,5 @@
 ;(import (eqs_lib.scm function_lib.scm cond_lib.scm
-(import (map.scm tree_lib.scm))
+(import (map.scm basics.scm))
 
 ;[int ID, int Key, binary Size serialize(Oracle)]
 ;<<id:256, result:8, ...>

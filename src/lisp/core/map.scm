@@ -1,4 +1,4 @@
-(import (eqs_lib.scm function_lib3.scm cond_lib.scm))
+(import (basics.scm))
 
 ; the map is happening completely at run-time
 
@@ -9,10 +9,10 @@
 		(recurse F ((cdr X))))))))
 
 ; this map is happening completely at compile-time
-(macro map2 (f l)
+(macro map_ct (f l)
        (cond (((= () l) ())
 	      (true
-	       (cons (execute f ((car l)))
-		     (map2 f (cdr l)))))))
+	       '(cons ,(execute f ((car l)))
+		     ,(map_ct f (cdr l)))))))
 
 			      

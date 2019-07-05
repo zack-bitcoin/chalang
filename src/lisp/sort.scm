@@ -1,5 +1,4 @@
-;(import (eqs_lib.scm function_lib3.scm cond_lib.scm let_lib.scm tree_lib.scm))
-(import (basics.scm let_lib.scm))
+(import (basics.scm))
 
 ; merge-sort
 
@@ -63,5 +62,5 @@
 		     (recurse (cdr l)))))))
 ;(rt_setup ((tree (4 5 6))))
 
-(macro rt_sort (l)
+(macro sort (l)
        (rt_sort2 (rt_setup l)))

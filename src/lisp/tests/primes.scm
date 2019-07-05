@@ -1,7 +1,7 @@
 ;This calculates the biggest prime below the input.
 ;This calculation happens completely at compile-time.
 
-(import (eqs_lib.scm))
+(import (basics.scm))
 
 (macro prime_p (N L)
        (cond (((= () L) true)

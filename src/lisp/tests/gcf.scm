@@ -1,4 +1,4 @@
-(import (eqs_lib.scm function_lib3.scm cond_lib.scm let_lib.scm))
+(import (basics.scm))
 ; gcf is the greatest common factg
 
 ; computing gcf at run-time

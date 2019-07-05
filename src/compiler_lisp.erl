@@ -11,25 +11,24 @@
 %-define(fun_end, 111).
 test() ->
     Files = [ 
-              %"rationals",
-              %"fun_test5",
-	      "let",
-              %"dice",
-	      "fun_test4",
-	      "fun_test",
-	      "macro_basics",
-	      "flatten_test",
-	      "enum_test",
-	      "append_test",
-	      "eqs_test",
-	      "case", 
+	      "tests/let",
+	      "tests/fun_test",
+	      "tests/fun_test4",
+	      "tests/fun_test5",
+	      "tests/macro_basics",
+	      "tests/flatten_test",
+	      "tests/enum_test",
+	      "tests/append_test",
+	      "tests/eqs_test",
+	      "tests/case", 
 	      "hashlock",
-	      "first_macro", "square_each_macro", 
-	      "primes", 
-	      "gcf",
-	      "map_test",
-	      "sort_test",
-              "rat_test",
+	      "tests/first_macro", 
+              "tests/square_each_macro", 
+	      "tests/primes", 
+	      "tests/gcf",
+	      "tests/map_test",
+	      "tests/sort_test",
+              "tests/rat_test",
               %"rationals",
               "sqrt",%slow to compile
               "binary_convert"
@@ -53,7 +52,8 @@ doit_1(A, Done) ->
     Words = to_words(C, <<>>, []),
     Tree = to_lists(Words),
     imports(Tree, Done).
-    
+%unique_file_name(File, [[<<"macro">>, Name, Vars, Code]|T]) ->
+%    [[<<"macro">>, <<File/binary, <<".">>/binary, Name/binary>>, Vars, Code]|unique_file_name(File, T)]
 doit(A) when is_list(A) ->
     doit(list_to_binary(A));
 doit(A) ->
@@ -389,7 +389,7 @@ macro_unique_vars2(Name, Var, [H|T]) ->
     [macro_unique_vars2(Name, Var, H)|
      macro_unique_vars2(Name, Var, T)];
 macro_unique_vars2(Name, Var, Var) ->
-    <<Var/binary, Name/binary>>;
+    <<Var/binary, <<".">>/binary, Name/binary>>;
 macro_unique_vars2(Name, Var, H) ->
     H.
     
@@ -598,66 +598,6 @@ lisp_cond([[Bool, Code]|T], D) ->
 	false -> lisp_cond(T, D);
 	X -> X
     end.
-
-%print_binary({error, R}) ->
-%    io:fwrite("error! \n"),
-%    io:fwrite(R),
-%    io:fwrite("\n"); 
-%print_binary(<<A:8, B/binary>>) ->
-%    io:fwrite(integer_to_list(A)),
-%    io:fwrite("\n"),
-%    print_binary(B);
-%print_binary(<<>>) -> ok.
-%split_def(B) ->
-%    split_def(B, 0).
-%split_def(B, N) ->
-%    <<Prev:N, Y:8, C/binary>> = B,
-%    case Y of
-%	?int -> split_def(B, N+8+?int_bits);
-%	?binary ->
-%	    <<_:N, Y:8, H:32, _/binary>> = B,
-%	    split_def(B, N+40+(H*8));
-%	?define ->
-%	    <<_:N, _D/binary>> = C,
-%	    {Func, T} = split_def(C),
-%	    Hash = hash:doit(Func, chalang_constants:hash_size()),
-%	    DSize = chalang_constants:hash_size(),
-%	    B2 = <<Prev:N, 2, DSize:32, Hash/binary, T/binary>>,
-%	    split_def(B2, N+40+(DSize*8));
-%	?fun_end ->
-%	    <<A:N, Y:8, T/binary>> = B,
-%	    {<<A:N>>, T};
-%	_ -> split_def(B, N+8)
-%    end.
-%after the first function definition, replace any repeated definition with the hash of the definition.
-%lambdas(<<0, N:32, T/binary>>, Done) -> 
-%    {T2, Done2} = lambdas(T, Done),
-%    {<<0, N:32, T2/binary>>, Done2};
-%lambdas(<<2, N:32, T/binary>>, Done) ->
-%    M = N * 8,
-%    <<X:M, T2/binary>> = T,
-%    {T3, Done2} = lambdas(T2, Done),
-%    {<<2, N:32, X:M, T3/binary>>, Done2};
-    
-%lambdas(<<110, T/binary>>, Done) ->
-%    {Func, T2} = split_def(T),
-%    Hash = hash:doit(Func, chalang_constants:hash_size()),
-%    Bool = is_in(Hash, Done),
-%    {Bin, Done2} = 
-%	if 
-%	    Bool -> 
-%		{<<>>, Done};
-%	    true -> 
-%		{<<110, Func/binary, 111>>, [Hash|Done]}
-%	end,
-%    {T3, Done3} = lambdas(T2, Done2),
-%    DSize = chalang_constants:hash_size(),
-    %{<<Bin/binary, 2, DSize:32, Hash/binary, T3/binary>>, Done3};
-%    {<<Bin/binary, 2, DSize:32, Hash/binary, T3/binary>>, Done3};
-%lambdas(<<X, T/binary>>, Done) -> 
-%    {T2, Done2} = lambdas(T, Done),
-%    {<<X, T2/binary>>, Done2};
-%lambdas(<<>>, D) -> {<<>>, D}.
     
 to_ops([], _) -> <<>>;
 to_ops([H|T], F) -> 

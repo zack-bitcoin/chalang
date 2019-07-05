@@ -1,4 +1,4 @@
-(import (eqs_lib.scm let_lib.scm))
+(import (core/eqs.scm core/let_lib.scm))
 
 ; this is happening at run time.
 (macro test ()
