@@ -1,6 +1,6 @@
-(import (function_lib3.scm cond_lib.scm tree_lib.scm eqs_lib.scm))
+(import (basics.scm))
 
-(define binary_convert2 (L N)
+(define (binary_convert2 L N)
   (cond (((= L nil) N)
          (true (binary_convert2
                 (cdr L)

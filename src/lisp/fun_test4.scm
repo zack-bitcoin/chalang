@@ -22,6 +22,7 @@
 (define func (b a)
   (cond (((> 1 2) a)
 	 (true b))))
+;(func 4 5)
 ;(apply (@ func) (5 3))
 ;0
 1

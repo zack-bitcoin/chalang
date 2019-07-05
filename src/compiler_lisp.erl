@@ -31,7 +31,7 @@ test() ->
 	      "sort_test",
               "rat_test",
               %"rationals",
-              %"sqrt",%slow to compile
+              "sqrt",%slow to compile
               "binary_convert"
 	    ],
     test2(Files).
@@ -66,6 +66,7 @@ doit(A) ->
     io:fwrite("Macros\n"),
     Tree2_0 = integers(Tree1),
     Tree2_1 = macro_names(Tree2_0),
+    %io:fwrite(Tree2_1),
     FNs = function_names(Tree2_1),
     Tree2 = apply_funs(FNs, Tree2_1),
     {Tree3, _} = macros(Tree2, dict:new()),
@@ -261,8 +262,10 @@ integers(A) ->
 	B -> list_to_integer(binary_to_list(A));
 	true -> A
     end.
-function_names([<<"define">>, Name, Vars, Code]) ->
-    [Name];
+function_names([[<<"define">>, Name, _, _]|T]) when not(is_list(Name))->
+    [Name] ++ function_names(T);
+function_names([[<<"define">>, Name|_]|T]) ->
+    [hd(Name)] ++ function_names(T);
 function_names([H|T]) when is_list(H) ->
     function_names(H) ++ function_names(T);
 function_names([H|T]) ->
@@ -274,6 +277,8 @@ apply_funs([], Code) -> Code.
 apply_fun(_Name, []) -> [];
 apply_fun(Name, [[<<"define">>, Name2, Vars, Code]|T]) ->
     [[<<"define">>, Name2, Vars, apply_fun(Name, [Code])]|apply_fun(Name, T)];
+apply_fun(Name, [[<<"define">>, Vars, Code]|T]) ->
+    [[<<"define">>, hd(Vars), tl(Vars), apply_fun(Name, [Code])]|apply_fun(Name, T)];
 apply_fun(Name, [[Name|T1]|T2])->
     [[<<"execute2">>,[Name|apply_fun(Name, T1)]]|
      apply_fun(Name, T2)];
