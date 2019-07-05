@@ -122,6 +122,8 @@
        '(execute (@ Name) Vars))
 (macro ex (Vars)
        '(execute (@ ,(car Vars)) ,(cdr Vars)))
+(macro execute2 (Vars)
+       '(execute (@ ,(car Vars)) ,(cdr Vars)))
 
 ;(define square (x)
 ;  (* x x))

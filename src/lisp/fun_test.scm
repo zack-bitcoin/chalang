@@ -19,8 +19,10 @@
 ;storing the pointer to your function in a variable
 (define Fun_1 (x) (+ x (* x x)))
 (=
- (execute (@ Fun_1) (5))
+ ;(execute (@ Fun_1) (5))
+ (Fun_1 5)
  30)
+
 ;and
 
 (define SS (x) (* x x))

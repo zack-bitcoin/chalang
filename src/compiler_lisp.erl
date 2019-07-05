@@ -65,14 +65,16 @@ doit(A) ->
     %Tree1 = quote_list(Tree),
     io:fwrite("Macros\n"),
     Tree2_0 = integers(Tree1),
-    Tree2 = macro_names(Tree2_0),
+    Tree2_1 = macro_names(Tree2_0),
+    FNs = function_names(Tree2_1),
+    Tree2 = apply_funs(FNs, Tree2_1),
     {Tree3, _} = macros(Tree2, dict:new()),
     io:fwrite("rpn\n"),
     %io:fwrite(Tree3),
     Tree35 = rpn(Tree3),%change to reverse polish notation.
     List = flatten(Tree35),
     List1 = just_in_time(List),
-    List2 = variables(List, {dict:new(), 1}),
+    List2 = variables(List1, {dict:new(), 1}),
     Funcs = dict:new(),
     List4 = to_ops(List2, Funcs),
     %{List5, _} = lambdas(List4, []),
@@ -259,6 +261,30 @@ integers(A) ->
 	B -> list_to_integer(binary_to_list(A));
 	true -> A
     end.
+function_names([<<"define">>, Name, Vars, Code]) ->
+    [Name];
+function_names([H|T]) when is_list(H) ->
+    function_names(H) ++ function_names(T);
+function_names([H|T]) ->
+    function_names(T);
+function_names([]) -> [].
+apply_funs([H|T], Code) ->
+    apply_funs(T, apply_fun(H, Code));
+apply_funs([], Code) -> Code.
+apply_fun(_Name, []) -> [];
+apply_fun(Name, [[<<"define">>, Name2, Vars, Code]|T]) ->
+    [[<<"define">>, Name2, Vars, apply_fun(Name, [Code])]|apply_fun(Name, T)];
+apply_fun(Name, [[Name|T1]|T2])->
+    [[<<"execute2">>,[Name|apply_fun(Name, T1)]]|
+     apply_fun(Name, T2)];
+%apply_fun(Name, [Name|T]) ->
+%    [<<"execute2">>, [Name|apply_fun(Name, T)]];
+apply_fun(Name, [H|T]) when is_list(H) ->
+    [apply_fun(Name, H)|
+     apply_fun(Name, T)];
+apply_fun(Name, [H|T]) ->
+    [H|apply_fun(Name, T)].
+    
 macro_names([<<"macro">>, Name, Vars, Code]) ->
     Vars2 = macro_unique_vars(Name, Vars, Vars),
     Code2 = macro_unique_vars(Name, Vars, Code),

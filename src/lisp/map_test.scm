@@ -22,8 +22,13 @@
 ;e can read the variable with `@`
 
 (define double3 (x) (* 2 x) )
+;(=
+ ;(execute (@ map) ((@ double3) (tree (2 3 4))))
+; (map '(@ 'double3) (tree (2 3 4)))
+                                        ; (tree (4 6 8)))
 (=
- (execute (@ map) ((@ double3) (tree (2 3 4))))
+ (map (@ double3) (tree (2 3 4)))
  (tree (4 6 8)))
+;(tree (2 3 4))
 
 ;and

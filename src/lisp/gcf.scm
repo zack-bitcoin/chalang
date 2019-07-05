@@ -10,7 +10,11 @@
   (cond (((= 0 b) a)
          (true (recurse b (rem a b))))))
 
-(= 12 (ex (gcf 24 36)))
+;(= 12 (execute2 (gcf 24 36)))
+;(= 12 (gcf 24 36))
+;(gcf 24 36)
+                                        ;0
+(= 12 (gcf 24 36))
 
 
 ; computing gcf at compile-time
@@ -22,5 +26,5 @@
    (= 12 (ctgcf 24 36))
    )
 (test)
+
 and
-;0
