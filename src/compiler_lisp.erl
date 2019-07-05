@@ -143,19 +143,33 @@ no_rff0([X|T]) -> no_rff0(T).
 no_rff(_, [<<"end_fun">>|_]) -> true;
 no_rff(N, [<<"r@">>,N,<<"+">>,<<"@">>|_]) -> false;
 no_rff(N, [X|T]) -> no_rff(N, T).
-           
+          
+used_r([]) -> false;
+used_r([<<"end_fun">>|_]) -> false;
+used_r([<<"else">>|T]) ->
+    used_r(skip_to_then(T));
+used_r([<<"r@">>|_]) -> true;
+used_r([<<"r>">>|_]) -> true;
+used_r([_|T]) -> used_r(T).
+skip_to_then([<<"then">>|T]) -> T;
+skip_to_then([_|T]) -> skip_to_then(T);
+skip_to_then([]) -> [].
+    
 %tail call optimizations
-%there are more cases we should handle. 
-%Like if a function call is the last thing inside of the first branch of a conditional.
-%or if after calling a function, we never use any input variables in the function definition after that point.
-just_in_time2([<<"r@">>,N,<<"+">>,<<">r">>,<<"call">>,M, <<"@">>, <<"call">>,<<"r>">>,<<"drop">>,<<"then">>,<<"end_fun">>|R]) -> 
-    [<<"call">>,M,<<"@">>,<<"call">>,<<"then">>,<<"end_fun">>|just_in_time2(R)];
-just_in_time2([<<"r@">>,N,<<"+">>,<<">r">>,<<"call">>,M,<<"@">>, <<"call">>,<<"r>">>,<<"drop">>,<<"end_fun">>|R]) -> 
-    [<<"call">>,M,<<"@">>,<<"call">>,<<"end_fun">>|just_in_time2(R)];
-just_in_time2([<<"r@">>,N,<<"+">>,<<">r">>,<<"call">>,<<"r>">>,<<"drop">>,<<"then">>,<<"end_fun">>|R]) -> 
-    [<<"call">>,<<"then">>,<<"end_fun">>|just_in_time2(R)];
-just_in_time2([<<"r@">>,N,<<"+">>,<<">r">>,<<"call">>,<<"r>">>,<<"drop">>,<<"end_fun">>|R]) -> 
-    [<<"call">>,<<"end_fun">>|just_in_time2(R)];
+just_in_time2([F, <<"@">>, <<"r@">>, <<">r">>, <<"call">>, <<"r>">>, <<"drop">>|T]) ->
+    B = used_r(T),
+    C = if
+        B -> [F, <<"@">>, <<"r@">>, <<">r">>, <<"call">>, <<"r>">>, <<"drop">>];
+        true -> [F, <<"@">>, <<"call">>]
+        end,
+    C ++ just_in_time2(T);
+just_in_time2([F, <<"@">>, <<"r@">>, N, <<"+">>, <<">r">>, <<"call">>, <<"r>">>, <<"drop">>|T]) ->
+    B = used_r(T),
+    C = if
+        B -> [F, <<"@">>, <<"r@">>, N, <<"+">>, <<">r">>, <<"call">>, <<"r>">>, <<"drop">>];
+        true -> [F, <<"@">>, <<"call">>]
+        end,
+    C ++ just_in_time2(T);
 
 %if we repeatedly call functions, we don't have to restore variables for parent function in between.
 just_in_time2([<<"call">>,<<"r>">>,<<"drop">>,N,<<"@">>,<<"r@">>,M,<<"+">>,<<">r">>|R]) -> 
