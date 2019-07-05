@@ -68,7 +68,11 @@ doit(A) ->
     Tree2_1 = macro_names(Tree2_0),
     %io:fwrite(Tree2_1),
     FNs = function_names(Tree2_1),
-    Tree2 = apply_funs(FNs, Tree2_1),
+    UnusedFuns = unused_funs(FNs, Tree2_1),
+    io:fwrite(UnusedFuns),
+    io:fwrite("\n\n\n"),
+    Tree2_2 = remove_unused_funs(UnusedFuns, Tree2_1),
+    Tree2 = apply_funs(FNs, Tree2_2),
     {Tree3, _} = macros(Tree2, dict:new()),
     io:fwrite("rpn\n"),
     %io:fwrite(Tree3),
@@ -174,9 +178,14 @@ just_in_time2([F, <<"@">>, <<"r@">>, N, <<"+">>, <<">r">>, <<"call">>, <<"r>">>,
 %if we repeatedly call functions, we don't have to restore variables for parent function in between.
 just_in_time2([<<"call">>,<<"r>">>,<<"drop">>,N,<<"@">>,<<"r@">>,M,<<"+">>,<<">r">>|R]) -> 
     [<<"call">>,N,<<"@">>|just_in_time2(R)];
+just_in_time2([<<"call">>,<<"r>">>,<<"drop">>,N,<<"@">>,<<"r@">>,<<">r">>|R]) -> 
+    [<<"call">>,N,<<"@">>|just_in_time2(R)];
+
 
 just_in_time2([<<"dup">>,<<">r">>,<<"dup">>,<<"r>">>|R]) -> 
     [<<"dup">>,<<"dup">>|just_in_time2(R)];
+
+%common combinations of opcodes that cancel to nothing
 just_in_time2([<<"rot">>, <<"tuck">>|R]) -> 
     just_in_time2(R);
 just_in_time2([<<"tuck">>, <<"rot">>|R]) -> 
@@ -191,10 +200,10 @@ just_in_time2([<<"r>">>, <<">r">>|R]) ->
     just_in_time2(R);
 
 %we want to use the variables in last-in-first-out order if possible, since this often leads to more opportunities to optimize.
-just_in_time2([<<"r@">>, <<"@">>, <<"r@">>, N, <<"+">>, <<"@">>|R]) when is_integer(N)-> 
-    just_in_time2([<<"r@">>, N, <<"+">>, <<"@">>, <<"r@">>, <<"@">>, <<"swap">>|R]);
-just_in_time2([<<"r@">>, M, <<"+">>, <<"@">>, <<"r@">>, N, <<"+">>, <<"@">>|R]) when ((is_integer(N) and is_integer(M)) and (M < N))-> 
-    just_in_time2([<<"r@">>, N, <<"+">>, <<"@">>, <<"r@">>, M, <<"+">>, <<"@">>, <<"swap">>|R]);
+%just_in_time2([<<"r@">>, <<"@">>, <<"r@">>, N, <<"+">>, <<"@">>|R]) when is_integer(N)-> 
+%    just_in_time2([<<"r@">>, N, <<"+">>, <<"@">>, <<"r@">>, <<"@">>, <<"swap">>|R]);
+%just_in_time2([<<"r@">>, M, <<"+">>, <<"@">>, <<"r@">>, N, <<"+">>, <<"@">>|R]) when ((is_integer(N) and is_integer(M)) and (M < N))-> 
+%    just_in_time2([<<"r@">>, N, <<"+">>, <<"@">>, <<"r@">>, M, <<"+">>, <<"@">>, <<"swap">>|R]);
 
 %using the first function var three in a row
 just_in_time2([<<"r@">>, <<"@">>, <<"r@">>, <<"@">>, <<"r@">>, <<"@">>|R]) -> 
@@ -204,8 +213,13 @@ just_in_time2([<<"r@">>, <<"@">>, <<"r@">>, <<"@">>|R]) ->
     just_in_time2([<<"r@">>|[<<"@">>|[<<"dup">>|R]]]);
 
 
-%using the Nth first function var twice in a row
-just_in_time2([<<"r@">>|[N|[<<"+">>|[<<"@">>|[<<"r@">>|[N|[<<"+">>|[<<"@">>|R]]]]]]]]) when is_integer(N)-> 
+%using the Nth first function var multiple times
+just_in_time2([<<"r@">>|[N|[<<"+">>|[<<"@">>|
+              [<<"r@">>|[N|[<<"+">>|[<<"@">>|
+              [<<"r@">>|[N|[<<"+">>|[<<"@">>|R]]]]]]]]]]]]) when is_integer(N)-> 
+    just_in_time2([<<"r@">>|[N|[<<"+">>|[<<"@">>|[<<"dup">>|[<<"dup">>|R]]]]]]);
+just_in_time2([<<"r@">>|[N|[<<"+">>|[<<"@">>|
+              [<<"r@">>|[N|[<<"+">>|[<<"@">>|R]]]]]]]]) when is_integer(N)-> 
     just_in_time2([<<"r@">>|[N|[<<"+">>|[<<"@">>|[<<"dup">>|R]]]]]);
 
 %for the symmetric functions +, *, and =, we should try and push variables to the left and constants to the right so that we can simplify the function definitions.
@@ -228,6 +242,7 @@ just_in_time2([N, <<"r@">>, <<"@">>|R]) when ((N == <<"nil">>) or (is_integer(N)
     just_in_time2([<<"r@">>, <<"@">>, N, <<"swap">>|R]);
 just_in_time2([N, <<"r@">>, M, <<"+">>, <<"@">>|R]) when (((N == <<"nil">>) or (is_integer(N))) and (is_integer(M))) ->
     just_in_time2([<<"r@">>, M, <<"+">>, <<"@">>, N, <<"swap">>|R]);
+
 %multiplying by 1 is the same as doing nothing
 just_in_time2([1|[<<"*">>|R]]) -> 
     just_in_time2(R);
@@ -293,6 +308,34 @@ integers(A) ->
 	B -> list_to_integer(binary_to_list(A));
 	true -> A
     end.
+remove_unused_funs([], Code) -> Code;
+remove_unused_funs([F|T], Code) ->
+    remove_unused_funs(T, remove_unused_fun(F, Code)).
+remove_unused_fun(F, [<<"define">>, F, _, _]) -> [];
+remove_unused_fun(F, [<<"define">>, [F|_], _]) -> [];
+remove_unused_fun(F, [H|T]) when is_list(H) -> 
+    [remove_unused_fun(F, H)|
+     remove_unused_fun(F, T)];
+remove_unused_fun(F, [H|T]) -> [H|remove_unused_fun(F, T)];
+remove_unused_fun(_, []) -> [].
+unused_funs([], _) -> [];
+unused_funs([H|T], Code) ->
+    B = used_fun(H, Code),
+    X = if
+            B -> [];
+            true -> [H]
+    end,
+    X ++ unused_funs(T, Code).
+used_fun(N, []) -> false;
+used_fun(N, [[<<"define">>, Name, _, C]|T]) when not(is_list(Name))->
+    used_fun(N, C) or used_fun(N, T);
+used_fun(N, [[<<"define">>, _, C]|T]) ->
+    used_fun(N, C) or used_fun(N, T);
+used_fun(N, [N|_]) -> true;
+used_fun(N, [H|T]) when is_list(H) ->
+    used_fun(N, H) or used_fun(N, T);
+used_fun(N, [_|T]) ->
+    used_fun(N, T).
 function_names([[<<"define">>, Name, _, _]|T]) when not(is_list(Name))->
     [Name] ++ function_names(T);
 function_names([[<<"define">>, Name|_]|T]) ->
