@@ -63,18 +63,18 @@ doit(A) ->
     %io:fwrite(packer:pack(Tree1)),
     %io:fwrite("\n"),
     %Tree1 = quote_list(Tree),
-    io:fwrite("Macros\n"),
+    %io:fwrite("Macros\n"),
     Tree2_0 = integers(Tree1),
     Tree2_1 = macro_names(Tree2_0),
     %io:fwrite(Tree2_1),
     FNs = function_names(Tree2_1),
     UnusedFuns = unused_funs(FNs, Tree2_1),
-    io:fwrite(UnusedFuns),
-    io:fwrite("\n\n\n"),
+    %io:fwrite(UnusedFuns),
+    %io:fwrite("\n\n\n"),
     Tree2_2 = remove_unused_funs(UnusedFuns, Tree2_1),
     Tree2 = apply_funs(FNs, Tree2_2),
     {Tree3, _} = macros(Tree2, dict:new()),
-    io:fwrite("rpn\n"),
+    %io:fwrite("rpn\n"),
     %io:fwrite(Tree3),
     Tree35 = rpn(Tree3),%change to reverse polish notation.
     List = flatten(Tree35),
@@ -319,7 +319,7 @@ remove_unused_fun(F, [H|T]) when is_list(H) ->
 remove_unused_fun(F, [H|T]) -> [H|remove_unused_fun(F, T)];
 remove_unused_fun(_, []) -> [].
 unused_funs([], _) -> [];
-unused_funs([H|T], Code) ->
+unused_funs([{H, _}|T], Code) ->
     B = used_fun(H, Code),
     X = if
             B -> [];
@@ -336,10 +336,12 @@ used_fun(N, [H|T]) when is_list(H) ->
     used_fun(N, H) or used_fun(N, T);
 used_fun(N, [_|T]) ->
     used_fun(N, T).
-function_names([[<<"define">>, Name, _, _]|T]) when not(is_list(Name))->
-    [Name] ++ function_names(T);
+function_names([[<<"define">>, Name, V, _]|T]) when not(is_list(Name))->
+    L = length(V),
+    [{Name, L}] ++ function_names(T);
 function_names([[<<"define">>, Name|_]|T]) ->
-    [hd(Name)] ++ function_names(T);
+    L = length(tl(Name)),
+    [{hd(Name), L}] ++ function_names(T);
 function_names([H|T]) when is_list(H) ->
     function_names(H) ++ function_names(T);
 function_names([H|T]) ->
@@ -353,9 +355,15 @@ apply_fun(Name, [[<<"define">>, Name2, Vars, Code]|T]) ->
     [[<<"define">>, Name2, Vars, apply_fun(Name, [Code])]|apply_fun(Name, T)];
 apply_fun(Name, [[<<"define">>, Vars, Code]|T]) ->
     [[<<"define">>, hd(Vars), tl(Vars), apply_fun(Name, [Code])]|apply_fun(Name, T)];
-apply_fun(Name, [[Name|T1]|T2])->
-    [[<<"execute2">>,[Name|apply_fun(Name, T1)]]|
-     apply_fun(Name, T2)];
+apply_fun({Name, M}, [[Name|T1]|T2])->
+    B = (M == length(T1)),
+    if
+        B ->
+            [[<<"execute2">>,[Name|apply_fun(Name, T1)]]|
+             apply_fun(Name, T2)];
+        true -> io:fwrite("\n\n=======ERROR========\nwrong number of inputs to function " ++ binary_to_list(Name) ++ "\n\n\n"),
+                error
+    end;
 %apply_fun(Name, [Name|T]) ->
 %    [<<"execute2">>, [Name|apply_fun(Name, T)]];
 apply_fun(Name, [H|T]) when is_list(H) ->

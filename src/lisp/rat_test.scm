@@ -33,7 +33,7 @@
          (true (recurse (- A 1)
                         B
                         C)))))
-;(ex (F_zero 3 6 5))
+;(F_zero 3 6 5)
 ;(ex (to_zero 3 6 5))
 ;(ex (Sum M 1))))))))
 
