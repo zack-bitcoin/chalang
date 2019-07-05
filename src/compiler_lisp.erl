@@ -143,7 +143,24 @@ no_rff0([X|T]) -> no_rff0(T).
 no_rff(_, [<<"end_fun">>|_]) -> true;
 no_rff(N, [<<"r@">>,N,<<"+">>,<<"@">>|_]) -> false;
 no_rff(N, [X|T]) -> no_rff(N, T).
-            
+           
+%tail call optimizations
+%there are more cases we should handle. 
+%Like if a function call is the last thing inside of the first branch of a conditional.
+%or if after calling a function, we never use any input variables in the function definition after that point.
+just_in_time2([<<"r@">>,N,<<"+">>,<<">r">>,<<"call">>,M, <<"@">>, <<"call">>,<<"r>">>,<<"drop">>,<<"then">>,<<"end_fun">>|R]) -> 
+    [<<"call">>,M,<<"@">>,<<"call">>,<<"then">>,<<"end_fun">>|just_in_time2(R)];
+just_in_time2([<<"r@">>,N,<<"+">>,<<">r">>,<<"call">>,M,<<"@">>, <<"call">>,<<"r>">>,<<"drop">>,<<"end_fun">>|R]) -> 
+    [<<"call">>,M,<<"@">>,<<"call">>,<<"end_fun">>|just_in_time2(R)];
+just_in_time2([<<"r@">>,N,<<"+">>,<<">r">>,<<"call">>,<<"r>">>,<<"drop">>,<<"then">>,<<"end_fun">>|R]) -> 
+    [<<"call">>,<<"then">>,<<"end_fun">>|just_in_time2(R)];
+just_in_time2([<<"r@">>,N,<<"+">>,<<">r">>,<<"call">>,<<"r>">>,<<"drop">>,<<"end_fun">>|R]) -> 
+    [<<"call">>,<<"end_fun">>|just_in_time2(R)];
+
+%if we repeatedly call functions, we don't have to restore variables for parent function in between.
+just_in_time2([<<"call">>,<<"r>">>,<<"drop">>,N,<<"@">>,<<"r@">>,M,<<"+">>,<<">r">>|R]) -> 
+    [<<"call">>,N,<<"@">>|just_in_time2(R)];
+
 just_in_time2([<<"dup">>,<<">r">>,<<"dup">>,<<"r>">>|R]) -> 
     [<<"dup">>,<<"dup">>|just_in_time2(R)];
 just_in_time2([<<"rot">>, <<"tuck">>|R]) -> 
