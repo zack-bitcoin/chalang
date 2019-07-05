@@ -6,7 +6,7 @@
   (cond (((= nil X) nil)
 	 (true (cons
 		(execute F ((car X)))
-		(recurse F (cdr X)))))))
+		(recurse F ((cdr X))))))))
 
 ; this map is happening completely at compile-time
 (macro map2 (f l)
