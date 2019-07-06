@@ -1,4 +1,4 @@
-(import (core/eqs.scm core/let.scm))
+(import (core/eqs.scm core/let_macro.scm core/let.scm))
 
 ; this is happening at compile time
 ; this is like a macro that is only defined for a small space.

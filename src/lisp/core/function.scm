@@ -1,12 +1,12 @@
-(import (core/let.scm))
+(import (core/let_macro.scm))
 
 ;this is a library for making functions at run-time.
 
 (macro lambda (Vars Code)
        ; define a new function
-       '(nop 
+       '(nop
          def
-         ,(let Vars Code)
+         ,(let_stack Vars Code)
          end_fun))
 ;(ex (lambda (a b c) '(nop b))
 (macro define (Name Vars Code)
@@ -14,8 +14,6 @@
        '(! ,(lambda Vars Code) Name))
 (macro execute (F V)
        '(call ,(cons nop V) F))
-(macro exec (Name Vars)
-       '(execute (@ Name) Vars))
 (macro execute2 (Vars)
        '(execute (@ ,(car Vars)) ,(cdr Vars)))
 

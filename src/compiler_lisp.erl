@@ -146,6 +146,7 @@ no_rff0([<<"r@">>,<<"@">>|_]) -> false;
 no_rff0([X|T]) -> no_rff0(T).
 
 no_rff(_, [<<"end_fun">>|_]) -> true;
+no_rff(_, []) -> true;
 no_rff(N, [<<"r@">>,N,<<"+">>,<<"@">>|_]) -> false;
 no_rff(N, [X|T]) -> no_rff(N, T).
           
