@@ -1,5 +1,5 @@
 ; let is a common tool for lisp.
-(import (basics.scm core/let_macro.scm))
+(import (basics.scm))
 
 ;let is how lisp offers local variables. That way you don't pollute the global namespace
 
