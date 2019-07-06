@@ -49,7 +49,7 @@ test_func() ->
     
 test() -> test(?loc).
 test(Loc) ->
-    Scripts = [ "clojure", "tuckn_test", "if_test", "pickn",
+    Scripts = [ "tuckn_test", "if_test", "pickn",
 		"filter",
 		"merge_sort",
 		"function", "variable",

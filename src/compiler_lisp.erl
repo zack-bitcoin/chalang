@@ -11,7 +11,6 @@
 %-define(fun_end, 111).
 test() ->
     Files = [ 
-              %"tests/clojure",
 	      "tests/let_test",
 	      "tests/fun_test",
 	      "tests/fun_test4",
