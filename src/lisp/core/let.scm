@@ -7,7 +7,9 @@
 ;(let ((x 2)(y 3)(z 5)) (+ (- z y) x)) -> 2
 
 ;you can use expressions as inputs to the let expression:
-;(let ((x (@ Height))(y 3)) (+ x y)) -> (+ (@ Height) 3)
+;(let ((x (@ Height))(y 3)) (+ (- x x) y)) -> (- y (* 2 (@ height)))
+
+; the (@ Height) computation executes only once, the result is stored in a variable, and read from that variable for every time you use x.
 
 (macro seconds (ps)
   (cond (((= () ps) ())
@@ -43,11 +45,12 @@
 ;(let_stack (firsts '((x 20)(y 10)))
 ;           (+ x (- 1 y)))
 ;(let_stack (firsts (tree ((x 2) (y 3))))
-                                        ;           '(+ (- y 1)))
-(! 5 Z )
-;(@ Z)
-;(seconds '((x 10) (y (@ Z))))
-(let ((x 20)
-      (y (@ Z))
-      (z (* 1 (@ Z))))
-  (+ y (- x (* z 1))))
+;       '(+ (- y 1)))
+
+
+;(! 5 Z )
+;(let ((x 20)
+;      (y (@ Z))
+;      (z (* 1 (@ Z))))
+;  (+ y (- y (* y (* y 0)))))
+;drop
