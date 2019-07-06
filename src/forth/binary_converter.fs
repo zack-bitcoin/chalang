@@ -8,7 +8,7 @@ macro ] swap cons reverse ;
 
 
 % Binary conversion function
-def _bc2 (Accumulator BinList -- Int)
+def (Accumulator BinList -- Int)
   >r
   nil == if drop drop r>
   else drop

@@ -1,5 +1,5 @@
 % the main function recursively adds 0's to the stack. )
-def _main ( print ) int 0 == not if drop int 1 - int 0 swap recurse call else drop drop then ;
+def ( print ) int 0 == not if drop int 1 - int 0 swap recurse call else drop drop then ;
 main !
 
 

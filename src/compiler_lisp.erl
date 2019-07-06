@@ -11,6 +11,7 @@
 %-define(fun_end, 111).
 test() ->
     Files = [ 
+              %"tests/clojure",
 	      "tests/let_test",
 	      "tests/fun_test",
 	      "tests/fun_test4",
@@ -73,6 +74,7 @@ doit(A) ->
     %io:fwrite("\n\n\n"),
     Tree2_2 = remove_unused_funs(UnusedFuns, Tree2_1),
     Tree2 = apply_funs(FNs, Tree2_2),
+    check_recursion_variable_amounts(Tree2),
     {Tree3, _} = macros(Tree2, dict:new()),
     %io:fwrite("rpn\n"),
     %io:fwrite(Tree3),
@@ -395,6 +397,38 @@ apply_fun(Name, [H|T]) when is_list(H) ->
      apply_fun(Name, T)];
 apply_fun(Name, [H|T]) ->
     [H|apply_fun(Name, T)].
+check_recursion_variable_amounts([]) -> ok;
+check_recursion_variable_amounts([[<<"define">>, Name, V, Code]|T]) ->
+    L = length(V),
+    crva2(L, Code, Name),
+    check_recursion_variable_amounts(T);
+check_recursion_variable_amounts([[<<"define">>, V, Code]|T]) ->
+    L = length(V) - 1, 
+    crva2(L, Code, hd(V)),
+    check_recursion_variable_amounts(T);
+check_recursion_variable_amounts([H|T]) ->
+    if
+        is_list(H) ->
+            check_recursion_variable_amounts(H);
+        true -> ok
+    end,
+    check_recursion_variable_amounts(T),
+    ok.
+crva2(_, [], _) -> ok;
+crva2(M, [<<"recurse">>|T], Name) ->
+    L = length(T),
+    if
+        (L == M) -> ok;
+        true -> 
+            io:fwrite("ERROR: wrong number of inputs for recursion in function " ++ binary_to_list(Name) ++ "\n"),
+            1=2
+    end;
+crva2(M, [H|T], Name) ->
+    if
+        is_list(H) -> crva2(M, H, Name);
+        true -> ok
+    end,
+    crva2(M, T, Name).
     
 macro_names([<<"macro">>, Name, Vars, Code]) ->
     Vars2 = macro_unique_vars(Name, Vars, Vars),

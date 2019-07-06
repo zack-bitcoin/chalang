@@ -7,6 +7,10 @@ run_script(X, Gas, Loc) ->
     io:fwrite(A),
     io:fwrite("\n"),
     B = compiler_chalang:doit(<<A/binary, <<"\n test \n">>/binary>>),
+    io:fwrite("compiled script \n"),
+    disassembler:doit(B),
+    %rp(<<0,B/binary>>),
+    io:fwrite("\n"),
     chalang:test(B, Gas, Gas, Gas, Gas, []).
 run_scripts([], _, _) -> ok;
 run_scripts([H|T], Gas, Loc) ->
@@ -45,7 +49,7 @@ test_func() ->
     
 test() -> test(?loc).
 test(Loc) ->
-    Scripts = [ "tuckn_test", "if_test", "pickn",
+    Scripts = [ "clojure", "tuckn_test", "if_test", "pickn",
 		"filter",
 		"merge_sort",
 		"function", "variable",

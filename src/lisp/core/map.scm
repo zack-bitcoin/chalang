@@ -6,6 +6,7 @@
   (cond (((= nil X) nil)
 	 (true (cons
 		(execute F ((car X)))
+		;,(F '(car X))
 		(recurse F ((cdr X))))))))
 
 ; this map is happening completely at compile-time

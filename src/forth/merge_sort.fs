@@ -7,7 +7,7 @@ macro ] , reverse ;
 
 
 % higher order function "map". applies a function to every element of a list. [A, B, B] -> [f(A), f(B), f(C)] 
-def _map2 ( NewList OldList -- List2 )
+def ( NewList OldList -- List2 )
   car swap r@ call rot cons swap
   nil ==
   if
@@ -22,7 +22,7 @@ macro map ( List Fun -- NewList )
 
 
 ( merge two sorted lists into one sorted list. )
-def _merge2 ( L1 L2 Accumulator -- L3 )
+def ( L1 L2 Accumulator -- L3 )
   >r
   nil == if ( if L1 is [] )
     drop drop r> reverse swap ++
@@ -50,7 +50,7 @@ macro merge ( L1 L2 -- L3 )
 
 
 ( example: [A, B, C] -> [[A], [B], [C]]. )
-def _merge_setup2 ( X -- [X] )
+def ( X -- [X] )
   nil cons ;
 merge_setup2 !
 macro merge_setup ( List -- ListOfLengthOneLists )
@@ -59,7 +59,7 @@ macro merge_setup ( List -- ListOfLengthOneLists )
 
 
 ( sort a list )
-def _sort2 ( ListOfSortedLists -- SortedList )
+def ( ListOfSortedLists -- SortedList )
   car nil == ( if there is only 1 sorted list left, return it. )
   if
     drop drop

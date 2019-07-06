@@ -23,20 +23,19 @@
                 (firsts (cdr ps)))))))
 ;(firsts '((1 2)(3 4)))
 ;(seconds '((x 2)(3 y)))
+;1
 (macro let (pairs code)
        (nop (>r (+ @r 30));hopefully the parent functions has less than 30 input variables. there is probably a better way to do this.
              (seconds pairs)
-             (let_stack (reverse (firsts pairs) ())
+             (let_stack (reverse (firsts pairs))
                         code)
              (drop r>)))
 
 
 ;20 10 (let_stack (x y) (+ x (- 1 y)))
 ;(seconds '((x 20)(y 10)))
-;(let_stack (firsts '((x 20)(y 10)))
+;(let_stack (reverse (firsts '((x 20)(y 10))))
 ;           (+ x (- 1 y)))
-;(let_stack (firsts (tree ((x 2) (y 3))))
-;       '(+ (- y 1)))
 
 ;(! 5 Z )
 ;(let ((x 20)

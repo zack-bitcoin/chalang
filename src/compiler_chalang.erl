@@ -114,7 +114,7 @@ get_macros([_|T], Functions) -> get_macros(T, Functions).
 
 get_functions(Words) -> get_functions(Words, dict:new(), {dict:new(), 1}). %this initializes variables on 1, because setelement starts at 1.
 
-get_functions([Y|[Name|R]], Functions, Variables) when ((Y == <<":">>) or (Y == <<"def">>))->
+get_functions([Y|[Name|R]], Functions, Variables) when (Y == <<":">>)->
     %Make sure Name isn't on the restricted list.
     {Code, T} = split(<<";">>, R),
     {Opcodes, Variables2} = to_opcodes(Code, Functions, [], Variables),
@@ -138,7 +138,7 @@ split(C, [D|B], Out) ->
 remove_functions(Words) -> rad(Words, []).
 rad([], Out) -> flip(Out);
 rad([<<":">>|[_|T]], Out) -> rad(T, [<<":">>|Out]);
-rad([<<"def">>|[_|T]], Out) -> rad(T, [<<"def">>|Out]);
+rad([<<"def">>|T], Out) -> rad(T, [<<"def">>|Out]);
 rad([X|T], Out) -> rad(T, [X|Out]).
 to_opcodes([<<"int">>|[B|T]], F, Out, V) ->
     Num = list_to_integer(binary_to_list(B)),

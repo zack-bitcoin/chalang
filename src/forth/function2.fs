@@ -1,10 +1,10 @@
 
-def _square dup * ;
+def dup * ;
 square ! % storing a function inside a variable
-def _double dup + ;
+def dup + ;
 >r % storing a pointer to a function on the r-stack
 
-def _i_am_not_named int 5 ;
+def int 5 ;
 call % calling the anonymous function.
 drop
 

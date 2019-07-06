@@ -3,7 +3,7 @@
 
 
 ;first a version that happens at compile time
-;it is a way of making a short term macro that wont pollute the name space anywhere else.
+;it is a way of making a short term macro that wont pollute the macro name space anywhere else.
 (macro let_macro (pairs code)
        (cond
 	(((= pairs ()) code)

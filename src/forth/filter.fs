@@ -3,12 +3,12 @@ macro [ nil ;
 macro , swap cons ;
 macro ] swap cons reverse ;
 
-def _check ( Int -- Bool )
+def ( Int -- Bool )
   int 27 >
 ;
 check !
 
-def _filter2 ( NewList OldList -- List2 )
+def ( NewList OldList -- List2 )
   nil ==
   if
     drop drop reverse
