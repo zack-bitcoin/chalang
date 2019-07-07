@@ -26,3 +26,9 @@ and
  (tree (4 6 8)))
 
 and
+
+(define (plus3 x) (+ 3 x))
+(define (test l n)
+  (map (@ plus3) l))
+  ;(map (lambda (x) (+ n x)) l))
+;(test (tree (4 5 6)) 2)

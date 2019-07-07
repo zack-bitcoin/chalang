@@ -1,4 +1,5 @@
-(import (core/let_macro.scm))
+(import (core/let_macro.scm
+         flatten.scm))
 
 ;this is a library for making functions at run-time.
 
@@ -10,12 +11,38 @@
          end_fun))
 ;(ex (lambda (a b c) '(nop b))
 (macro define (Name Vars Code)
-       ;make a new function and give it a name.
+      ;make a new function and give it a name.
        '(! ,(lambda Vars Code) Name))
 (macro execute (F V)
        '(call ,(cons nop V) F))
 (macro execute2 (Vars)
        '(execute (@ ,(car Vars)) ,(cdr Vars)))
+
+
+
+(macro lexical_define (Name Vars Code)
+       (lexical_define2 Name Vars Code (context Code)))
+;(macro lexical_define2 (Name Vars Code Context)
+;       '(,(context_switch Context)
+;         ,(define Name (local_vars Vars Context)
+;            (local_vars Code Context))))
+(macro context2 (code)
+      (cond (((= () code) ())
+              ((is_number code) ())
+              ((is_list code) ;())
+               (cons '(context2 ,(car code))
+                     (context2 (cdr code))))
+              (true code))))
+(macro context (X)
+       (flatten (context2 X)))
+;(context '(a 5 is (te beginning)))
+;(write (abc def))
+;(write (context '(abc '(1 def) abc)))
+;0
+
+
+
+
 
 ;(define square (x)
 ;  (* x x))

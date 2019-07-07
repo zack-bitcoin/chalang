@@ -11,16 +11,17 @@
 %-define(fun_end, 111).
 test() ->
     Files = [ 
-	      "tests/let_test",
+	      "tests/macro_basics",
 	      "tests/fun_test",
 	      "tests/fun_test4",
 	      "tests/fun_test5",
-	      "tests/macro_basics",
 	      "tests/flatten_test",
 	      "tests/enum_test",
 	      "tests/append_test",
 	      "tests/eqs_test",
 	      "tests/case", 
+	      "tests/let_test",
+              "tests/clojure",
 	      "hashlock",
 	      "tests/first_macro", 
               "tests/square_each_macro", 
@@ -46,7 +47,7 @@ test2([H|T]) ->
 	X -> X
     end.
 doit_1(A, Done) ->
-    B = remove_comments(<<A/binary, <<"\n">>/binary>>),
+    B = remove_comments(<<<<"nop ">>/binary, A/binary, <<"\n">>/binary>>),
     B2 = quote_unquote(B),
     C = add_spaces(B2),
     Words = to_words(C, <<>>, []),
@@ -79,8 +80,8 @@ doit(A) ->
     %io:fwrite(Tree3),
     Tree35 = rpn(Tree3),%change to reverse polish notation.
     List = flatten(Tree35),
-    List1 = just_in_time(List),
-    List2 = variables(List1, {dict:new(), 1}),
+    List1 = variables(List, {dict:new(), 1}),
+    List2 = just_in_time(List1),
     Funcs = dict:new(),
     List4 = to_ops(List2, Funcs),
     %{List5, _} = lambdas(List4, []),
@@ -384,8 +385,8 @@ apply_fun({Name, M}, [[Name|T1]|T2])->
     B = (M == length(T1)),
     if
         B ->
-            [[<<"execute2">>,[Name|apply_fun(Name, T1)]]|
-             apply_fun(Name, T2)];
+            [[<<"execute2">>,[Name|apply_fun({Name, M}, T1)]]|
+             apply_fun({Name, M}, T2)];
         true -> io:fwrite("\n\n=======ERROR========\nwrong number of inputs to function " ++ binary_to_list(Name) ++ "\n\n\n"),
                 error
     end;
@@ -451,12 +452,15 @@ macro_unique_vars2(Name, Var, H) ->
     H.
     
 macros([<<"macro">>, Name, Vars, Code], D) ->
+    %{Code2, D3} = macros(Code, D),
+    %io:fwrite(Code2),
+    %{Code2, _} = macros(Code, D),
     D2 = dict:store(Name, {Vars, Code}, D),
     {[], D2};
 macros([<<"macro">>|[Name|_]], _) ->
     io:fwrite("\n\nerror, macro named "),
     io:fwrite(Name),
-    io:fwrite(" has the wrong number of inputs\n\n");
+    io:fwrite(" has the wrong number of inputs in it's definition\n\n");
 macros([<<"quote">>|T], D) ->
     {[<<"quote">>|T], D};
 macros([H|T], D) when is_list(H) ->
@@ -618,12 +622,32 @@ lisp([<<"and">>, A, B], F) ->
 lisp([<<"not">>, A], F) ->
     {A2, _} = macros(A, F),
     not(bih(A2, F));
-lisp([<<"print">>|R], F) ->
-    io:fwrite(packer:pack(R)),
-    lisp(R, F);
+%lisp([[<<"write">>|M],R], F) ->
+%    io:fwrite(packer:pack(M)),
+%    lisp(R, F);
+lisp([<<"write">>, R], F) ->
+    lisp_write_helper(R),
+    io:fwrite("\n"),
+    lisp([], F);
 %lisp([<<"nil">>], F) ->
 %    [];
 lisp(X, _) -> X.
+lisp_write_helper(R) ->
+    if 
+        is_integer(R) ->
+            io:fwrite(integer_to_list(R));
+        is_list(R) ->
+            io:fwrite("["),
+            lists:map(fun(X) -> lisp_write_helper(X), io:fwrite(" ") end, R),
+            io:fwrite("]");
+        %io:fwrite(packer:pack(R));
+        is_binary(R) ->
+            io:fwrite(R);
+        true -> 
+            io:fwrite(R),
+            1=2
+    end.
+    
 bih(A, F) -> bool_interpret(lisp(A, F)).
 bool_interpret(<<"false">>) -> false;
 bool_interpret([<<"false">>]) -> false;
