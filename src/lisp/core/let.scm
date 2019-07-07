@@ -34,23 +34,33 @@
           code)
          (drop r>)
          ))
-(macro let* (pairs code)
+;(let* ((a 3)(b 5)) (+ a b))
+; should become ->
+;r@ 30 + r> 3 r@ ! 5 r@ 1 + ! r@ @ r@ 1 + @ +
+
+(macro let*2 (pairs code n)
        (cond (((= pairs ()) code)
-              (true ;(let* (cdr pairs)
-                   ;  (let ((car pairs)) code))))))
-               (let ((car pairs))
-                 (let* (cdr pairs) code))))))
-
-
-(macro let*_bad (pairs code)
-       (nop (>r (+ @r 30))
-            pairs
-            (_call_stack*
-             (_length pairs)
-             (_variables (reverse (firsts pairs))
-                         '(code)
-                         0))))
+              (true '(() ,(car (cdr (car pairs)))
+                      r@ n + !
+                      ,(let*2
+                        (_variables
+                         (cons (car (car pairs)) ())
+                         (cdr pairs)
+                         n)
+                        (_variables
+                         (cons (car (car pairs)) ())
+                         (code)
+                         n)
+                        (+ n 1)))))))
+(macro let* (pairs code)
+       '(() (>r (+ @r 30))
+         (let*2 pairs code 0)
+         (drop r>)
+         ))
+;(let_stack (a) (+ a 2))
 ;(let* ((a 0)(x 2)(y 5)(z 11)) (+ y z))
+;(let ((a 0)) (let ((b a)(x 2)) (+ b x)))
+;(let ((a 0)) (+ 100 a))
 
                                         ;(let ((a 5)) (let ((b (+ 10 a))(c (+ 1 a))) (+ c b)))
 
