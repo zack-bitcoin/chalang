@@ -80,8 +80,8 @@ doit(A) ->
     %io:fwrite(Tree3),
     Tree35 = rpn(Tree3),%change to reverse polish notation.
     List = flatten(Tree35),
-    List1 = variables(List, {dict:new(), 1}),
-    List2 = just_in_time(List1),
+    List1 = just_in_time(List),
+    List2 = variables(List1, {dict:new(), 1}),
     Funcs = dict:new(),
     List4 = to_ops(List2, Funcs),
     %{List5, _} = lambdas(List4, []),
@@ -91,7 +91,7 @@ doit(A) ->
     Gas = 10000,
     VM = chalang:vm(List4, Gas*100, Gas*10, Gas, Gas, []),
     {{%Tree1, Tree3, Tree35, 
-      List %List1, List4, List5
+      List, List1%, List4%, List5
       }, VM}.
 r_collapse([], _, _) ->
     false;
@@ -152,15 +152,18 @@ no_rff(_, []) -> true;
 no_rff(N, [<<"r@">>,N,<<"+">>,<<"@">>|_]) -> false;
 no_rff(N, [X|T]) -> no_rff(N, T).
           
-used_r([]) -> false;
-used_r([<<"end_fun">>|_]) -> false;
-used_r([<<"if">>|T]) ->
-    used_r(skip_next_else(T));
-used_r([<<"else">>|T]) ->
-    used_r(skip_to_then(T));
-used_r([<<"r@">>|_]) -> true;
-used_r([<<"r>">>|_]) -> true;
-used_r([_|T]) -> used_r(T).
+used_r([], _) -> false;
+used_r([<<"end_fun">>|_], _) -> false;
+used_r([<<"if">>|T], N) ->
+    used_r(skip_next_else(T), N);
+used_r([<<"else">>|T], N) ->
+    used_r(skip_to_then(T), N);
+used_r([<<"r@">>|_], 0) -> true;
+used_r([<<"r>">>,<<"drop">>|_], 0) -> false;
+used_r([<<"r>">>|_], 0) -> true;
+used_r([<<"r>">>|T], N) -> used_r(T, N-1);
+used_r([<<">r">>|T], N) -> used_r(T, N+1);
+used_r([_|T], N) -> used_r(T, N).
 skip_to_then([<<"then">>|T]) -> T;
 skip_to_then([_|T]) -> skip_to_then(T);
 skip_to_then([]) -> [].
@@ -168,17 +171,51 @@ skip_next_else([<<"else">>|T]) ->
     T;
 skip_next_else([H|T]) ->
     [H|skip_next_else(T)].
+skip_to_fromr_drop([<<"r>">>,<<"drop">>|T], T1, 0) ->
+    {T1, T};
+skip_to_fromr_drop(_, _, N) when (N < 0) -> 1=2;
+skip_to_fromr_drop([<<"r>">>|T], T1, N) ->
+    skip_to_fromr_drop(T, T1 ++ [<<"r>">>], N-1);
+skip_to_fromr_drop([<<">r">>|T], T1, N) ->
+    skip_to_fromr_drop(T, T1 ++ [<<">r">>], N+1);
+skip_to_fromr_drop([A|B], T1, N) ->
+    skip_to_fromr_drop(B, T1 ++ [A], N).
+
+%if we are doing math with 2 constants, this is something that can be done at compile time.
+just_in_time2([N, M, <<"+">>|R]) 
+  when (is_integer(N) and is_integer(M)) ->
+    just_in_time2([(N + M)|R]);
+just_in_time2([N|[M|[<<"-">>|R]]]) 
+  when ((is_integer(N)) and (is_integer(M))) ->
+    just_in_time2([(N - M)|R]);
+just_in_time2([N|[M|[<<"*">>|R]]]) 
+  when ((is_integer(N)) and (is_integer(M))) ->
+    just_in_time2([(N * M)|R]);
+just_in_time2([N|[M|[<<"/">>|R]]]) 
+  when ((is_integer(N)) and (is_integer(M))) ->
+    just_in_time2([(N div M)|R]);
+
+%r-stack optimizations
+just_in_time2([<<">r">>, <<"r@">>|T]) ->
+    [<<"dup">>, <<">r">>|just_in_time2(T)];
+just_in_time2([<<"@r">>, N, <<"+">>, <<">r">>|T]) when is_integer(N) ->
+    {T1, T2} = skip_to_fromr_drop(T,[],0),
+    B = used_r(T2, 0),
+    C = if
+            B -> [N|just_in_time2([<<"+">>, <<">r">>|T])];
+            true -> just_in_time2(T1 ++ T2)
+        end;
     
 %tail call optimizations
 just_in_time2([F, <<"@">>, <<"r@">>, <<">r">>, <<"call">>, <<"r>">>, <<"drop">>|T]) ->
-    B = used_r(T),
+    B = used_r(T, 0),
     C = if
         B -> [F, <<"@">>, <<"r@">>, <<">r">>, <<"call">>, <<"r>">>, <<"drop">>];
         true -> [F, <<"@">>, <<"call">>]
         end,
     C ++ just_in_time2(T);
 just_in_time2([F, <<"@">>, <<"r@">>, N, <<"+">>, <<">r">>, <<"call">>, <<"r>">>, <<"drop">>|T]) ->
-    B = used_r(T),
+    B = used_r(T, 0),
     C = if
         B -> [F, <<"@">>, <<"r@">>, N, <<"+">>, <<">r">>, <<"call">>, <<"r>">>, <<"drop">>];
         true -> [F, <<"@">>, <<"call">>]
@@ -279,19 +316,7 @@ just_in_time2([0|[<<"+">>|R]]) ->
 just_in_time2([<<"nop">>|R]) -> 
     just_in_time2(R);
 
-%if we are doing math with 2 constants, this is something that can be done at compile time.
-just_in_time2([N, M, <<"+">>|R]) 
-  when ((is_integer(N)) and (is_integer(M))) ->
-    just_in_time2([(N + M)|R]);
-just_in_time2([N|[M|[<<"-">>|R]]]) 
-  when ((is_integer(N)) and (is_integer(M))) ->
-    just_in_time2([(N - M)|R]);
-just_in_time2([N|[M|[<<"*">>|R]]]) 
-  when ((is_integer(N)) and (is_integer(M))) ->
-    just_in_time2([(N * M)|R]);
-just_in_time2([N|[M|[<<"/">>|R]]]) 
-  when ((is_integer(N)) and (is_integer(M))) ->
-    just_in_time2([(N div M)|R]);
+
 %just_in_time2([<<">r">>|R]) ->
 %    R2 = r_collapse(R, 0, []),
 %    io:fwrite(R2),
@@ -301,7 +326,7 @@ just_in_time2([N|[M|[<<"/">>|R]]])
 %    end;
 just_in_time2([A|B]) ->
     [A|just_in_time2(B)];
-just_in_time2(A) -> A.
+just_in_time2([]) -> [].
 
 imports([<<"import">>, []], Done) -> {[], Done};
 imports([<<"import">>, [H|T]], Done) ->

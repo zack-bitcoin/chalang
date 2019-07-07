@@ -29,3 +29,18 @@
 ;and
 ;(let ((x 3))
 ;  (+ x 5))
+
+(macro test ()
+       (let ((a 5))
+         (let ((g a)
+               (b (+ a 4))
+               (c (- a 1)))
+           (let ((d (+ b c))
+                 (h g))
+             (* d h)))))
+(= (test) 65)
+and
+(macro test ()
+       (let ((a 10)) (a)))
+;(test)
+;0

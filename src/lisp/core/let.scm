@@ -29,14 +29,17 @@
 (macro let (pairs code)
        '(() (>r (+ @r 30));hopefully the parent functions has less than 30 input variables. there is probably a better way to do this.
          (seconds pairs)
-         (let_stack ;(firsts pairs)
-          (reverse (firsts pairs))
+         (let_stack (firsts pairs)
+          ;(reverse (firsts pairs))
           code)
-         (drop r>)))
+         (drop r>)
+         ))
 (macro let* (pairs code)
        (cond (((= pairs ()) code)
-              (true (let* (cdr pairs)
-                      (let ((car pairs)) code))))))
+              (true ;(let* (cdr pairs)
+                   ;  (let ((car pairs)) code))))))
+               (let ((car pairs))
+                 (let* (cdr pairs) code))))))
 
 
 (macro let*_bad (pairs code)
@@ -47,11 +50,9 @@
              (_variables (reverse (firsts pairs))
                          '(code)
                          0))))
+;(let* ((a 0)(x 2)(y 5)(z 11)) (+ y z))
 
-;(let ((a 0)(x 2)(y 5)(z 7)) (+ x y))
-;(let ((a 5)) (+ a b))
-
-;0
+                                        ;(let ((a 5)) (let ((b (+ 10 a))(c (+ 1 a))) (+ c b)))
 
 ;2 5 7 (let_stack (x y z) (+ x y))
 ;(seconds '((x 20)(y 10)))
