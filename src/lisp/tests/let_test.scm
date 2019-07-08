@@ -1,4 +1,4 @@
-(import (core/let.scm))
+(import (core/let.scm ));basics.scm))
 
 ; this is for loading variables off the stack into local namespace
 ; it is important for loading values from the script sig into the script pubkey.
@@ -25,7 +25,7 @@
              (y (@ Z))
              (z (* 1 (@ Z))))
          (+ y (- y (* y (* y 0))))))
-(= 10 (test2))
+;(= 10 (test2))
 ;and
 ;(let ((x 3))
 ;  (+ x 5))
@@ -38,18 +38,53 @@
            (let ((d (+ b c))
                  (h g))
              (* d h)))))
-(= (test) 65)
-and
+;(= (test) 65)
+;and
 (macro test ()
        (let ((a 10)) (a)))
 ;(test)
-(macro test ()
-       (let* ((a 1)
-              (b (+ a 2)) ;3
-              (c (- b (* a 2))) ;1
-              (d (- (+ c 2) a)));2
-         (+ d (- b a))));4
-(= (test) 4)
+(macro test99 (A)
+       (let* ((a A);10
+              (b (+ a 2)) ;12
+              (c (- b (* a 1))) ;2
+              (d (+ (+ c 2) a)));14
+         (+ d (- b a))));16
+;(=
+; (test99 10) 16)
+;and
+;(test)
+(macro test98 (A)
+       (let* ((a A)
+             (b (+ a 1)))
+         (a)))
+;(test98 5)
+(define (test100) ;(test98 8))
+   (let ((a 8)(b 5))
+     (+ 2 b)))
+;(test100 0)
+(define (test101) ;(test98 8))
+   ;((! A Z))
+;   (write
+;    (let ((a (@ Z))) (a)))
+;  (let* ((a 6)(b (+ a 1)))
+;    b))
+  (let*2 ((a 8)(b (+ a 10)))
+         (+ 2 b)
+         5))
+;(test101)
+;(test98 5)
+;0
+;[[] [>r [+ @r 30 ] ] [[] [@ Z ] ] [nop [nop r@ ! [] ] [[[@ [r@ ] ] ] ] ] [drop r> ] ]
+;[[] [>r [+ @r 30 ] ] [[] [@ Z ] r@ 0 + ! [[[@ [r@ ] ] ] ] ] [drop r> ] ]
+   ;(let* ((a (@ Z))) a)))
+;(define (foo q g)
+; (test q g))
+;(foo 10 0)
+;(= (test 10) 16)
+;(=
+; (test100 9)
+                                        ; 1)
+1
 ;compared to javascript, it is practically identical
 ; function test() {
 ;   var a = 1;
@@ -63,6 +98,8 @@ and
 ;  1 dup r@ ! 2 + dup r@ 1 + ! r@ @ 2 * - 2 + r@ @ - r@ 1 + @ r@ @ - +
 ;29 opcodes from 5 variable definitions, 7 variable reads, and 9 arithmetic operations. 5+7+9/29 is about 70% efficiency. Hand written code in assembly wouldn't be much shorter.
 
-and
-;0
+; I tried to write it by hand, and it ended up being 30 opcodes.
+; 1 dup r@ ! 2 + dup r@ 1 + ! 2 r@ @ - 2 + r@ @ swap - r@ 1 + @ r@ @ - + ;
 
+;and
+;0

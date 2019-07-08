@@ -1,4 +1,4 @@
-(import (basics.scm))
+(import (basics.scm core/let.scm))
 
 ; merge-sort
 
@@ -50,14 +50,14 @@
 
 (define (rt_sort l f)
   (cond (((= nil (cdr l)) (car l))
-	 (true
-	  (recurse
-	   (reverse
-	    (cons
-	     (rt_merge f
+         (true
+          (recurse
+           (reverse
+            (cons
+             (rt_merge f
                        (car l)
                        (car (cdr l)))
-	     (reverse (cdr (cdr l)))))
+             (reverse (cdr (cdr l)))))
            f)))))
 ;(execute (@ rt_sort) ((tree ((5)(2)(6)(1)(3)))))
 

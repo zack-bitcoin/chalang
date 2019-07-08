@@ -403,9 +403,9 @@ apply_funs([H|T], Code) ->
 apply_funs([], Code) -> Code.
 apply_fun(_Name, []) -> [];
 apply_fun(Name, [[<<"define">>, Name2, Vars, Code]|T]) ->
-    [[<<"define">>, Name2, Vars, apply_fun(Name, [Code])]|apply_fun(Name, T)];
+    [[<<"define">>, Name2, Vars, apply_fun(Name, Code)]|apply_fun(Name, T)];
 apply_fun(Name, [[<<"define">>, Vars, Code]|T]) ->
-    [[<<"define">>, hd(Vars), tl(Vars), apply_fun(Name, [Code])]|apply_fun(Name, T)];
+    [[<<"define">>, hd(Vars), tl(Vars), apply_fun(Name, Code)]|apply_fun(Name, T)];
 apply_fun({Name, M}, [[Name|T1]|T2])->
     B = (M == length(T1)),
     if

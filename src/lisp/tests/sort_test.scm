@@ -13,5 +13,5 @@
  (sort (tree (3 1 5 3 9 20 4 8))
           (lambda (a b) (< a b)))
    (tree (1 3 3 4 5 8 9 20)))
-
+;0
 ;and

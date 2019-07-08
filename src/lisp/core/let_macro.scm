@@ -52,27 +52,36 @@
 ;1 2 3
 ;(_variable* zack '(nop 0 zack) 1)
 (macro _variable* (Var Code N)
-       ;Replace each Var in Code with the input to the function
-       (cond (((= Code ()) ())
-	      (true
-	       (cons
-		(cond
-		 (((is_list (car Code))
-		   (_variable* Var (car Code) N))
-		  ((= (car Code) Var)
-		   '(@ ,(_pointer N)))
-		  (true (car Code))))
-		(_variable* Var (cdr Code) N))))))
+                                        ;Replace each Var in Code with the input to the function
+       ;'(nop
+         (cond (((= Code ()) ())
+                 (true
+                  (cons
+                   (cond
+                    (((is_list (car Code))
+                      (_variable* Var (car Code) N))
+                     ((= (car Code) Var)
+                      '(@ ,(_pointer N)))
+                     (true (car Code))))
+                   (_variable* Var (cdr Code) N))))))
 (macro _variables (Vars Code N)
+;       '(nop
        ; repeatedly use _variable* to replace
        ; each Var in Code with the inputs to the function,
-       ; which are stored in the vm as variables.
-       (cond (((= Vars ()) Code)
-	      (true (_variables
-		     (cdr Vars)
-		     (_variable* (car Vars) Code N)
-		     (+ N 1))))))
-;(_variables (reverse (a b c)) '(nop b) 0)
+                                        ; which are stored in the vm as variables.
+;       '(;(write Code)
+;l         nop
+       (cond (
+              ;((not (is_list Code))
+               ;(car (_variables Vars (Code) N)))
+              ((= Vars ()) Code)
+               (true (_variables
+                      (cdr Vars)
+                      (_variable* (car Vars) Code N)
+                      (+ N 1))))))
+;(write (_variables (reverse (a b c))
+;                   '(nop (+ a b)) 0))
+;0
 (macro _call_stack* (Many Code)
        ; functions need to be able to call other functions.
        ; if function A calls function B, then when our
@@ -94,7 +103,8 @@
 	   '(nop ,(_call_stack* Many (cdr Code)) ,(_pointer Many) >r
                  call
                  r> drop))
-                 ;,(_call_stack* Many (cdr Code))))
+                                        ;,(_call_stack* Many (cdr Code))))
+         ;((= (car Code) let*) (write (let_macro here)))
          (true 
           (cons (car Code)
 		 (_call_stack* Many (cdr Code)))))))
@@ -106,15 +116,26 @@
 ;this version of let gets it's inputs from the stack.
 (macro let_stack (Vars Code)
        '(nop
+;         ,(write (inside let macro))
+;         (write ,(reverse Vars))
+;         (write ,(_load_inputs Vars 0))
+;         (write ,(Code))
+;         (write ,(_variables (reverse Vars)
+;                            (Code)
+;                            0))
+;          ,(_variables (reverse Vars)
+;                      Code
+;                      0))
          ,(_load_inputs Vars 0)
          ,(_call_stack*
            (_length Vars)
            (_variables (reverse Vars)
-                       '(Code)
+                       (Code)
                        0))))
 ;4 5
 ;(let_stack (x y) (* (+ x x) y))
 
 ;2 3 (let_stack (x y) (+ x (- y 1)))
-
-;(let ((x 2) (y 3)) (+ x (- y 1)))
+;,(write '(let macro here))
+;(write (let ((x 2) (y 3)) (+ x (- y 1))))
+;0

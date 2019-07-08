@@ -13,10 +13,10 @@
 ;e can read the variable with `@`
 
 (define (double3 x) (* 2 x) )
-(=
- (map (@ double3) (tree (2 3 4)))
- (tree (4 6 8)))
-and
+;(=
+; (map (@ double3) (tree (2 3 4)))
+; (tree (4 6 8)))
+;and
 
 ; this time we are mapping using an anonymous function
 
@@ -29,6 +29,6 @@ and
 
 (define (plus3 x) (+ 3 x))
 (define (test l n)
-  (map (@ plus3) l))
-  ;(map (lambda (x) (+ n x)) l))
+  ;(map (@ plus3) l))
+  (map (lambda (x) (+ n x)) l))
 ;(test (tree (4 5 6)) 2)

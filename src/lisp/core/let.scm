@@ -22,7 +22,8 @@
          (true 
           (cons (car (car ps))
                 (firsts (cdr ps)))))))
-;(firsts '((1 2)(3 4)))
+;(write (firsts '((1 2)(3 4))))
+;0
 ;(seconds '((x 2)(3 y)))
                                         ;1
 ;(macro mcons (x y) (cons x y));for some reason I had to do this to get the compiler-time version of cons to run.
@@ -34,29 +35,47 @@
           code)
          (drop r>)
          ))
-;(let* ((a 3)(b 5)) (+ a b))
+;(let ((a 3)(b 5)) (+ a b))
+;(write (let_stack '(a b) (+ a b)))
 ; should become ->
 ;r@ 30 + r> 3 r@ ! 5 r@ 1 + ! r@ @ r@ 1 + @ +
 
 (macro let*2 (pairs code n)
-       (cond (((= pairs ()) code)
-              (true '(() ,(car (cdr (car pairs)))
-                      r@ n + !
-                      ,(let*2
-                        (_variables
-                         (cons (car (car pairs)) ())
-                         (cdr pairs)
-                         n)
-                        (_variables
-                         (cons (car (car pairs)) ())
-                         (code)
-                         n)
-                        (+ n 1)))))))
+       '(nop
+         (write pairs)
+         (write code)
+         ;(write (_variables (cons a ()) code 0))
+         ,(cond (((= pairs ()) code)
+                 (true '(() ,(car (cdr (car pairs)))
+                         r@ n + !
+                         ,(let*2
+                           (_variable*
+                            ;(cons (car (car pairs)) ())
+                            (car (car pairs))
+                            (cdr pairs)
+                            n)
+                           (_variable*
+                            ;(cons (car (car pairs)) ())
+                            (car (car pairs))
+                            code
+                            n)
+                           (+ n 1))))))))
+;(let*2 ((a 4)) ((+ a 5)) 0)
+
 (macro let* (pairs code)
        '(() (>r (+ @r 30))
-         (let*2 pairs code 0)
+         (let*2 pairs (code) 0)
          (drop r>)
          ))
+(macro test_let ()
+       (let* ((a 7)
+              (b (+ a 123));130
+              (c 0)
+              (d 1))
+         '(nop (+ d (- b a)))))
+                                        ;(test_let)
+;(let* ((a 7)) (+ 5 a))
+;(test)
 ;(let_stack (a) (+ a 2))
 ;(let* ((a 0)(x 2)(y 5)(z 11)) (+ y z))
 ;(let ((a 0)) (let ((b a)(x 2)) (+ b x)))
