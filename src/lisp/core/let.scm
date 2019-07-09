@@ -1,5 +1,5 @@
 ; let is a common tool for lisp.
-(import (basics.scm))
+(import (core/immutable_variables.scm))
 
 ;let is how lisp offers local variables. That way you don't pollute the global namespace
 
@@ -27,6 +27,8 @@
 ;(seconds '((x 2)(3 y)))
                                         ;1
 ;(macro mcons (x y) (cons x y));for some reason I had to do this to get the compiler-time version of cons to run.
+
+;let doesn't know about the surrounding context. if you want access to some data, it needs to be included in the pairs.
 (macro let (pairs code)
        '(() (>r (+ @r 30));hopefully the parent functions has less than 30 input variables. there is probably a better way to do this.
          (seconds pairs)
@@ -40,28 +42,8 @@
 ; should become ->
 ;r@ 30 + r> 3 r@ ! 5 r@ 1 + ! r@ @ r@ 1 + @ +
 
-(macro let*2 (pairs code n)
-       '(nop
-         (write pairs)
-         (write code)
-         ;(write (_variables (cons a ()) code 0))
-         ,(cond (((= pairs ()) code)
-                 (true '(() ,(car (cdr (car pairs)))
-                         r@ n + !
-                         ,(let*2
-                           (_variable*
-                            ;(cons (car (car pairs)) ())
-                            (car (car pairs))
-                            (cdr pairs)
-                            n)
-                           (_variable*
-                            ;(cons (car (car pairs)) ())
-                            (car (car pairs))
-                            code
-                            n)
-                           (+ n 1))))))))
-;(let*2 ((a 4)) ((+ a 5)) 0)
-
+;let* doesn't know about the surrounding context. if you want access to some data, it needs to be included in the pairs.
+;you can't put let* into a function, instead use the letdef macro.
 (macro let* (pairs code)
        '(() (>r (+ @r 30))
          (let*2 pairs (code) 0)

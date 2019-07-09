@@ -1,4 +1,5 @@
 (import (basics.scm))
+(export global)
 
 ; the map is happening completely at run-time
 

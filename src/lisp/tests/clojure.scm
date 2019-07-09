@@ -1,4 +1,4 @@
-(import (core/let.scm))
+(import (core/let.scm basics.scm))
 ;3 7 11
 ;(let ((x 5))
 ;  (define (plusn y) (+ x y)))

@@ -1,4 +1,3 @@
-
 (import (basics.scm))
 
 (define Double (x) (+ x x))

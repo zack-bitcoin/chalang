@@ -1,6 +1,5 @@
-(import (core/let_macro.scm
-         core/let.scm
-         flatten.scm))
+(import (core/immutable_variables.scm))
+(export (execute lambda define execute2 deflet))
 
 ;this is a library for making functions at run-time.
 
@@ -25,13 +24,15 @@
 (macro deflet (name vars pairs code)
        ;store the function pointer in a variable
        '(! ,(deflet2 vars pairs code) name))
-(macro deflet2 (vars pairs code)
+(macro deflet2 (vars pairs code) ;ths is the new version of lambda.
        ;wrap the function definition in `def` and `end_fun` to mark it as a function.
        '(nop
          def
-         ,(deflet3 vars pairs code (_length vars) (+ (_length vars) (_length pairs)) (reverse vars))
+         ,(deflet3 vars pairs code )
          end_fun))
-(macro deflet3 (vars pairs code m n rv)
+(macro deflet3 (vars pairs code);we should use this to define let and define.
+       (deflet4 vars pairs code (_length vars) (+ (_length vars) (_length pairs)) (reverse vars)))
+(macro deflet4 (vars pairs code m n rv)
        '(nop
          ,(_load_inputs vars 0)
          ,(let*2 (_call_stack* n (_variables rv pairs 0))
@@ -57,48 +58,12 @@
 ;(testf)
 
 
-;0
-
-(macro lexical_define (Name Vars Code)
-       (lexical_define2 Name Vars Code (context Code)))
-;(macro lexical_define2 (Name Vars Code Context)
-;       '(,(context_switch Context)
-;         ,(define Name (local_vars Vars Context)
-;            (local_vars Code Context))))
-(macro context2 (code)
-      (cond (((= () code) ())
-              ((is_number code) ())
-              ((is_list code) ;())
-               (cons '(context2 ,(car code))
-                     (context2 (cdr code))))
-              (true code))))
-(macro context (X)
-       (flatten (context2 X)))
-;(context '(a 5 is (te beginning)))
-;(write (abc def))
-;(write (context '(abc '(1 def) abc)))
-;0
-
-
-
-
-
-;(define square (x)
-;  (* x x))
-;(ex (square 5))
-
 ;3 4 5 6 7
 ;(lambda (x y) (+ 1 (+ x y)))
 ;(lambda (x y z) (+ x (+ z y )))
 ;(_load_inputs (x y z) 0)
 ;(_length (x y z))
 ;(_variables (z y x) '(+ z (+ y x)) 0)
-					;0
-;1
-
-;(1 2 3)
-;(cons 1 (cons 2 (cons 3 ())))
-
 
 ;(_length (1 1 5 1 1 1 1))
 ;(_pointer 3) ; 4

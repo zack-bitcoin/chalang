@@ -1,40 +1,11 @@
-; let is a common tool for lisp.
-(import (core/tree.scm core/cond.scm core/eqs.scm))
 
+;This is a library for having a context to store local variables in, that way you don't need to use global variables.
 
-;first a version that happens at compile time
-;it is a way of making a short term macro that wont pollute the macro name space anywhere else.
-(macro let_macro (pairs code)
-       (cond
-	(((= pairs ()) code)
-	 (true (let_macro (let2 (car pairs) (cdr pairs))
-		 (let2 (car pairs) code))))))
-(macro let2 (pair code)
-       (let3 (car pair)
-	     (car (cdr pair))
-	     code))
-(macro let3 (ID Value Code)
-       (cond (((= () Code) ())
-	      ((= ID (car Code))
-	       '(cons Value ,(let3 ID Value (cdr Code))))
-	      ((is_list (car Code))
-	       '(cons ,(let3 ID Value (car Code))
-		     ,(let3 ID Value (cdr Code))))
-	      (true '(cons ,(car Code)
-			  ,(let3 ID Value (cdr Code)))))))
+(export (_variables _call_stack* _length _load_inputs _variable* let_stack let*2))
 
-
-;now here is the run-time version
-
-; uses the r-stack to store the memory locations
-; for the input of the functions we are currently
-; processing. So the r-stack is used as a function
-; call stack, one additional thing is added to r every
-; time a function is called, and one thing is
-; removed from r every time a function returns.
-
-
-(>r 500) ;start storing inputs to functions at 50, that way 1-49 are available for smart contract developers.
+(macro init ()
+       '(nop 500 >r))
+(init)
 
 (macro _pointer (X)
        ; look up a pointer to the xth variable being stored for the current function being processed
@@ -104,7 +75,6 @@
                  call
                  r> drop))
                                         ;,(_call_stack* Many (cdr Code))))
-         ;((= (car Code) let*) (write (let_macro here)))
          (true 
           (cons (car Code)
 		 (_call_stack* Many (cdr Code)))))))
@@ -134,8 +104,29 @@
                        0))))
 ;4 5
 ;(let_stack (x y) (* (+ x x) y))
-
 ;2 3 (let_stack (x y) (+ x (- y 1)))
+
+
+;this version of let accepts a list of pairs, which are variable definitions. 
+;n is how deep in memory to store variables so we don't over-write any currently in use by the surrounding context.
+(macro let*2 (pairs code n)
+         (cond (((= pairs ()) code)
+                 (true '(() ,(car (cdr (car pairs)))
+                         r@ n + !
+                         ,(let*2
+                           (_variable*
+                            (car (car pairs))
+                            (cdr pairs)
+                            n)
+                           (_variable*
+                            (car (car pairs))
+                            code
+                            n)
+                           (+ n 1)))))))
+;(let*2 ((a 4)(b (+ a 1))) ((+ a b)) 0)
+
+
 ;,(write '(let macro here))
 ;(write (let ((x 2) (y 3)) (+ x (- y 1))))
 ;0
+

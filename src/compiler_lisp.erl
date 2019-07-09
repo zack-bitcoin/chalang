@@ -11,8 +11,10 @@
 %-define(fun_end, 111).
 test() ->
     Files = [ 
-	      "tests/macro_basics",
+              "tests/filter_test",
+              "tests/fold_test",
 	      "tests/fun_test",
+	      "tests/macro_basics",
 	      "tests/fun_test4",
 	      "tests/fun_test5",
 	      "tests/flatten_test",
@@ -52,21 +54,77 @@ doit_1(A, Done) ->
     C = add_spaces(B2),
     Words = to_words(C, <<>>, []),
     Tree = to_lists(Words),
-    imports(Tree, Done).
+    TempTree = integers(Tree),
+    F = fun({F1, _}) -> F1 end,
+    FNs = function_names(TempTree),
+    MNs = macro_names(TempTree),
+    Tree2 = export_funs(Tree, Tree, hd(Done), lists:map(F, MNs++FNs)),
+    Tree3 = remove_export_tag(Tree2),
+    imports(Tree3, Done).
 %unique_file_name(File, [[<<"macro">>, Name, Vars, Code]|T]) ->
 %    [[<<"macro">>, <<File/binary, <<".">>/binary, Name/binary>>, Vars, Code]|unique_file_name(File, T)]
+remove_export_tag([]) ->
+    [];
+remove_export_tag([[<<"export">>,_]|T]) ->
+    remove_export_tag(T);
+remove_export_tag([H|T]) when is_list(H) ->
+    [remove_export_tag(H)|
+     remove_export_tag(T)];
+remove_export_tag([H|T]) ->
+    [H|remove_export_tag(T)].
+export_funs([[<<"export">>, <<"global">>]|_], Tree, _, _) -> 
+    Tree;
+export_funs([[<<"export">>, Funs]|_], Tree, FileName, All) ->
+    
+    Exported = export_funs2(Funs, Tree, FileName, All),
+    %io:fwrite("in export funs \n"),
+    %io:fwrite(Exported),
+    %io:fwrite("\n"),
+    %io:fwrite(Exported),
+    Exported;
+export_funs([H|T], Tree, FileName, All) when is_list(H) ->
+    export_funs((H++T), Tree, FileName, All);
+%export_funs(T, Tree, FileName, All);
+export_funs([_|T], Tree, FileName, All) ->
+    export_funs(T, Tree, FileName, All);
+export_funs([], Tree, _, _) -> 
+    Tree;
+export_funs(X, _, _, _) -> 
+    io:fwrite("in export"),
+    io:fwrite(X),
+    io:fwrite("\n"),
+    1=2,
+    X.
+export_funs2(_, [], _, _) -> [];
+export_funs2(ExportFuns, [H|T], FileName, AllFuns) when is_list(H)->
+    [export_funs2(ExportFuns, H, FileName, AllFuns)|
+     export_funs2(ExportFuns, T, FileName, AllFuns)];
+export_funs2(ExportFuns, [H|T], FileName, AllFuns) ->
+    B1 = is_in(H, AllFuns),
+    B2 = is_in(H, ExportFuns),
+    H2 = if
+             (B1 and (not(B2))) -> 
+                 X = <<FileName/binary, <<"_">>/binary, H/binary>>,
+                 io:fwrite(X),
+                 io:fwrite("\n"),
+                 X;
+             true -> H
+         end,
+    [H2|export_funs2(ExportFuns, T, FileName, AllFuns)].
+            
 doit(A) when is_list(A) ->
     doit(list_to_binary(A));
 doit(A) ->
-    {Tree1, _} = doit_1(A, []),
-    %io:fwrite(Tree1),
+    {Tree1, _} = doit_1(A, [<<"">>]),
+    %io:fwrite("in doit\n"),
+    %io:fwrite(Tree1),%bad
     %io:fwrite("\n"),
     %io:fwrite(packer:pack(Tree1)),
     %io:fwrite("\n"),
     %Tree1 = quote_list(Tree),
     %io:fwrite("Macros\n"),
     Tree2_0 = integers(Tree1),
-    Tree2_1 = macro_names(Tree2_0),
+    Tree2_1 = macro_var_names(Tree2_0),%adds the file name to every variable to make sure they are unique for the compiler.
     %io:fwrite(Tree2_1),
     FNs = function_names(Tree2_1),
     UnusedFuns = unused_funs(FNs, Tree2_1),
@@ -387,6 +445,11 @@ used_fun(N, [H|T]) when is_list(H) ->
     used_fun(N, H) or used_fun(N, T);
 used_fun(N, [_|T]) ->
     used_fun(N, T).
+macro_names([<<"macro">>, Name, V, _]) ->
+    [{Name, length(V)}];
+macro_names([H|T]) ->
+    macro_names(H) ++ macro_names(T);
+macro_names(X) -> [].
 function_names([[<<"define">>, Name, V, _]|T]) when not(is_list(Name))->
     L = length(V),
     [{Name, L}] ++ function_names(T);
@@ -455,15 +518,15 @@ crva2(M, [H|T], Name) ->
     end,
     crva2(M, T, Name).
     
-macro_names([<<"macro">>, Name, Vars, Code]) ->
+macro_var_names([<<"macro">>, Name, Vars, Code]) ->
     Vars2 = macro_unique_vars(Name, Vars, Vars),
     Code2 = macro_unique_vars(Name, Vars, Code),
     [<<"macro">>, Name, Vars2, Code2];
-macro_names([H|T]) when is_list(H) ->
-    [macro_names(H)|macro_names(T)];
-macro_names([H|T]) ->
-    [H|macro_names(T)];
-macro_names([]) -> [].
+macro_var_names([H|T]) when is_list(H) ->
+    [macro_var_names(H)|macro_var_names(T)];
+macro_var_names([H|T]) ->
+    [H|macro_var_names(T)];
+macro_var_names([]) -> [].
 macro_unique_vars(Name, [], Code) -> Code;
 macro_unique_vars(Name, [H|T], Code) ->
     macro_unique_vars(Name, T, macro_unique_vars2(Name, H, Code)).
