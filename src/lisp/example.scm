@@ -8,6 +8,8 @@
 
 ;this is the list we will use for all 4 example programming styles
 (tree (0 1 2 3 4 2 10 2 1)) List !
+;This list is being stored in the variable named "List"
+;The ability to store values in variables and read them later is a bonus 5th style of programming.
 
 
 ;first in forth stack-based style
@@ -86,9 +88,9 @@ forth_list_min @ call ;use the other function to calcualte the minimum of the li
 (deflet pythonic_doit (l)
         ((A (fold (@ lispmax2) 0 l));store the biggest element in A
          (B (fold (@ lispmin2) 0 l)));store the smallest element in B
-        ((/ (+ A B) 2)));take the average of A and B
+        (/ (+ A B) 2));take the average of A and B
 
-(= 5 (execute (@ pythonic_doit) ((@ List)))) ;check that the average is 5
+(= 5 (pythonic_doit (@ List))) ;check that the average is 5
 
 
 and and and ;combine the 4 test results into a single true/false result.

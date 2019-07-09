@@ -23,7 +23,7 @@
 
 (macro deflet (name vars pairs code)
        ;store the function pointer in a variable
-       '(! ,(deflet2 vars pairs code) name))
+       '(! ,(deflet2 vars pairs (code)) name))
 (macro deflet2 (vars pairs code) ;ths is the new version of lambda.
        ;wrap the function definition in `def` and `end_fun` to mark it as a function.
        '(nop

@@ -451,12 +451,15 @@ macro_names([<<"macro">>, Name, V, _]) ->
 macro_names([H|T]) ->
     macro_names(H) ++ macro_names(T);
 macro_names(X) -> [].
-function_names([[<<"define">>, Name, V, _]|T]) when not(is_list(Name))->
+function_names([[<<"define">>, Name, V, _Code]|T]) when not(is_list(Name))->
     L = length(V),
     [{Name, L}] ++ function_names(T);
-function_names([[<<"define">>, Name|_]|T]) ->
+function_names([[<<"define">>, Name, _Code]|T]) ->
     L = length(tl(Name)),
     [{hd(Name), L}] ++ function_names(T);
+function_names([[<<"deflet">>, Name, Vars, _Pairs, _Code]|T]) ->
+    L = length(Vars),
+    [{Name, L}] ++ function_names(T);
 function_names([H|T]) when is_list(H) ->
     function_names(H) ++ function_names(T);
 function_names([H|T]) ->

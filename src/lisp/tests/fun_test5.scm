@@ -13,7 +13,7 @@
    (e (- (+ d c) 10)))
   (e))
 ;0
-(= 11 (execute2 (foo 5)))
+(= 11 (execute (@ foo)  (5)))
 and
 
 ;4 variable definitions, 5 variables reads, 4 arithmetic operations, 1 function definition
