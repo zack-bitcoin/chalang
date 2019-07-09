@@ -10,29 +10,30 @@
 (tree (0 1 2 3 4 2 10 2 1)) List !
 ;This list is being stored in the variable named "List"
 ;The ability to store values in variables and read them later is a bonus 5th style of programming.
+; this symbol is used to store a value in a variable: `!`. this symbol is used to fetch a value from a variable: `@`.
 
 
 ;first in forth stack-based style
 
-;( A B -- M )
+;( A B -- Min )
 def 2dup < if drop else swap drop then end_fun
 forth_min ! ;defined a function to calculate the min of 2 integers.
 
-;( A B -- M )
+;( A B -- Max )
 def 2dup > if drop else swap drop then end_fun
 forth_max ! ;calculate the max of 2 integers
 
-;( A L -- M )
+;( A L -- Min )
 def nil === if drop drop else drop car@ tuck forth_min @ call swap recurse then end_fun
-forth_list_min ! ;a function to calculate the minimum of a list of integers
+smallest_in_list1 ! ;a function to calculate the minimum of a list of integers
 
-;( A L -- M )
+;( A L -- Max )
 def nil === if drop drop else drop car@ tuck forth_max @ call swap recurse then end_fun
-forth_list_max ! ;a function to calculate the maximum of a list of integers
+biggest_in_list1 ! ;a function to calculate the maximum of a list of integers
 
-0 List @ dup tuck forth_list_max @ call ;use the function to calculate the maximum of the list
+0 List @ dup tuck biggest_in_list1 @ call ;use the function to calculate the maximum of the list
 swap 0 swap
-forth_list_min @ call ;use the other function to calcualte the minimum of the list
+smallest_in_list1 @ call ;use the other function to calcualte the minimum of the list
 + 2 / ;take the average
 5 === tuck drop drop ;check that the average is 5.
 
@@ -45,50 +46,47 @@ forth_list_min @ call ;use the other function to calcualte the minimum of the li
 (define lispmin (a b);min of 2 integers
   (cond (((< a b) a)
          (true b))))
-(define lisp_max_list (a l);max of a list
+(define biggest_in_list2 (a l);max of a list
   (cond (((= l nil) a)
-         (true (lisp_max_list
+         (true (recurse;you can use keyword `recurse` for recursion.
                 (lispmax a (car l))
                 (cdr l))))))
-(define lisp_min_list (a l);min of a list
+(define smallest_in_list2 (a l);min of a list
   (cond (((= l nil) a)
-         (true (lisp_min_list
+         (true (smallest_in_list2;you can use the name of the function for recursion.
                 (lispmin a (car l))
                 (cdr l))))))
-(define lisp_average (a b);average of 2 integers
-  (/ (+ a b) 2))
+(define average (Q R)
+       (/ (+ Q R) 2))
 
 (define lisp_doit (l);putting it all together
-  ((lisp_average
-   (lisp_max_list 0 l)
-   (lisp_min_list 0 l))))
+  ((average
+   (biggest_in_list2 0 l)
+   (smallest_in_list2 0 l))))
 
-(= 5 (lisp_doit (@ List))) ; checking that the average is 5
+(= 5 (lisp_doit (@ List))) ; testing that the average is 5
 
 
 ; now using lisp with generics
 
-(define lispmax2 (a b);max of 2 integers
-  (cond (((> a b) a)
-         (true b))))
-(define lispmin2 (a b);min of 2 integers
-  (cond (((< a b) a)
-         (true b))))
+(define biggest_in_list3 (l)
+  ((fold (@ forth_max) 0 l)))
+   ;I used the function defined in forth syntax, to show how it is cross-compatible.
+(define smallest_in_list3 (l)
+  ((fold (@ lispmin) 0 l)));fold is a higher-order function that takes a pointer to another function as an input.
 (define generic_doit (l);putting it all together
-  (/ (+
-      ((fold (@ lispmax2) 0 l))
-      ((fold (@ lispmin2) 0 l)))
-     2))
+  ((average (biggest_in_list3 l)
+           (smallest_in_list3 l))))
 
 (= 5 (generic_doit (@ List))) ;check that the average is 5.
 
 
-; now using something more similar to python syntax, where we allow for setting intermediate values A and B
+; now using something more similar to python syntax, where we allow for setting intermediate values Biggest and Smallest
 
 (deflet pythonic_doit (l)
-        ((A (fold (@ lispmax2) 0 l));store the biggest element in A
-         (B (fold (@ lispmin2) 0 l)));store the smallest element in B
-        (/ (+ A B) 2));take the average of A and B
+        ((Biggest (biggest_in_list3 l))
+         (Smallest (smallest_in_list3 l)))
+        (average Biggest Smallest))
 
 (= 5 (pythonic_doit (@ List))) ;check that the average is 5
 
