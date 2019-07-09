@@ -11,6 +11,7 @@
 %-define(fun_end, 111).
 test() ->
     Files = [ 
+              "example",
               "tests/filter_test",
               "tests/fold_test",
 	      "tests/fun_test",
@@ -105,8 +106,8 @@ export_funs2(ExportFuns, [H|T], FileName, AllFuns) ->
     H2 = if
              (B1 and (not(B2))) -> 
                  X = <<FileName/binary, <<"_">>/binary, H/binary>>,
-                 io:fwrite(X),
-                 io:fwrite("\n"),
+                 %io:fwrite(X),
+                 %io:fwrite("\n"),
                  X;
              true -> H
          end,
