@@ -46,47 +46,48 @@ smallest_in_list1 @ call ;use the other function to calcualte the minimum of the
 (define lispmin (a b);min of 2 integers
   (cond (((< a b) a)
          (true b))))
-(define biggest_in_list2 (a l);max of a list
-  (cond (((= l nil) a)
+(define biggest_in_list2 (a L);max of a list
+  (cond (((= L nil) a)
          (true (recurse;you can use keyword `recurse` for recursion.
-                (lispmax a (car l))
-                (cdr l))))))
-(define smallest_in_list2 (a l);min of a list
-  (cond (((= l nil) a)
+                (lispmax a (car L))
+                (cdr L))))))
+(define smallest_in_list2 (a L);min of a list
+  (cond (((= L nil) a)
          (true (smallest_in_list2;you can use the name of the function for recursion.
-                (lispmin a (car l))
-                (cdr l))))))
+                (lispmin a (car L))
+                (cdr L))))))
 (define average (Q R)
        (/ (+ Q R) 2))
 
-(define lisp_doit (l);putting it all together
+(define lisp_doit (L);putting it all together
   ((average
-   (biggest_in_list2 0 l)
-   (smallest_in_list2 0 l))))
+   (biggest_in_list2 0 L)
+   (smallest_in_list2 0 L))))
 
 (= 5 (lisp_doit (@ List))) ; testing that the average is 5
 
 
 ; now using lisp with generics
 
-(define biggest_in_list3 (l)
-  ((fold (@ forth_max) 0 l)))
+(define biggest_in_list3 (L)
+  ((fold (@ forth_max) 0 L)))
    ;I used the function defined in forth syntax, to show how it is cross-compatible.
-(define smallest_in_list3 (l)
-  ((fold (@ lispmin) 0 l)));fold is a higher-order function that takes a pointer to another function as an input.
-(define generic_doit (l);putting it all together
-  ((average (biggest_in_list3 l)
-           (smallest_in_list3 l))))
+(define smallest_in_list3 (L)
+  ((fold (@ lispmin) 0 L)));fold is a higher-order function that takes a pointer to another function as an input.
+(define generic_doit (L);putting it all together
+  ((average (biggest_in_list3 L)
+           (smallest_in_list3 L))))
 
 (= 5 (generic_doit (@ List))) ;check that the average is 5.
 
 
 ; now using something more similar to python syntax, where we allow for setting intermediate values Biggest and Smallest
 
-(deflet pythonic_doit (l)
-        ((Biggest (biggest_in_list3 l))
-         (Smallest (smallest_in_list3 l)))
+(deflet pythonic_doit (L)
+        ((Biggest (biggest_in_list3 L))
+         (Smallest (smallest_in_list3 L)))
         (average Biggest Smallest))
+;this is especially  useful if you are going to re-use the calculated intermediate value in multiple places. That way you don't have to re-calculate the value more than once.
 
 (= 5 (pythonic_doit (@ List))) ;check that the average is 5
 
