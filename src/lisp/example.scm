@@ -64,9 +64,9 @@ smallest_in_list1 @ call ;use the other function to calcualte the minimum of the
          (true (smallest_in_list2;you can use the name of the function for recursion.
                 (lispmin a (car L))
                 (cdr L))))))
-(define average (Q R)
+(define (average Q R)
   ;3 opcodes
-       (/ (+ Q R) 2))
+  (/ (+ Q R) 2))
 
 (define lisp_doit (L);putting it all together
   ;23 opcodes

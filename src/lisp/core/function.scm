@@ -4,21 +4,29 @@
 ;this is a library for making functions at run-time.
 
 (macro lambda (Vars Code)
-       ; define a new function
-       '(nop
-         def
+      ; define a new function
+       (deflet2 Vars () (Code)))
+;(macro lambda_old (Vars Code)
+;       '(nop
+;         def
          ;,(write (function lambda))
          ;(write Vars)
          ;(write Code)
-         ,(let_stack Vars (Code))
-         end_fun))
+;         ,(let_stack Vars (Code))
+;         end_fun))
 ;(ex (lambda (a b c) '(nop b))
+;(macro define_old (Name Vars Code)
+;       '(! ,(lambda Vars Code) Name))
 (macro define (Name Vars Code)
       ;make a new function and give it a name.
-       '(! ,(lambda Vars Code) Name))
+       '(deflet Name Vars () Code))
 (macro execute (F V)
        '(call ,(cons nop V) F))
+       ;'(call V F))
 (macro execute2 (Vars)
+                                        ;'(execute (@ ,(car Vars)) ,(cdr Vars)))
+       ;'(nop
+         ;(write ,(car Vars))
        '(execute (@ ,(car Vars)) ,(cdr Vars)))
 
 (macro deflet (name vars pairs code)
@@ -30,35 +38,8 @@
          def
          ,(deflet3 vars pairs code )
          end_fun))
-(macro deflet3 (vars pairs code);we should use this to define let and define.
-       (deflet4 vars pairs code (_length vars) (+ (_length vars) (_length pairs)) (reverse vars)))
-(macro deflet4 (vars pairs code m n rv)
-       '(nop
-         ,(_load_inputs vars 0)
-         ,(let*2 (_call_stack* n (_variables rv pairs 0))
-                 ((_call_stack* n (_variables rv code 0)))
-                 m)))
-;(deflet3 () () () 0 ())
-;(write (_variables (a) ((c a)) 0))
-;0
-;(let ((a 1)) (+ a 3))
-                                        ;(write
-;9
-;(write (let*2 (_variables (a) ((c a)) 0)
-;              (_variables (a) (c) 0)
-;              2))
-; )
-;0
-;(let ((c 5)) c)
-;(write (let*2 ((a 5))
-;              (+ a 4)
-;              1))
-(macro testf ()
-       ,(write (deflet f (a) ((c 6)) (+ a c))))
-;(testf)
 
 
-;3 4 5 6 7
 ;(lambda (x y) (+ 1 (+ x y)))
 ;(lambda (x y z) (+ x (+ z y )))
 ;(_load_inputs (x y z) 0)

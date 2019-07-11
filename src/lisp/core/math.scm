@@ -7,4 +7,4 @@
 (define min (a b)
   (cond (((< a b) a)
          (true b))))
-;(max 6 5)
+;(max 100 5)

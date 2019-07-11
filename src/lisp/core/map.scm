@@ -12,9 +12,11 @@
 
 ; this map is happening completely at compile-time
 (macro map_ct (f l)
+;       (write f))
+;(macro next ()
        (cond (((= () l) ())
 	      (true
-	       '(cons ,(execute f ((car l)))
-		     ,(map_ct f (cdr l)))))))
+               '(cons ,(execute f ((car l)))
+                      ,(map_ct f (cdr l)))))))
 
 			      

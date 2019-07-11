@@ -2,7 +2,7 @@
 %If the compiler is written in macros, it is easier to understand, and modify.
 
 -module(compiler_lisp).
--export([doit/1, test/0]).
+-export([doit/2, test/0]).
 %-define(int_bits, 32).
 %-define(int, 0).
 %-define(binary, 2).
@@ -11,13 +11,12 @@
 %-define(fun_end, 111).
 test() ->
     Files = [ 
-              "example",
-              "tests/filter_test",
-              "tests/fold_test",
-	      "tests/fun_test",
 	      "tests/macro_basics",
+	      "tests/fun_test",
 	      "tests/fun_test4",
 	      "tests/fun_test5",
+              "tests/filter_test",
+              "tests/fold_test",
 	      "tests/flatten_test",
 	      "tests/enum_test",
 	      "tests/append_test",
@@ -35,6 +34,7 @@ test() ->
               "tests/rat_test",
               %"rationals",
               "sqrt",%slow to compile
+              "example",
               "binary_convert"
 	    ],
     test2(Files).
@@ -43,13 +43,14 @@ test2([H|T]) ->
     io:fwrite("test "),
     io:fwrite(H),
     io:fwrite("\n"),
-    {ok, Text} = file:read_file("src/lisp/" ++ H ++ ".scm"),
-    case doit(Text) of
+    L = "src/lisp/",
+    {ok, Text} = file:read_file(L ++ H ++ ".scm"),
+    case doit(Text, L) of
 	{_, [<<1:32>>]} ->
 	    test2(T);
 	X -> X
     end.
-doit_1(A, Done) ->
+doit_1(A, Done, L) ->
     B = remove_comments(<<<<"nop ">>/binary, A/binary, <<"\n">>/binary>>),
     B2 = quote_unquote(B),
     C = add_spaces(B2),
@@ -61,7 +62,7 @@ doit_1(A, Done) ->
     MNs = macro_names(TempTree),
     Tree2 = export_funs(Tree, Tree, hd(Done), lists:map(F, MNs++FNs)),
     Tree3 = remove_export_tag(Tree2),
-    imports(Tree3, Done).
+    imports(Tree3, Done, L).
 %unique_file_name(File, [[<<"macro">>, Name, Vars, Code]|T]) ->
 %    [[<<"macro">>, <<File/binary, <<".">>/binary, Name/binary>>, Vars, Code]|unique_file_name(File, T)]
 remove_export_tag([]) ->
@@ -113,10 +114,10 @@ export_funs2(ExportFuns, [H|T], FileName, AllFuns) ->
          end,
     [H2|export_funs2(ExportFuns, T, FileName, AllFuns)].
             
-doit(A) when is_list(A) ->
-    doit(list_to_binary(A));
-doit(A) ->
-    {Tree1, _} = doit_1(A, [<<"">>]),
+doit(A, L) when is_list(A) ->
+    doit(list_to_binary(A), L);
+doit(A, L) ->
+    {Tree1, _} = doit_1(A, [<<"">>], L),
     %io:fwrite("in doit\n"),
     %io:fwrite(Tree1),%bad
     %io:fwrite("\n"),
@@ -387,8 +388,8 @@ just_in_time2([A|B]) ->
     [A|just_in_time2(B)];
 just_in_time2([]) -> [].
 
-imports([<<"import">>, []], Done) -> {[], Done};
-imports([<<"import">>, [H|T]], Done) ->
+imports([<<"import">>, []], Done, _) -> {[], Done};
+imports([<<"import">>, [H|T]], Done, L) ->
     %io:fwrite("importing "),
     %io:fwrite(H),
     B = is_in(H, Done),
@@ -396,18 +397,18 @@ imports([<<"import">>, [H|T]], Done) ->
 	if
 	    B -> {[], Done};
 	    true ->		
-		{ok, File} = file:read_file("src/lisp/" ++ binary_to_list(H)),
+		{ok, File} = file:read_file(L ++ binary_to_list(H)),
 		D2 = [H|Done],
-		{Tr, D3} = doit_1(File, D2),
+		{Tr, D3} = doit_1(File, D2, L),
 		{Tr, D3}
 	end,
-    {Tree2, Done3} = imports([<<"import">>, T], Done2),
+    {Tree2, Done3} = imports([<<"import">>, T], Done2, L),
     {[Tree|Tree2], Done3};
-imports([H|T], Done) -> 
-    {H2, Done2} = imports(H, Done),
-    {T2, Done3} = imports(T, Done2),
+imports([H|T], Done, L) -> 
+    {H2, Done2} = imports(H, Done, L),
+    {T2, Done3} = imports(T, Done2, L),
     {[H2|T2], Done3};
-imports(Tree, Done) -> {Tree, Done}.
+imports(Tree, Done, _) -> {Tree, Done}.
 
 integers([A|B]) ->
     [integers(A)|
@@ -615,10 +616,10 @@ lisp([<<"execute">>,[<<"quote">>, F],A], D) ->
 	    T2 = apply_macro(F, Code, Vars, T4, D2),
 	    lisp(T2, D2)
     end;
-lisp([<<"execute">>,F,A], D) ->
-    io:fwrite("bad execute!!\n"),
-    io:fwrite([F, A]),
-    lisp([<<"execute">>,[<<"quote">>, F],A], D);
+%lisp([999,<<"execute">>,F,A], D) ->
+%    io:fwrite("bad execute!!\n"),
+%    io:fwrite([F, A]),
+%    lisp([<<"execute">>,[<<"quote">>, F],A], D);
 lisp([<<">">>, A, B], F) ->
     {A2, _} = macros(A, F),
     {B2, _} = macros(B, F),

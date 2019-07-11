@@ -4,7 +4,7 @@
 (macro double2 (x) (* 2 x) )
 (macro test3 ()
        (=
-	(map_ct 'double2 (2 3 4 5))
+        (map_ct 'double2 (2 3 4 5))
 	(4 6 8 10)))
 (test3)
 

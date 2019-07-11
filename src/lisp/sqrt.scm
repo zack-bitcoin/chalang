@@ -21,7 +21,7 @@
 (macro sqrt_h2 (x g) (sqrt_h x (sqrt_h x g)));two improves
 (define (sqrt2 guess x)
   (sqrt_h2 x (sqrt_h2 x (sqrt_h2 x guess))))
-(define (sqrt6 x);this does 6 iterations.
+(define (sqrt6 x);this calculates the sqrt using 6 iterations of the algorithm
   (sqrt2 x x))
 ;(sqrt6 (makerat 144 100))))
 
@@ -32,7 +32,7 @@
                                (improve x guess)
                                x
                                )))))
-(define (sqrt_times N X);this is so you can choose to do more any number of iterations
+(define (sqrt_times N X);this is so you can choose to do any number of iterations
   (sqrt_times_h N X X))
 ;(sqrt_times 4 (makerat 2 1))
                 

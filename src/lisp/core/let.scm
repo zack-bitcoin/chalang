@@ -27,6 +27,17 @@
 ;(seconds '((x 2)(3 y)))
                                         ;1
 ;(macro mcons (x y) (cons x y));for some reason I had to do this to get the compiler-time version of cons to run.
+(macro let_stack (Vars Code)
+       '(nop
+         ,(_load_inputs Vars 0)
+         ,(_call_stack*
+           (_length Vars)
+           (_variables (reverse Vars)
+                       (Code)
+                       0))))
+;4 5
+;(let_stack (x y) (* (+ x x) y))
+;2 3 (let_stack (x y) (+ x (- y 1)))
 
 ;let doesn't know about the surrounding context. if you want access to some data, it needs to be included in the pairs.
 (macro let (pairs code)

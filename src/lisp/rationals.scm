@@ -11,11 +11,13 @@
 (macro int_limit () 16384)
 
 (define (bigger r)
-  ((max (numerator r) (divisor r))))
+  (max (numerator r) (divisor r)))
 ;(bigger (makerat 4 5))
 (define (simplify_more S R)
   (makerat (/ (numerator R) S)
            (/ (divisor R) S)))
+;(simplify_more 1 (makerat 10 8))
+;0
 ;(simplify_more 12 (makerat 100000 200000))
 (define (simplify R)
   (simplify_more
@@ -34,8 +36,12 @@
           (divisor a)))
     (* (divisor a)
        (divisor b)))))
+;(max
+; (/ (bigger (makerat 10 8)) (int_limit))
+; 9)
+;(simplify (makerat 10 8))
 ;(add_rat (makerat 1 2)
-;             (makerat 3 4))
+;         (makerat 3 4))
 (define (additive_inverse_rat r)
   (makerat
        (- 0 (numerator r))

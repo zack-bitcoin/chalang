@@ -1,7 +1,7 @@
 
 ;This is a library for having a context to store local variables in, that way you don't need to use global variables.
 
-(export (_variables _call_stack* _length _load_inputs _variable* let_stack let*2))
+(export (deflet3 let_stack))
 
 (macro init ()
        '(nop 500 >r))
@@ -52,6 +52,7 @@
                       (+ N 1))))))
 ;(write (_variables (reverse (a b c))
 ;                   '(nop (+ a b)) 0))
+;(write (_variables (a) ((c a)) 0))
 ;0
 (macro _call_stack* (Many Code)
        ; functions need to be able to call other functions.
@@ -84,27 +85,6 @@
 	      (true (+ (_length (cdr X)) 1)))))
 
 ;this version of let gets it's inputs from the stack.
-(macro let_stack (Vars Code)
-       '(nop
-;         ,(write (inside let macro))
-;         (write ,(reverse Vars))
-;         (write ,(_load_inputs Vars 0))
-;         (write ,(Code))
-;         (write ,(_variables (reverse Vars)
-;                            (Code)
-;                            0))
-;          ,(_variables (reverse Vars)
-;                      Code
-;                      0))
-         ,(_load_inputs Vars 0)
-         ,(_call_stack*
-           (_length Vars)
-           (_variables (reverse Vars)
-                       (Code)
-                       0))))
-;4 5
-;(let_stack (x y) (* (+ x x) y))
-;2 3 (let_stack (x y) (+ x (- y 1)))
 
 
 ;this version of let accepts a list of pairs, which are variable definitions. 
@@ -124,9 +104,43 @@
                             n)
                            (+ n 1)))))))
 ;(let*2 ((a 4)(b (+ a 1))) ((+ a b)) 0)
+;(write (let*2 (_variables (a) ((c a)) 0)
+;              (_variables (a) (c) 0)
+;              2))
+; )
 
 
 ;,(write '(let macro here))
 ;(write (let ((x 2) (y 3)) (+ x (- y 1))))
 ;0
+
+
+(macro deflet3 (vars pairs code);we should use this to define let and define.
+       (deflet4 vars pairs code (_length vars)
+         (+ (_length vars)
+            (_length pairs))
+         (reverse vars)))
+
+(macro deflet4 (vars pairs code m n rv)
+       '(nop
+         ,(_load_inputs vars 0)
+         ,(let*2 (_call_stack* n (_variables rv pairs 0))
+                 ((_call_stack* n (_variables rv code 0)))
+                 m)))
+                                        ;(deflet3 () () () 0 ())
+
+
+(macro let_stack (Vars Code)
+       '(nop
+         ,(_load_inputs Vars 0)
+         ,(_call_stack*
+           (_length Vars)
+           (_variables (reverse Vars)
+                       (Code)
+                       0))))
+;4 5
+;(let_stack (x y) (* (+ x x) y))
+;2 3 (let_stack (x y) (+ x (- y 1)))
+
+
 
