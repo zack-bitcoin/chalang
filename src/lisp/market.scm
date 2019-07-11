@@ -6,7 +6,8 @@
        ;'(nop B N split nil cons cons)
        '(cons (cons (split B N) nil)))
 (macro extract (X)
-       (split X 40))
+       (unpack 40 X))
+
 (macro extract_old (X)
  ;( signed_price_declaration -- height price portion_matched )
        '(40 split dup tuck Pubkey @ verify_sig or_die

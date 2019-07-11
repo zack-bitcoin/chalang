@@ -2,7 +2,7 @@
 %If the compiler is written in macros, it is easier to understand, and modify.
 
 -module(compiler_lisp).
--export([doit/2, test/0]).
+-export([doit/2, compile/2, test/0]).
 %-define(int_bits, 32).
 %-define(int, 0).
 %-define(binary, 2).
@@ -117,6 +117,21 @@ export_funs2(ExportFuns, [H|T], FileName, AllFuns) ->
 doit(A, L) when is_list(A) ->
     doit(list_to_binary(A), L);
 doit(A, L) ->
+
+    List4 = compile(A, L),
+
+    %io:fwrite("--------------------\n"),
+    disassembler:doit(List4),
+    io:fwrite("===========================\n"),
+    Gas = 10000,
+    VM = chalang:vm(List4, Gas*100, Gas*10, Gas, Gas, []),
+    {%{%Tree1, Tree3, Tree35, 
+     % List, List1%, List4%, List5
+                     List4, VM}.
+
+
+compile(A, L) ->
+
     {Tree1, _} = doit_1(A, [<<"">>], L),
     %io:fwrite("in doit\n"),
     %io:fwrite(Tree1),%bad
@@ -144,15 +159,8 @@ doit(A, L) ->
     List2 = variables(List1, {dict:new(), 1}),
     Funcs = dict:new(),
     List4 = to_ops(List2, Funcs),
-    %{List5, _} = lambdas(List4, []),
-    %io:fwrite("--------------------\n"),
-    disassembler:doit(List4),
-    io:fwrite("===========================\n"),
-    Gas = 10000,
-    VM = chalang:vm(List4, Gas*100, Gas*10, Gas, Gas, []),
-    {{%Tree1, Tree3, Tree35, 
-      List, List1%, List4%, List5
-      }, VM}.
+    List4.
+
 r_collapse([], _, _) ->
     false;
 %%    io:fwrite("unbalanced >r and r>\n"),
