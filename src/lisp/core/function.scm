@@ -1,9 +1,9 @@
 (import (core/immutable_variables.scm))
-(export (execute define execute2 deflet))
+(export (execute function define execute2 deflet))
 
 ;this is a library for making functions at run-time.
 
-(macro lambda (Vars Code)
+(macro function (Vars Code)
       ; define a new function
        (deflet2 Vars () (Code)))
 ;(macro lambda_old (Vars Code)

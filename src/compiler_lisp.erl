@@ -631,6 +631,8 @@ lisp([<<"is_list">>, A], F) ->
     {A2, _} = macros(A, F),
     B = lisp(A2, F),
     bool_atom_to_int(is_list(B));
+lisp([<<"is_atom">>, X], F) when is_binary(F) ->
+    bool_atom_to_int(true);
 lisp([<<"is_atom">>, [<<"quote">>, X]], F) when is_binary(X) ->
     bool_atom_to_int(true);
 lisp([<<"is_atom">>, _], F) ->

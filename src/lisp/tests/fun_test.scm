@@ -49,7 +49,10 @@
          (= 25 ,((lambda (x) (* x x)) 5))
 ;         (write (hello ))
 ;         (write ((lambda (x) (* x x)) 5))
-;         (write ,((lambda (x) (* x x)) 5))
+;         (write ((lambda (x) (* x x)) 5))
+;         5
+         ;(= 25 ,(execute (fun) (5)))
+         ;(= 25 ,(execute (fun) (5)))
          (= 25 ,((fun) 5))
          (= 7 ,((plus_n 2) 5))
          (= 7 ,(plus_2 5))
@@ -61,3 +64,8 @@ and
 ;(execute (plus_n 2) 5)
 ;(@ plus_s)
 ;(execute (@ plus_2) 5)
+
+; anonymous functions are runtime can only be created at the top level. functions can't produce functions.
+(= (execute (function (x) (* x x)) (5))
+   25)
+and
