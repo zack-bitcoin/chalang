@@ -41,26 +41,18 @@
  ;(execute (@ fun) (5 4 3))
 (macro fun () '(lambda (x) (* x x)))
 (macro plus_n (n) '(lambda (x) (+ x n)));closure with lexical context
-(macro plus_2 (x) (plus_n 2))
-(macro plus_2b (x) (+ x 2))
+(macro plus_2 (x) ((plus_n 2) x))
+;(macro plus_2b (x) (+ x 2))
                                         ; (4 5 3 3 3))
 (macro test_macro ()
        '(()
-         (= 25 ,(call_macro (lambda (x) (* x x)) (5)))
-;         ,(write (lambda (x) (* x x)))
-;         ,(write (plus_n 2))
-         (= 25 ,(call_macro (fun) (5)))
-         (= 7 ,(call_macro (plus_n 2) (5)))
-         (= 7 ,(call_macro 'plus_2b (5)))
+         (= 25 ,((lambda (x) (* x x)) (5)))
+         ;(= 25 ,(execute (fun) (5)))
+         ;(= 25 ,(execute (fun) (5)))
+         (= 25 ,((fun) 5))
+         (= 7 ,((plus_n 2) 5))
+         (= 7 ,(plus_2 5))
          and and and
-
-;         ,(plus_2 5)
-        ;(macro plus_n (n) (lambda (x) (+ x n)))
-        ;(macro plus_2 (x) (plus_n 2))
-        ;(plus_2 5)
-;        25 === tuck drop drop swap
-;        25 === tuck drop drop
-;        and 
        ))
 (test_macro)
 and
