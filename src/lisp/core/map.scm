@@ -16,7 +16,7 @@
 ;(macro next ()
        (cond (((= () l) ())
 	      (true
-               (cons (f ((car l)))
+               (cons (f (car l))
                       (map_ct f (cdr l)))))))
 
 

@@ -610,24 +610,11 @@ bool_atom_to_int(true) -> 1;
 bool_atom_to_int(false) -> 0.
 lisp([<<"quote">>|T], D) -> lisp_quote(T, D);
 lisp([<<"cond">>, T], D) -> lisp(lisp_cond(T, D), D);
-lisp([[<<"lambda">>, Vars, Code],A], D) ->
+lisp([[<<"lambda">>, Vars, Code]|A], D) ->
     {T3, D2} = macros(A, D),
     T4 = lisp(T3, D2),
     T2 = apply_macro(<<"lambda">>, Code, Vars, T4, D2),
     lisp(T2, D2);
-lisp([[<<"quote">>, F],A], D) ->
-    case dict:find(F, D) of
-	error ->
-	    io:fwrite("no function named "),
-	    io:fwrite(F),
-	    io:fwrite("\n"),
-	    1=2;
-	{ok, {Vars, Code}} ->
-	    {T3, D2} = macros(A, D),
-	    T4 = lisp(T3, D2),
-	    T2 = apply_macro(F, Code, Vars, T4, D2),
-	    lisp(T2, D2)
-    end;
 lisp([<<">">>, A, B], F) ->
     {A2, _} = macros(A, F),
     {B2, _} = macros(B, F),
@@ -728,7 +715,8 @@ lisp([<<"not">>, A], F) ->
 %    lisp(R, F);
 lisp([<<"write">>, R], F) ->
     {A2, _} = macros(R, F),
-    lisp_write_helper(A2),
+    io:fwrite(stringify_lisp(A2)),
+%    lisp_write_helper(A2),
     io:fwrite("\n"),
     lisp([], F);
 %lisp([<<"nil">>], F) ->
@@ -737,18 +725,14 @@ lisp([[]|T], F) ->
     [[]|lisp(T, F)];
 lisp([H|T], F) when is_list(H)-> 
     {H2, _} = macros(H, F),
+    {T3, D2} = macros(T, F),
+    T4 = lisp(T3, D2),
     H3 = case H2 of
              [<<"lambda">>, Vars, Code] ->
-                 {T3, D2} = macros(T, F),
-                 T4 = lisp(T3, D2),
                  apply_macro(<<"lambda">>, Code, Vars, T4, D2);
              _ -> 
-                 {T2, _} = macros(T, F),
-                 [H2|T2]
+                 [H2|T4]
          end;
-        
-    %H2 = lisp(H, F),
-%    lisp([H2|T], F);
 lisp(X, _) -> X.
 lisp_write_helper(R) ->
     if 
