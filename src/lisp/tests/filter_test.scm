@@ -1,9 +1,9 @@
 (import (core/filter.scm core/tree.scm))
 
-
+(define even (X) (= 0 (rem X 2)))
 (macro test ()
        (filter
-        (lambda (x) (= 0 (rem x 2)))
+        (@ even)
         (tree (2 3 4 5))))
 (= (test) (tree (2 4)))
 

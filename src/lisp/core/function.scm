@@ -1,5 +1,5 @@
 (import (core/immutable_variables.scm))
-(export (execute lambda define execute2 deflet))
+(export (execute define execute2 deflet))
 
 ;this is a library for making functions at run-time.
 

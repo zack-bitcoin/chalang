@@ -142,7 +142,6 @@ compile(A, L) ->
     %io:fwrite("Macros\n"),
     Tree2_0 = integers(Tree1),
     Tree2_1 = macro_var_names(Tree2_0),%adds the file name to every variable to make sure they are unique for the compiler.
-    %io:fwrite(Tree2_1),
     FNs = function_names(Tree2_1),
     UnusedFuns = unused_funs(FNs, Tree2_1),
     %io:fwrite(UnusedFuns),
@@ -152,7 +151,7 @@ compile(A, L) ->
     check_recursion_variable_amounts(Tree2),
     {Tree3, _} = macros(Tree2, dict:new()),
     %io:fwrite("rpn\n"),
-    %io:fwrite(Tree3),
+    %io:fwrite(stringify_lisp(Tree3)),
     Tree35 = rpn(Tree3),%change to reverse polish notation.
     List = flatten(Tree35),
     List1 = just_in_time(List),
@@ -611,7 +610,12 @@ bool_atom_to_int(true) -> 1;
 bool_atom_to_int(false) -> 0.
 lisp([<<"quote">>|T], D) -> lisp_quote(T, D);
 lisp([<<"cond">>, T], D) -> lisp(lisp_cond(T, D), D);
-lisp([<<"execute">>,[<<"quote">>, F],A], D) ->
+lisp([<<"call_macro">>,[<<"lambda">>, Vars, Code],A], D) ->
+    {T3, D2} = macros(A, D),
+    T4 = lisp(T3, D2),
+    T2 = apply_macro(<<"lambda">>, Code, Vars, T4, D2),
+    lisp(T2, D2);
+lisp([<<"call_macro">>,[<<"quote">>, F],A], D) ->
     case dict:find(F, D) of
 	error ->
 	    io:fwrite("no function named "),
@@ -624,6 +628,13 @@ lisp([<<"execute">>,[<<"quote">>, F],A], D) ->
 	    T2 = apply_macro(F, Code, Vars, T4, D2),
 	    lisp(T2, D2)
     end;
+lisp([<<"call_macro">>,F,A], D) ->
+    {[<<"lambda">>, Vars, Code], _} = macros(F, D),
+    {T3, D2} = macros(A, D),
+    T4 = lisp(T3, D2),
+    T2 = apply_macro(<<"lambda">>, Code, Vars, T4, D2),
+    T2;
+    %lisp([<<"execute">>, T, D2);
 %lisp([999,<<"execute">>,F,A], D) ->
 %    io:fwrite("bad execute!!\n"),
 %    io:fwrite([F, A]),
@@ -727,7 +738,8 @@ lisp([<<"not">>, A], F) ->
 %    io:fwrite(packer:pack(M)),
 %    lisp(R, F);
 lisp([<<"write">>, R], F) ->
-    lisp_write_helper(R),
+    {A2, _} = macros(R, F),
+    lisp_write_helper(A2),
     io:fwrite("\n"),
     lisp([], F);
 %lisp([<<"nil">>], F) ->
@@ -896,6 +908,24 @@ is_op(<<"reverse">>) -> {true, <<136>>, 1, 1};
 is_op(<<"is_list">>) -> {true, <<137, 22, 20>>, 1, 2};
 is_op(_) -> {false, not_an_op, 0, 0}.
 
+stringify_lisp(X) ->
+    << <<"(">>/binary, (stringify_lisp2(X))/binary>>.
+stringify_lisp2([]) -> <<")">>;
+stringify_lisp2([H]) when is_list(H) -> << (stringify_lisp(H))/binary, <<")">>/binary >>;
+stringify_lisp2([H]) -> << (stringify_lisp2(H))/binary, <<")">>/binary >>;
+stringify_lisp2([[<<"macro">>|T1]|T]) ->
+    << <<"\n(macro ">>/binary, (stringify_lisp2(T1))/binary, (stringify_lisp2(T))/binary>>;
+stringify_lisp2([[<<"define">>|T1]|T]) ->
+    << <<"\n(define ">>/binary, (stringify_lisp2(T1))/binary, (stringify_lisp2(T))/binary>>;
+stringify_lisp2([[<<"deflet">>|T1]|T]) ->
+    << <<"\n(deflet ">>/binary, (stringify_lisp2(T1))/binary, (stringify_lisp2(T))/binary>>;
+stringify_lisp2([H|T]) when is_list(H)->
+    << (stringify_lisp(H))/binary, <<" ">>/binary, (stringify_lisp2(T))/binary>>;
+stringify_lisp2([H|T]) ->
+    << (stringify_lisp2(H))/binary, <<" ">>/binary, (stringify_lisp2(T))/binary>>;
+stringify_lisp2(H) when is_integer(H) ->
+    << (list_to_binary(integer_to_list(H)))/binary>>;
+stringify_lisp2(H) -> H.
 to_lists(Words) ->
     {ok, X} = to_lists(Words, [], 0),
     X.
