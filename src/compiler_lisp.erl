@@ -11,23 +11,25 @@
 %-define(fun_end, 111).
 test() ->
     Files = [ 
+              "objects",
+	      "tests/first_macro", 
+              "tests/square_each_macro", 
+	      "tests/let_test",
+	      "tests/primes", 
+	      "tests/flatten_test",
+	      "tests/case", 
+              "lisp",
 	      "tests/macro_basics",
 	      "tests/fun_test",
 	      "tests/fun_test4",
 	      "tests/fun_test5",
               "tests/filter_test",
               "tests/fold_test",
-	      "tests/flatten_test",
 	      "tests/enum_test",
 	      "tests/append_test",
 	      "tests/eqs_test",
-	      "tests/case", 
-	      "tests/let_test",
               "tests/clojure",
 	      "hashlock",
-	      "tests/first_macro", 
-              "tests/square_each_macro", 
-	      "tests/primes", 
 	      "tests/gcf",
 	      "tests/map_test",
 	      "tests/sort_test",
@@ -60,6 +62,7 @@ doit_1(A, Done, L) ->
     F = fun({F1, _}) -> F1 end,
     FNs = function_names(TempTree),
     MNs = macro_names(TempTree),
+    %io:fwrite(stringify_lisp(TempTree)),
     Tree2 = export_funs(Tree, Tree, hd(Done), lists:map(F, MNs++FNs)),
     Tree3 = remove_export_tag(Tree2),
     imports(Tree3, Done, L).
@@ -261,6 +264,7 @@ just_in_time2([N|[M|[<<"*">>|R]]])
 just_in_time2([N|[M|[<<"/">>|R]]]) 
   when ((is_integer(N)) and (is_integer(M))) ->
     just_in_time2([(N div M)|R]);
+
 
 %r-stack optimizations
 just_in_time2([<<">r">>, <<"r@">>|T]) ->
@@ -574,6 +578,7 @@ macros([H|T], D) ->
 	    {[H|T2], D2};
 	{ok, {Vars, Code}} ->
 	    {T3, D2} = macros(T, D),
+	    %{T3, D2} = macros(lisp(T, D), D),
 	    T2 = apply_macro(H, Code, Vars, T3, D2),
 	    %T2 = apply_macro(Code, Vars, T, D),
 	    macros(T2, D2)
@@ -585,7 +590,9 @@ apply_macro(_, Code, [], [], D) ->
 apply_macro(Name, Code, [V|Vars], [H|T], D) ->%D is a dict of the defined macros.
     %V is the name given in the definition of the macro.
     %H is the name given when calling the macro in the code.
-    Code2 = replace(Code, V, H),
+    {H2, _} = macros(H, D),
+    %Code2 = replace(Code, V, H2),
+    Code2 = replace(Code, V, H2),
     apply_macro(Name, Code2, Vars, T, D);
 apply_macro(Name,_,_,_,_) ->
     io:fwrite("\nwrong number of inputs to macro "),
@@ -631,14 +638,36 @@ lisp([<<"is_list">>, A], F) ->
     {A2, _} = macros(A, F),
     B = lisp(A2, F),
     bool_atom_to_int(is_list(B));
-lisp([<<"is_atom">>, X], F) when is_binary(F) ->
-    bool_atom_to_int(true);
-lisp([<<"is_atom">>, [<<"quote">>, X]], F) when is_binary(X) ->
-    bool_atom_to_int(true);
-lisp([<<"is_atom">>, _], F) ->
-    bool_atom_to_int(false);
+lisp([<<"is_atom">>, X], F) ->
+    {A2,_} = macros(X, F),
+    A3 = lisp(A2, F),
+    bool_atom_to_int(is_binary(A3));
+%lisp([<<"is_atom">>, X], F) when is_binary(X) ->
+%    bool_atom_to_int(true);
+%lisp([<<"is_atom">>, [<<"quote">>, X]], F) when is_binary(X) ->
+%    bool_atom_to_int(true);
+%lisp([<<"is_atom">>, A], F) ->
+%    {A2,_} = macros(A, F),
+%    A3 = lisp(A2, F),
+%    io:fwrite("compiler lisp is atom false "),
+%    io:fwrite(A3),
+%    io:fwrite("\n"),
+%    bool_atom_to_int(false);
+lisp([<<"null?">>, X], F) ->
+    {X2, _} = macros(X, F),
+    X3 = lisp(X2, F),
+    B = X3 == [],
+    bool_atom_to_int(B);
 lisp([<<"is_number">>, X], F) ->
-    bool_atom_to_int(is_integer(X));
+    {X2, _} = macros(X, F),
+    X3 = lisp(X2, F),
+    bool_atom_to_int(is_integer(X3));
+lisp([<<"eqs">>, A, B], D) ->
+    {A3, _} = macros(A, D),
+    A2 = lisp(A3, D),
+    {B3, _} = macros(B, D),
+    B2 = lisp(B3, D),
+    bool_atom_to_int(A2 == B2);
 lisp([<<"=">>, A, B], D) ->
     {A3, _} = macros(A, D),
     A2 = lisp(A3, D),
@@ -650,6 +679,8 @@ lisp([<<"+">>, A, B], F) ->
     {B2, _} = macros(B, F),
     C = lisp(A2, F),
     D = lisp(B2, F),
+    %io:fwrite([C, D]),
+    %io:fwrite(packer:pack([C, D])),
     C + D;
 lisp([<<"-">>, A, B], F) ->
     {A2, _} = macros(A, F),
@@ -716,7 +747,8 @@ lisp([<<"not">>, A], F) ->
 %    io:fwrite(packer:pack(M)),
 %    lisp(R, F);
 lisp([<<"write">>, R], F) ->
-    {A2, _} = macros(R, F),
+    {A, _} = macros(R, F),
+    A2 = lisp(A, F),
     io:fwrite(stringify_lisp(A2)),
 %    lisp_write_helper(A2),
     io:fwrite("\n"),
@@ -726,13 +758,14 @@ lisp([<<"write">>, R], F) ->
 lisp([[]|T], F) ->
     [[]|lisp(T, F)];
 lisp([H|T], F) when is_list(H)-> 
-    {H2, _} = macros(H, F),
-    {T3, D2} = macros(T, F),
+    {H2, D1} = macros(H, F),
+    {T3, D2} = macros(T, D1),
     T4 = lisp(T3, D2),
     H3 = case H2 of
              [<<"lambda">>, Vars, Code] ->
                  apply_macro(<<"lambda">>, Code, Vars, T4, D2);
              _ -> 
+%                 [lisp(H2, D1)|T4]
                  [H2|T4]
          end;
 lisp(X, _) -> X.
@@ -1033,4 +1066,5 @@ qua2(<<32, T2/binary>>, X) -> {X, T2};%space
 qua2(<<10, T2/binary>>, X) -> {X, T2};%newline
 qua2(<<L, R/binary>>, X) ->
     qua2(R, <<X/binary, L>>).
+    
     

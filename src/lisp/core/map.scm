@@ -19,4 +19,11 @@
                (cons (f (car l))
                       (map_ct f (cdr l)))))))
 
+                                        ;(map_ct (lambda (x) (+ 0 x)) (9))
+(macro map_test_0 ()
+       (map_ct '(lambda (x) (+ x 3))
+               (1 2 3)))
 
+;       ((lambda (x) (+ 5 x)) 4))
+;(map_test_0)
+;0

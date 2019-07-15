@@ -11,61 +11,35 @@
 ;that is not a problem. The compiler only defines it the first time it is used, and after that it replaces each function definition with the 32-byte binary id for that function.
 
 ;using an anonymous function.
+; anonymous functions at runtime can only be created at the top level. functions can't produce functions. But you can give anonymous functions as inputs to functions, and you can re-define variables to store different functions.
+; the advantage of an anonymous function is that you don't waste time storing it's pointer in a variable, or recalling that variable to execute. you can leave the pointer on the stack, since it will immediately be consumed.
+;(= (execute (function (x y) (* x y)) (5 4))
+;   20)
 
-;(=
-; (execute (lambda (x y) (- (* x x) y)) (3 4))
-; 5)
-;and
-;storing the pointer to your function in a variable
+;storing the pointer to your function in the variable "Fun_1", so it is easy to be executed whenever we need it.
 (define Fun_1 (x) (+ x (* x x)))
-(=
- ;(execute (@ Fun_1) (5))
- (Fun_1 5)
- 30)
+;(=
+; (Fun_1 5);executing the function
+; 30)
 
 ;and
 
+;unused function are automatically removed by the compiler
 (define SS (x) (* x x))
 (define FF (A B C) (+ A (+ C B)))
-;(execute (@ FF) (4 5 6))
-;(define map (F X)
-;  (cond (((= nil X) 7);nil)
-;	 (true (cons
-;		6 ;(apply F ((car X)))
-;		()))))) ;(recurse F (cdr X)))))))
-;(execute (@ FF) (2 3 4))
-;(macro fun ()
-;       (lambda (x y z)
-;	 (y x z z z)))
-;(=
- ;(execute (@ fun) (5 4 3))
-(macro fun () '(lambda (x) (* x x)))
-(macro plus_n (n) '(lambda (x) (+ x n)));closure with lexical context
-(macro plus_2 (x) ((plus_n 2) x))
-;(macro plus_2b (x) (+ x 2))
-                                        ; (4 5 3 3 3))
+
+
+(macro fun () (lambda (x) (* x x)));a simple higher-order macro. the output is another macro.
+(macro plus_n (n) (lambda (x) (+ x n)));closures use lexical context.
+(macro plus_2 (x) ((plus_n 2) x));partial application
 (macro test_macro ()
        '(()
          (= 25 ,((lambda (x) (* x x)) 5))
-;         (write (hello ))
-;         (write ((lambda (x) (* x x)) 5))
-;         (write ((lambda (x) (* x x)) 5))
-;         5
-         ;(= 25 ,(execute (fun) (5)))
-         ;(= 25 ,(execute (fun) (5)))
          (= 25 ,((fun) 5))
          (= 7 ,((plus_n 2) 5))
          (= 7 ,(plus_2 5))
          and and and
        ))
 (test_macro)
-and
-;(execute (plus_n 2) 5)
-;(execute (plus_n 2) 5)
-;(@ plus_s)
-;(execute (@ plus_2) 5)
+;and
 
-; anonymous functions are runtime can only be created at the top level. functions can't produce functions.
-(= (execute (function (x) (* x x)) (5))
-   25)
-and

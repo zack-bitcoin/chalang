@@ -5,7 +5,7 @@
 (macro test3 ()
 ;       (=
         (map_ct 'double2 (2 3 4 5)))
-	;(4 6 8 10)))
+;	(4 6 8 10)))
 ;(test3)
 
 ; but this time we use `define` to make the function.

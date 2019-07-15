@@ -3,11 +3,11 @@
 (macro pass_var (x) (first x x))
 
 (macro test (X)
-       (= z (pass_var X)))
-(test z)
+       (= 'z (pass_var X)))
+(test 'z)
 
-(macro maker_test ()
-       (macro inner (x) (+ x x)))
-(maker_test)
+;(macro maker_test ()
+;       (macro inner (x) (+ x x)))
+;(maker_test)
 ;(inner 2)
 
