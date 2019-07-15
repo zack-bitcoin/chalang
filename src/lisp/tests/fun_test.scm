@@ -13,8 +13,8 @@
 ;using an anonymous function.
 ; anonymous functions at runtime can only be created at the top level. functions can't produce functions. But you can give anonymous functions as inputs to functions, and you can re-define variables to store different functions.
 ; the advantage of an anonymous function is that you don't waste time storing it's pointer in a variable, or recalling that variable to execute. you can leave the pointer on the stack, since it will immediately be consumed.
-;(= (execute (function (x y) (* x y)) (5 4))
-;   20)
+(= (execute (function (x y) (* x y)) (5 4))
+   20)
 
 ;storing the pointer to your function in the variable "Fun_1", so it is easy to be executed whenever we need it.
 (define Fun_1 (x) (+ x (* x x)))
@@ -41,5 +41,5 @@
          and and and
        ))
 (test_macro)
-;and
+and
 

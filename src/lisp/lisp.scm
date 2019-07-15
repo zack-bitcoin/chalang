@@ -1,4 +1,4 @@
-;(import (basics.scm))
+(export (lisp))
 
 (macro
     lisp2 (expr env)

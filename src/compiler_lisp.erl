@@ -11,6 +11,7 @@
 %-define(fun_end, 111).
 test() ->
     Files = [ 
+              "compiler",
               "objects",
 	      "tests/first_macro", 
               "tests/square_each_macro", 
@@ -150,6 +151,7 @@ compile(A, L) ->
     %io:fwrite(UnusedFuns),
     %io:fwrite("\n\n\n"),
     Tree2_2 = remove_unused_funs(UnusedFuns, Tree2_1),
+%    Tree2_2 = Tree2_1,
     Tree2 = apply_funs(FNs, Tree2_2),
     check_recursion_variable_amounts(Tree2),
     {Tree3, _} = macros(Tree2, dict:new()),
@@ -616,7 +618,9 @@ lisp_quote(X, _) -> X.
 bool_atom_to_int(true) -> 1;
 bool_atom_to_int(false) -> 0.
 lisp([<<"quote">>|T], D) -> lisp_quote(T, D);
-lisp([<<"cond">>, T], D) -> lisp(lisp_cond(T, D), D);
+lisp([<<"cond">>, T], D) -> 
+    lisp(lisp_cond(T, D), D);
+    %lisp_cond(T,D);
 lisp([[<<"lambda">>, Vars, Code]|A], D) ->
     {T3, D2} = macros(A, D),
     T4 = lisp(T3, D2),
