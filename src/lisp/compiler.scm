@@ -18,7 +18,17 @@
          def
          ,(deflet3 vars pairs code )
          end_fun))
-
+(macro let_internal (pairs env) ;env)
+;(macro temp ()
+       (cond (((null? pairs) env)
+              (true 
+               (let_internal
+                (cdr pairs)
+                (lambda (arg)
+                  (cond (((= arg (car (car pairs)))
+                          (compile2 (car (cdr (car pairs))) env))
+                         (true (env arg))))))))))
+       
 (macro cond_internal (X env)
        (cond (((= X ()) '(()))
 	      ((= (car (car X)) true)
@@ -49,8 +59,11 @@
        (compile2 (cdr expr) env))
       ((= lambda (car expr))
        (function_internal
-         (compile2 (car (cdr expr)) env)
+         (reverse (compile2 (car (cdr expr)) env))
          (compile2 (car (cdr (cdr expr))) env)))
+      ((= let (car expr))
+       (compile2 (car (cdr (cdr expr)))
+                 (let_internal (car (cdr expr)) env)))
       ((= define (car expr))
        (define_internal
          (compile2 (car (cdr expr)) env)
@@ -104,7 +117,15 @@
                            (execute (@ square) (5)))))
        (=_i 25 ,(compile '((define squar (x) (* x x))
                            (execute (@ squar) (5)))))
-       and and and and and and and and
+       (=_i 11,(compile '(let ((a 5)
+                               (b (+ a 1)))
+                           (+ a b))))
+       (=_i 15 ,(compile
+                 '(let ((f (lambda (x y) (* x (+ 1 y))))
+                        (b (execute f (3 4))))
+                    b)))
+       (=_i 9 ,(compile '(execute (lambda (a b c) (+ (+ a b) c)) (2 3 4))))
+       and and and and and and and and and and and
        ))
 (test)
 
