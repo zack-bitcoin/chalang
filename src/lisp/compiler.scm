@@ -87,6 +87,17 @@
        (cons (car expr)
              (compile2 (cdr expr) env)))
       ((= (car expr) quote) (cdr expr))
+      ((= def (car (car expr)))
+       (
+         (! (function_internal
+             (reverse (compile2 (car (cdr (cdr (car expr)))) env))
+             (compile2 (car (cdr (cdr (cdr (car expr))))) env))
+            (compile2 (car (cdr (car expr))) env))
+         (compile2
+          (cdr expr)
+          (lambda (y) (cond (((= y (compile2 (car (cdr (car expr))) env))
+                              (@ (compile2 (car (cdr (car expr))) env)))
+                             (true (env y))))))))
       ((is_list (car expr))
        (cons (compile2 (car expr) env)
              (compile2 (cdr expr) env)))
@@ -121,12 +132,14 @@
                                (b (+ a 1)))
                            (+ a b))))
        (=_i 15 ,(compile
-                 '(let ((f (lambda (x y) (* x (+ 1 y))))
-                        (b (execute f (3 4))))
-                    b)))
+                 '(let ((f (lambda (x y) (* x (+ 1 y))));this only makes sense for very short functions, because the entire function gets written every time you call it.
+                        (b (execute f (3 4)))
+                        (c (execute f (0 4))))
+                    (+ c b))))
        (=_i 9 ,(compile '(execute (lambda (a b c) (+ (+ a b) c)) (2 3 4))))
-       and and and and and and and and and and and
+       (=_i 10 ,(compile '((def f1 (x) (+ x 5));def is nice, because you don't need the @ when you call the function.
+                           (execute f1 5))))
+       and and and and and and and and and and and and
        ))
 (test)
-
              
