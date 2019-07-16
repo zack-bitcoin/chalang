@@ -1,7 +1,7 @@
 
 ;This is a library for having a context to store local variables in, that way you don't need to use global variables.
 
-(export (deflet3))
+(export (deflet3 let*2))
 
 (macro init ()
        '(nop 500 >r))

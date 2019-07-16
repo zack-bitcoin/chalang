@@ -959,8 +959,9 @@ to_lists(Words) ->
     X.
 to_lists([<<")">>|T], X, N) when N > 0->
     {lists:reverse(X), T};
-to_lists([<<")">>|_], _, _)->
+to_lists([<<")">>|_], X, _)->
     io:fwrite("too many close parenthesis )\n"),
+    io:fwrite(stringify_lisp(lists:reverse(X))),
     error;
 to_lists([<<"(">>|T], X, N) ->
     {H, T2} = to_lists(T, [], N+1),
