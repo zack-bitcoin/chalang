@@ -87,7 +87,7 @@
        (compile2 (car (cdr (cdr expr)))
                  (let_set_internal (car (cdr expr)) env funs)
                  funs))
-      ((= (car expr) quote) (cdr expr))
+;      ((= (car expr) quote) (cdr expr))
       ((= let_mac (car expr))
        (compile2 (car (cdr (cdr expr)))
                  (let_mac_internal (car (cdr expr)) env funs)
@@ -103,6 +103,9 @@
        (execute_internal
         (compile2 (car (cdr expr)) env funs)
         (compile2 (cdr (cdr expr)) env funs)))
+      ((= set! (car expr))
+       (! (compile2 (car (cdr (cdr expr))) env funs)
+          (compile2 (car (cdr expr)) env funs)))
       ((funs (car expr))
        (execute_internal
         (@ (compile2 (car expr) env funs))
@@ -179,10 +182,11 @@
                    and and
                    ))
        ,(compile '(= 5 (let* ((a 5)) (+ a 0))));let* uses the r stack to store variables, so you can put it inside of recursive functions, and you don't have to waste global variable space.
-       ,(compile '(let* ((f2 (lambda (A) (+ A 7)))
+       ,(compile '(let* ((f2 (lambda (A) (+ A 7)));the function definition is only written once, we don't write the binary hash anywhere, and we aren't wasting global variable space. This is probably the ideal way to define run-time functions.
                          (b 9))
-                    (= 16 (execute f2 (9)))))
-       and and and and and and and and and and and and and
-
+                    (= 16 (execute f2 (b)))))
+       ,(compile '((set! A 50)
+                   (= 50 (@ A))))
+       and and and and and and and and and and and and and and 
        ))
-(test)
+(test) 

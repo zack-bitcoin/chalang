@@ -1,5 +1,12 @@
 (export (lisp))
 
+(macro quote_internal (q env)
+       (cond (((not (is_list q)) q)
+              ((= q ()) ())
+              ((= unquote (car q))
+               (lisp2 (cdr q) env))
+              (true q))))
+
 (macro
     lisp2 (expr env)
     (cond
@@ -14,7 +21,7 @@
        (lisp2 (cdr expr) env))
       ((= (car expr) quote)
        ;(quote (cdr expr)))
-       (cdr expr))
+       (quote_internal (cdr expr) env))
       ((= (car expr) write)
        (write (cdr expr)));
 ;       (write (lisp2 (cdr expr) env)))
@@ -122,10 +129,9 @@
          ,(! 5 Z)
          ,(lisp '('(+ (@ Z) 4)))
          9 === tuck drop drop
-
-         ;combining all the passing tests into a single true value
-         and and and and and and and and and and and
+         ,(lisp '('(+ (@ Z) ,(+ 2 2))))
+                                        ;combining all the passing tests into a single true value
+         and and and and and and and and and and and and
         ))
 (test)
-
 
