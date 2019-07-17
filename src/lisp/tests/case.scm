@@ -1,4 +1,4 @@
-(import (eqs_lib.scm cond_lib.scm))
+(import (basics.scm))
 
 ; first show a case statement at compile time
 (macro Z () 

@@ -7,7 +7,7 @@ macro ] , reverse ;
 
 
 % higher order function "map". applies a function to every element of a list. [A, B, B] -> [f(A), f(B), f(C)] 
-: map2 ( NewList OldList -- List2 )
+def ( NewList OldList -- List2 )
   car swap r@ call rot cons swap
   nil ==
   if
@@ -15,13 +15,14 @@ macro ] , reverse ;
   else
     drop recurse call
   then ;
+map2 !
 macro map ( List Fun -- NewList )
-  >r nil swap map2 call r> drop
+  >r nil swap map2 @ call r> drop
 ;
 
 
 ( merge two sorted lists into one sorted list. )
-: merge2 ( L1 L2 Accumulator -- L3 )
+def ( L1 L2 Accumulator -- L3 )
   >r
   nil == if ( if L1 is [] )
     drop drop r> reverse swap ++
@@ -42,21 +43,23 @@ macro map ( List Fun -- NewList )
     then
   then
 ;
+merge2 !
 macro merge ( L1 L2 -- L3 )
-  nil merge2 call
+  nil merge2 @ call
 ;
 
 
 ( example: [A, B, C] -> [[A], [B], [C]]. )
-: merge_setup2 ( X -- [X] )
+def ( X -- [X] )
   nil cons ;
+merge_setup2 !
 macro merge_setup ( List -- ListOfLengthOneLists )
-  merge_setup2 map
+  merge_setup2 @ map
 ;
 
 
 ( sort a list )
-: sort2 ( ListOfSortedLists -- SortedList )
+def ( ListOfSortedLists -- SortedList )
   car nil == ( if there is only 1 sorted list left, return it. )
   if
     drop drop
@@ -65,12 +68,12 @@ macro merge_setup ( List -- ListOfLengthOneLists )
     drop car tuck merge nil cons ++ recurse call
   then
 ;
+sort2 !
 macro sort ( UnsortedList -- SortedList )
-  merge_setup sort2 call
+  merge_setup sort2 @ call
 ;
 
 macro test
-  % [int 4, int 13] [int 2, int 5, int 10] merge 
    [ int 10, int 2, int 13, int 4, int 5 ] sort
   [ int 2, int 4, int 5, int 10, int 13 ]
   == tuck drop drop

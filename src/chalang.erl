@@ -1,10 +1,11 @@
 -module(chalang).
--export([run5/2, data_maker/8, data_maker/9, test/6, vm/6, replace/3, new_state/3, new_state/2, split/2, none_of/1, stack/1, time_gas/1]).
+-export([run5/2, data_maker/9, data_maker/10, test/6, vm/6, replace/3, new_state/3, new_state/2, split/2, none_of/1, stack/1, time_gas/1]).
 -record(d, {op_gas = 0, stack = [], alt = [],
 	    ram_current = 0, ram_most = 0, ram_limit = 0, 
 	    vars = {},  
 	    funs = {}, many_funs = 0, fun_limit = 0,
 	    state = [], hash_size = chalang_constants:hash_size(),
+            version = 0,
             verbose = false
 	   }).
 -record(state, {
@@ -58,6 +59,7 @@ new_state(Height, Slash) ->
 -define(many_vars, 100).
 -define(many_funs, 101).
 -define(define, 110).
+-define(define2, 114).
 -define(fun_end, 111).
 -define(recurse, 112).
 -define(call, 113).
@@ -99,7 +101,8 @@ test(Script, OpGas, RamGas, Funs, Vars, State) ->
 	   fun_limit = Funs,
 	   ram_current = size(Script), 
 	   state = State,
-           verbose = true},
+           version = 1,
+           verbose = false},
     %compiler_chalang:print_binary(Script),
     %io:fwrite("\nrunning a script =============\n"),
     %disassembler:doit(Script),
@@ -110,9 +113,9 @@ test(Script, OpGas, RamGas, Funs, Vars, State) ->
     %X#d.stack.
 
 %run takes a list of bets and scriptpubkeys. Each bet is processed seperately by the RUN2, and the results of each bet is accumulated together to find the net result of all the bets.
-data_maker(OpGas, RamGas, Vars, Funs, ScriptSig, SPK, State, HashSize) ->
-    data_maker(OpGas, RamGas, Vars, Funs, ScriptSig, SPK, State, HashSize, false).
-data_maker(OpGas, RamGas, Vars, Funs, ScriptSig, SPK, State, HashSize, Verbose) ->
+data_maker(OpGas, RamGas, Vars, Funs, ScriptSig, SPK, State, HashSize, Version) ->
+    data_maker(OpGas, RamGas, Vars, Funs, ScriptSig, SPK, State, HashSize, Version, false).
+data_maker(OpGas, RamGas, Vars, Funs, ScriptSig, SPK, State, HashSize, Version, Verbose) ->
     #d{op_gas = OpGas, 
        ram_limit = RamGas, 
        vars = make_tuple(e, Vars),
@@ -121,6 +124,7 @@ data_maker(OpGas, RamGas, Vars, Funs, ScriptSig, SPK, State, HashSize, Verbose) 
        ram_current = size(ScriptSig) + size(SPK),
        state = State, 
        hash_size = HashSize,
+       version = Version,
        verbose = Verbose}.
     
 %run2 processes a single opcode of the script. in comparison to run3/2, run2 is able to edit more aspects of the RUN2's state. run2 is used to define functions and variables. run3/2 is for all the other opcodes. 
@@ -236,10 +240,41 @@ run2([<<?define:8, Script/binary>>|T], D) ->
 		    NewD = D#d{op_gas = D#d.op_gas - S - 30,
 			       ram_current = D#d.ram_current + (2 * S),
 			       many_funs = MF,
+                               %stack = [B|D#d.stack],
 		       funs = M},
 		    run1([Script2|T], NewD)
 	    end
     end;
+run2([<<?define2:8, Script/binary>>|T], D) ->
+    %io:fwrite("run2 define\n"),
+    true = (D#d.version > 0),
+    case split(?fun_end, Script) of
+	{error, R} -> {error, R};
+	{Definition, Script2, _} ->
+    %true = balanced_r(Definition, 0),
+	    B = hash:doit(Definition, chalang_constants:hash_size()),
+    %replace "recursion" in the definition with a pointer to this.
+	    DSize = chalang_constants:hash_size(),
+	    NewDefinition = replace(<<?recurse:8>>, <<2, DSize:32, B/binary>>, Definition),
+    %io:fwrite("chalang define function "),
+    %compiler_chalang:print_binary(NewDefinition),
+    %io:fwrite("\n"),
+	    M = maps:put(B, NewDefinition, D#d.funs),
+	    S = size(NewDefinition) + size(B),
+	    MF = D#d.many_funs + 1,
+	    if
+		MF > D#d.fun_limit ->
+		    {error, "too many functions"};
+		true ->
+		    NewD = D#d{op_gas = D#d.op_gas - S - 30,
+			       ram_current = D#d.ram_current + (2 * S),
+			       many_funs = MF,
+                               stack = [B|D#d.stack],
+		       funs = M},
+		    run1([Script2|T], NewD)
+	    end
+    end;
+
 run2([<<?return:8, _/binary>>|_], D) ->
     run1([<<>>], D);
 run2([<<Command:8, Script/binary>>|T], D) 
@@ -530,7 +565,7 @@ run4(?cons, D) -> % ( A [B] -- [A, B] )
 		    D#d{op_gas = D#d.op_gas - 1,
 			stack = [[B|A]|T],
 			ram_current = D#d.ram_current + 1};
-		true -> {error, "can only cond onto a list"}
+		true -> {error, "can only cons onto a list"}
 	    end;
         _ -> {error, "cons stack underflow"}
     end;
@@ -625,6 +660,9 @@ balanced_f(<<>>, 1) -> false;
 balanced_f(<<?define:8, Script/binary>>, 0) ->
     balanced_f(Script, 1);
 balanced_f(<<?define:8, _/binary>>, 1) -> false;
+balanced_f(<<?define2:8, Script/binary>>, 0) ->
+    balanced_f(Script, 1);
+balanced_f(<<?define2:8, _/binary>>, 1) -> false;
 balanced_f(<<?fun_end:8, Script/binary>>, 1) ->
     balanced_f(Script, 0);
 balanced_f(<<?fun_end:8, _/binary>>, 0) -> false;

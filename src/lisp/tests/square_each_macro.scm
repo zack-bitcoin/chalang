@@ -1,4 +1,4 @@
-(import (eqs_lib.scm))
+(import (core/eqs.scm))
 
 (macro square (X) (* X X))
 ;(macro eqs (A B)
@@ -18,8 +18,11 @@
 	     (true '(cons ,(car X)
 			  ,(tree (cdr X)))))))
 
-(and
- (= (sqr (2 3))
-    (cons 4 (cons 9 nil)))
- (= (tree (4 9))
-    (cons 4 (cons 9 nil))))
+;(cons 4 (cons 9 nil))
+(= (sqr (2 3))
+   (tree (4 9)))
+;(and
+; (= '(sqr (2 3))
+;    '(cons 4 (cons 9 nil)))
+; (= '(tree (4 9))
+;    '(cons 4 (cons 9 nil))))

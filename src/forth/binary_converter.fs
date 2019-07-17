@@ -8,15 +8,15 @@ macro ] swap cons reverse ;
 
 
 % Binary conversion function
-: bc2 (Accumulator BinList -- Int)
+def (Accumulator BinList -- Int)
   >r
   nil == if drop drop r>
   else drop
     car swap r> int 2 * + recurse call
   then
-;
+; bc2 !
 macro binary_convert (BinList -- Int)
-  int 0 bc2 call
+  int 0 bc2 @ call
 ;
 
 

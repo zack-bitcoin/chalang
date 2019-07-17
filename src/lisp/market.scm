@@ -1,14 +1,22 @@
-(import (tree_lib.scm cond_lib.scm oracle.scm))
+(import (basics.scm oracle.scm))
 (macro mil () 1000000)
 
 ;<<height:32, price:16, portionMatched:16, market_id:256, signature/binary>>
+(macro unpack (N B)
+       ;'(nop B N split nil cons cons)
+       '(cons (cons (split B N) nil)))
 (macro extract (X)
+       (unpack 40 X))
+
+(macro extract_old (X)
  ;( signed_price_declaration -- height price portion_matched )
        '(40 split dup tuck Pubkey @ verify_sig or_die
 	     4 split 
 	     swap  
 	     2 split --AAA= swap ++ swap 
 	     2 split --AAA= swap ++ swap
+             MarketID @ == or_die drop drop 
+             dup Height @ < not or_die 
 	     ))
 
 ;verify the signature.

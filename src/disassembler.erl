@@ -82,6 +82,7 @@ doit2(110) -> "\n:";
 doit2(111) -> " ;\n";
 doit2(112) -> " recurse";
 doit2(113) -> " call";
+doit2(114) -> "\ndef";
 
 doit2(120) -> " !";
 doit2(121) -> " @";

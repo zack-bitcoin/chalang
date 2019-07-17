@@ -13,7 +13,11 @@ opcode, symbol for compiled language, stack changes
 
 10 print % ( Y -- X )
 
-11 crash %code stops execution here. Whatever is on top of the stack is the final state.
+11 return %code stops execution here. Whatever is on top of the stack is the final state.
+
+12 nop % ( -- ) does nothing
+
+13 fail % this smart contract fails.
 
 
 # stack opcodes
@@ -145,6 +149,8 @@ only works with 4-byte integers. Results are 4-byte integers. 32-bits. The integ
 112 recurse %crash. this word should only be used in the definition of a word.
 
 113 call %Use the binary at the top of the stack to look in our hashtable of defined words. If it exists call the code, otherwise crash.
+
+114 def % this is the same as `:`. it is used to start a function declaration. The only difference is that it leaves the hash of the function on the top of the stack. This is the pointer that is used for calling the function later.
 
 
 # variables opcodes

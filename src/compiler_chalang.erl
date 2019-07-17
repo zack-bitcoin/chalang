@@ -114,7 +114,7 @@ get_macros([_|T], Functions) -> get_macros(T, Functions).
 
 get_functions(Words) -> get_functions(Words, dict:new(), {dict:new(), 1}). %this initializes variables on 1, because setelement starts at 1.
 
-get_functions([<<":">>|[Name|R]], Functions, Variables) ->
+get_functions([Y|[Name|R]], Functions, Variables) when (Y == <<":">>)->
     %Make sure Name isn't on the restricted list.
     {Code, T} = split(<<";">>, R),
     {Opcodes, Variables2} = to_opcodes(Code, Functions, [], Variables),
@@ -138,6 +138,7 @@ split(C, [D|B], Out) ->
 remove_functions(Words) -> rad(Words, []).
 rad([], Out) -> flip(Out);
 rad([<<":">>|[_|T]], Out) -> rad(T, [<<":">>|Out]);
+rad([<<"def">>|T], Out) -> rad(T, [<<"def">>|Out]);
 rad([X|T], Out) -> rad(T, [X|Out]).
 to_opcodes([<<"int">>|[B|T]], F, Out, V) ->
     Num = list_to_integer(binary_to_list(B)),
@@ -152,7 +153,7 @@ to_opcodes([<<"binary">>|[M|[B|T]]], F, Out, V) ->
 to_opcodes([Word|T], F, Out, Vars) ->
     case w2o(Word) of
 	not_op ->
-	    case get_func(Word, F) of%Since we already replaced the function name with it's binary in apply_functions(_, _), we can't look it up in F any more.
+	    case get_func(Word, F) of
 		{error, "undefined function"} ->
 						%So it is a variable then.
 		    {Y, Vars2} = absorb_var(Word, Vars),
@@ -246,6 +247,7 @@ w2o(<<"oracle">>) -> 99;
 w2o(<<"many_vars">>) -> 100;
 w2o(<<"many_funs">>) -> 101;
 w2o(<<":">>) -> 110;
+w2o(<<"def">>) -> 114;
 w2o(<<";">>) -> 111;
 w2o(<<"recurse">>) -> 112;
 w2o(<<"call">>) -> 113;

@@ -49,28 +49,15 @@
 ;(rt_merge (tree (2 4 6)) (tree (3 5 6)))
 
 (define (rt_sort l f)
-  (let ((cdrl (cdr l))
-        (carl (car l))
-    (cond (((= nil cdrl) carl)
-           (true
-            (recurse
-             (reverse
-              (cons
-               (rt_merge f
-                         carl
-                         (car cdrl))
-               (reverse (cdr cdrl))))
-             f))))))
-(define (rt_sort_old l f)
   (cond (((= nil (cdr l)) (car l))
-	 (true
-	  (recurse
-	   (reverse
-	    (cons
-	     (rt_merge f
+         (true
+          (recurse
+           (reverse
+            (cons
+             (rt_merge f
                        (car l)
                        (car (cdr l)))
-	     (reverse (cdr (cdr l)))))
+             (reverse (cdr (cdr l)))))
            f)))))
 ;(execute (@ rt_sort) ((tree ((5)(2)(6)(1)(3)))))
 
@@ -82,4 +69,5 @@
 
 (macro sort (l g)
        (rt_sort (rt_setup l) g))
-;(sort (tree (1 2 3)))
+;0
+

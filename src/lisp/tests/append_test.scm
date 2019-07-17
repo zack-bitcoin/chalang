@@ -1,4 +1,4 @@
-(import (tree_lib.scm))
+(import (basics.scm))
 
 (macro test ()
        (= (++ (1 2 3) (4))
