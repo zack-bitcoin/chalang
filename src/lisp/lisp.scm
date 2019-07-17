@@ -125,13 +125,17 @@
                                      (car (cdr X))))
                         (5 6))))
 
-        ;producing code that runs at run-time
+        ;producing code that runs at run-time using quote
          ,(! 5 Z)
          ,(lisp '('(+ (@ Z) 4)))
-         9 === tuck drop drop
+         9 === tuck drop drop;we have to check if this is = to 9 at run-time.
+
+         ;running code at compile-time inside of a quoted expression, using unquote.
          ,(lisp '('(+ (@ Z) ,(+ 2 2))))
-                                        ;combining all the passing tests into a single true value
+         9 === tuck drop drop
+         ;combining all the passing tests into a single true value
          and and and and and and and and and and and and
         ))
 (test)
 
+        
