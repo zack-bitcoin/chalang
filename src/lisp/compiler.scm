@@ -65,30 +65,65 @@
 		      ,(tree_internal (cdr T))))
 	      (true '(cons ,(car T)
 			   ,(tree_internal (cdr T)))))))
+(macro let_setup_inputs (mbv pairs env funs)
+       '(nop
+         (compile2 (+ mbv 1)
+                   (car (cdr (car pairs)))
+                   env
+                   funs)
+         (let_setup_inputs2 (length (car (car pairs)))
+                            mbv)))
+(macro let_setup_inputs2 (many_in mbv)
+       (cond (((= many_in 0) ())
+              (true '(() (nop r@ mbv + !)
+                       (let_setup_inputs2
+                        (- many_in 1)
+                        (+ mbv 1)))))))
+(macro let_setup_env (mbv pairs code env funs)
+       (let_internal
+        (+ mbv (length (car (car pairs))))
+        (cdr pairs)
+        code
+        (let_setup_env2 env mbv (reverse (car (car pairs))))
+        funs))
+(macro let_setup_env2 (env mbv vars)
+       (cond (((= vars ()) env)
+              (true (let_setup_env2
+                     (lambda (internal_arg)
+                       (cond (((= internal_arg (car vars))
+                               (@ (+ r@ mbv)))
+                              (true (env internal_arg)))))
+                     (+ 1 mbv)
+                     (cdr vars))))))
+                             
 (macro let_internal (mbv pairs code env funs)
        (cond (((= pairs ()) (compile2 mbv code env funs))
+              ((is_list (car (car pairs))) ;(write '(let internal pairs two)))
+               '((),(let_setup_inputs mbv pairs env funs)
+                 ,(let_setup_env mbv pairs code env funs)))
+                ; ))
               (true
-               '((! (compile2 (+ mbv 1) (car (cdr (car pairs))) env funs) (+ r@ mbv))
+               '((! (compile2 (+ mbv 1)
+                              (car (cdr (car pairs)))
+                              env
+                              funs)
+                    (+ r@ mbv))
                 ,(let_internal
                   (+ mbv 1)
                   (cdr pairs)
                   code
-                  (lambda (y) (cond (((= y (car (car pairs)))
-                                      (@ (+ r@ mbv)))
-                                     (true (env y)))))
+                  (lambda (y)
+                    (cond (((= y (car (car pairs)))
+                            (@ (+ r@ mbv)))
+                           (true (env y)))))
                   funs))))))
 (macro execute_helper (fun code mbv)
        (cond
         (((= mbv 0)
-          (call
-           code
-           fun))
+          (call code fun))
          (true
-          '((call
-             code
-             fun
-             (>r (+ r@ mbv))
-             )
+          '((call code fun
+             (>r (+ r@ mbv)))
             (drop r>))))))
 (macro
     compile2 (mbv expr env funs)
@@ -169,7 +204,7 @@
                                      (true 3)))))
        (=_i (tree_internal (1 2 3 4))
             ,(compile '(tree (1 2 3 4))))
-       ,(compile '((def f1 (x y z) (- x y));def is nice, because you don't need the (execute (@ when you call the function.
+       ,(compile '((def f1 (x y z) (- x y));defining a function
                    (= 4 (f1 7 3 1))
                    (= 10 (f1 15 (f1 (f1 11 1 0) 5 0) 0))
                    ))
@@ -183,5 +218,11 @@
                                (b (f a)))
                            b))))
        and and and and and and and and and and
+;                           (a))))
+       ,(compile '(= 100 (let (((a b) (car@ (cons 100 (cons 101 nil)))))
+                    (a))))
+       ,(compile '(= 102 (let (((x y z) (nop 101 102 103)))
+                           y)))
+       and and
        ))
-(test) 
+(test)
