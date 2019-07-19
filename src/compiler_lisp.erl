@@ -145,22 +145,23 @@ compile(A, L, JustInTimeFlag) ->
     %io:fwrite(packer:pack(Tree1)),
     %io:fwrite("\n"),
     %Tree1 = quote_list(Tree),
-    %io:fwrite("Macros\n"),
     Tree2_0 = integers(Tree1),
     Tree2_1 = macro_var_names(Tree2_0),%adds the file name to every variable to make sure they are unique for the compiler.
     FNs = function_names(Tree2_1),
+    io:fwrite("Unused Funs"),
+    io:fwrite("\n\n\n"),
     UnusedFuns = unused_funs(FNs, Tree2_1),
-    %io:fwrite(UnusedFuns),
-    %io:fwrite("\n\n\n"),
     Tree2_2 = remove_unused_funs(UnusedFuns, Tree2_1),
 %    Tree2_2 = Tree2_1,
     Tree2 = apply_funs(FNs, Tree2_2),
     check_recursion_variable_amounts(Tree2),
+    io:fwrite("Macros\n"),
     {Tree3, _} = macros(Tree2, dict:new()),
-    %io:fwrite("rpn\n"),
+    io:fwrite("rpn\n"),
     %io:fwrite(stringify_lisp(Tree3)),
     Tree35 = rpn(Tree3),%change to reverse polish notation.
     List = flatten(Tree35),
+    io:fwrite("Just in time\n"),
     List1 = if
                 JustInTimeFlag ->
                     just_in_time3(just_in_time(List));
@@ -171,6 +172,7 @@ compile(A, L, JustInTimeFlag) ->
     List2 = variables(List1, {dict:new(), 1}),
     Funcs = dict:new(),
     List4 = to_ops(List2, Funcs),
+    io:fwrite("Done compiling\n"),
     List4.
 
 r_collapse([], _, _) ->
@@ -440,6 +442,7 @@ just_in_time2([<<"nop">>|R]) ->
 just_in_time2([A|B]) ->
     [A|just_in_time2(B)];
 just_in_time2([]) -> [].
+
 
 
 just_in_time3([<<"r@">>, P, <<"+">>, <<"!">>|T]) ->
@@ -773,9 +776,9 @@ lisp([<<"++">>, A, B], F) ->
     A3 ++ B3;
 lisp([<<"cons">>, A, B], F) ->
     %{A2, _} = macros(A, F),
-    {B2, _} = macros(B, F),
+    %{B2, _} = macros(B, F),
     C = lisp(A, F),
-    D = lisp(B2, F),
+    D = lisp(B, F),
     [C|D];
 lisp([<<"hd">>, A], F) ->
     {A2, _} = macros(A, F),

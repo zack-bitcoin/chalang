@@ -234,7 +234,8 @@
                                      (+ b c)))))
        and
        ,(compile '(nop 11 12 13 14 15 (let (((A B C D E) ()))
-                                   (nop 21 A E 25))))
+                                        (nop 21 A E 25))))
+       drop drop drop drop
        ))
 (test)
-0
+
