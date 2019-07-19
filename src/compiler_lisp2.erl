@@ -45,6 +45,35 @@ fip([A|T], D, Dict) ->
 load_inputs(0, _) -> [];
 load_inputs(Many, 0) -> [<<"r@">>, <<"!">>|load_inputs(Many-1, 1)];
 load_inputs(Many, D) -> [<<"r@">>,D,<<"+">>,<<"!">>|load_inputs(Many-1, D+1)].
+let_setup_inputs([], _, _, _) -> [];
+let_setup_inputs([[A, V]|Pairs], Vars, Funs, N) ->
+    functions(V, Vars, Funs, N+1) ++
+        let_setup_inputs2(A, N).
+let_setup_inputs2(0, N) -> [];
+let_setup_inputs2(ManyIn, N) when is_integer(ManyIn)->
+    [<<"r@">>, N, <<"+">>, <<"!">>] ++ let_setup_inputs2(ManyIn-1, N+1);
+let_setup_inputs2(ManyIn, N) when is_list(ManyIn)->
+    let_setup_inputs2(length(ManyIn), N);
+let_setup_inputs2(_, N) ->
+    let_setup_inputs2(1, N).
+
+let_internal([], Code, Vars, Funs, N) ->
+    functions(Code, Vars, Funs, N);
+let_internal([[V, C]|Pairs], Code, Vars, Funs, N) when not(is_list(V))->
+    Vars2 = dict:store(V, [<<"r@">>,N, <<"+">>,<<"@">>], Vars),
+    functions(C, Vars, Funs, N+1) ++ [<<"r@">>,N,<<"+">>,<<"!">>]++let_internal(Pairs, Code, Vars2, Funs, N+1);
+let_internal(Pairs, Code, Vars, Funs, N) ->
+    let_setup_inputs( Pairs, Vars, Funs, N) ++
+        let_setup_env(Pairs, Code, Vars, Funs, N).
+
+let_setup_env2(Vars, _, []) -> Vars;
+let_setup_env2(Vars, N, [H|L]) ->
+    Vars2 = dict:store(H,[<<"r@">>, N, <<"+">>, <<"@">>],Vars),
+    let_setup_env2(Vars2, N+1, L).
+            
+let_setup_env([[V,C]|Pairs], Code, Vars, Funs, N) ->
+    Vars2 = let_setup_env2(Vars, N, lists:reverse(V)),
+    let_internal(Pairs, Code, Vars2, Funs, N+length(V)).
             
 functions([], _Vars, _, _Depth) -> [];
 functions([[<<"define">>,[Name|V],Code]|T], Vars, Funs, N) ->
@@ -52,11 +81,12 @@ functions([[<<"define">>,[Name|V],Code]|T], Vars, Funs, N) ->
     LV = length(V),
     X2 = load_inputs(LV, 0) ++ functions(Code, fip(lists:reverse(V), N, Vars), Funs2, LV),
     [<<"def">>] ++ X2 ++ [<<"end_fun">>, Name, <<"!">>] ++ functions(T, Vars, Funs2, N);
-functions([<<"let">>, []|Code], Vars, Funs, N) ->
-    functions(Code, Vars, Funs, N);
-functions([<<"let">>, [[V,C]|Pairs]|Code], Vars, Funs, N) when not(is_list(V)) ->
-    Vars2 = dict:store(V, [<<"r@">>,N, <<"+">>,<<"@">>], Vars),
-    [functions(C, Vars, Funs, N+1), <<"r@">>,N,<<"+">>,<<"!">>]++functions([<<"let">>, Pairs|Code], Vars2, Funs, N+1);
+%functions([<<"let">>, [[V,C]|Pairs]|Code], Vars, Funs, N) when not(is_list(V)) ->
+%    let_internal([[V, C]|Pairs], Code, Vars, Funs, N);
+functions([<<"let">>, Pairs|Code], Vars, Funs, N) ->
+    let_internal(Pairs, Code, Vars, Funs, N);
+%    let_setup_inputs( Pairs, Vars, Funs, N) ++
+%        let_setup_env(Pairs, Code, Vars, Funs, N);
 functions([<<"set!">>, Name, Code], Vars, Funs, N) ->
     functions(Code, Vars, Funs, N) ++ [Name, <<"!">>];
 functions([<<"=">>, A, B], Vars, Funs, N) ->
@@ -71,6 +101,10 @@ functions([<<"cond">>, [[Q, A]|T]], Vars, Funs, N) ->
         functions(A, Vars, Funs, N) ++ [<<"else">>] ++
         functions([<<"cond">>, T], Vars, Funs, N) ++
         [<<"then">>];
+functions([<<"tree">>, T], _, _, _) ->
+    [[]] ++ tree_internal(T);
+functions([<<"+">>, A, B], Vars, Funs, N) ->
+    functions(A, Vars, Funs, N) ++ functions(B, Vars, Funs, N) ++ [<<"+">>];
 functions([H|T], Vars, Funs, N) when is_integer(H)->
     [H|functions(T, Vars, Funs, N)];
 functions([Rator|Rand], Vars, Funs, N) when (not(is_integer(Rator)) and( not(is_list(Rator)))) ->
@@ -79,7 +113,9 @@ functions([Rator|Rand], Vars, Funs, N) when (not(is_integer(Rator)) and( not(is_
             Val ++ functions(Rand, Vars, Funs, N);
         error ->
             A = case dict:find(Rator, Funs) of
-                    error -> [Rator|functions(Rand, Vars, Funs, N)];
+                    error -> 
+                        [Rator|functions(Rand, Vars, Funs, N)];
+                        %[functions(Rand, Vars, Funs, N) ++ [Rator]];
                     {ok, true} -> 
                         M = if
                                 N > 0 -> [<<"r@">>, N, <<"+">>, <<">r">>, Rator, <<"@">>,<<"call">>,<<"r>">>,<<"drop">>];
@@ -96,10 +132,18 @@ functions(I, _, _, _) when is_integer(I) -> [I];
 functions(I, Vars, _, _) ->
     A = case dict:find(I, Vars) of
             error -> [I];
-            {ok, Val} -> [Val]
+            {ok, Val} -> Val
         end.
-    
-    
+   
+tree_internal([]) -> [<<"nil">>];
+tree_internal([[H|T1]|T2]) -> 
+        tree_internal([H|T1]) ++
+        tree_internal(T2) ++ 
+        [<<"cons">>];
+tree_internal([[]|T]) ->
+    [<<"nil">>]++tree_internal(T);
+tree_internal([H|T]) ->
+    [H] ++ tree_internal(T) ++ [<<"cons">>].
    
                       
 

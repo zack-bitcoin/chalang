@@ -20,26 +20,38 @@
   (let ((c (+ a b))
         (e (+ d c)))
     e))
-(= 15 (f1 4 5 6))
+;(= 15 (f1 4 5 6))
 
-(= 3
-   (let ((a 1)
-      (b (* a 2))
-      (c (+ b a)))
-     c))
-and
+;(= 3
+;   (let ((a 1)
+;      (b (* a 2))
+;      (c (+ b a)))
+;     c))
+;and
 
 (set! N 9)
 (= 9 (N @))
-and
+;and
 
-(= 4 4)
-and
+;(= 4 4)
+;and
 
-(= 4 5) not
-and
+;(= 4 5) not
+;and
 
 (= 7 (cond (((= 4 5) 6)
             (true 7))))
 and
 
+;(tree (((10)) 11 (12)))
+(let ((y 5))
+  y)
+
+;(let (((x y) (car@ (cons 8 (cons 9 nil)))))
+;  (y))
+;(cons 9 nil)
+(+ 4 5)
+(+ 4 5)
+
+(let (((x z) (6 5)))
+  (+ x z))

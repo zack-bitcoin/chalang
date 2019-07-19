@@ -9,7 +9,7 @@ doit(X) ->
     Words = to_words(C, <<>>, []),
     integers(to_lists(Words)).
 doit2(F, Tree) ->
-    to_ops(variables(F(flatten(rpn(Tree))))).
+    to_ops(variables(F(flatten(Tree)))).
     
 
 integers([A|B]) ->
