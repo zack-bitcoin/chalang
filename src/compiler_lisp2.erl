@@ -103,8 +103,8 @@ functions([<<"cond">>, [[Q, A]|T]], Vars, Funs, N) ->
         [<<"then">>];
 functions([<<"tree">>, T], _, _, _) ->
     [[]] ++ tree_internal(T);
-functions([<<"+">>, A, B], Vars, Funs, N) ->
-    functions(A, Vars, Funs, N) ++ functions(B, Vars, Funs, N) ++ [<<"+">>];
+%functions([<<"+">>, A, B], Vars, Funs, N) ->
+%    functions(A, Vars, Funs, N) ++ functions(B, Vars, Funs, N) ++ [<<"+">>];
 functions([H|T], Vars, Funs, N) when is_integer(H)->
     [H|functions(T, Vars, Funs, N)];
 functions([Rator|Rand], Vars, Funs, N) when (not(is_integer(Rator)) and( not(is_list(Rator)))) ->
@@ -114,7 +114,9 @@ functions([Rator|Rand], Vars, Funs, N) when (not(is_integer(Rator)) and( not(is_
         error ->
             A = case dict:find(Rator, Funs) of
                     error -> 
-                        [Rator|functions(Rand, Vars, Funs, N)];
+                        lists:foldr( fun(Elem, Acc) ->
+                                             Elem ++ Acc end, [], lists:map(fun(X) -> functions(X, Vars, Funs, N) end, Rand)) ++ [Rator];
+                    %[Rator|functions(Rand, Vars, Funs, N)];
                         %[functions(Rand, Vars, Funs, N) ++ [Rator]];
                     {ok, true} -> 
                         M = if
