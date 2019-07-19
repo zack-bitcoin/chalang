@@ -233,6 +233,8 @@
        ,(compile '(= 23 (nop 11 12 (let (((b c) ()))
                                      (+ b c)))))
        and
+       ,(compile '(nop 11 12 13 14 15 (let (((A B C D E) ()))
+                                   (nop 21 A E 25))))
        ))
 (test)
-;0
+0

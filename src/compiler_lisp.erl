@@ -163,7 +163,7 @@ compile(A, L, JustInTimeFlag) ->
     List = flatten(Tree35),
     List1 = if
                 JustInTimeFlag ->
-                    just_in_time(List);
+                    just_in_time3(just_in_time(List));
                 true -> List
             end,
 %    io:fwrite(stringify_lisp(List1)),
@@ -440,6 +440,19 @@ just_in_time2([<<"nop">>|R]) ->
 just_in_time2([A|B]) ->
     [A|just_in_time2(B)];
 just_in_time2([]) -> [].
+
+
+just_in_time3([<<"r@">>, P, <<"+">>, <<"!">>|T]) ->
+    B = used_pth(T, P, 0),
+    C = if
+            B -> [<<"r@">>, P, <<"+">>, <<"!">>|just_in_time3(T)];
+            true -> [<<"drop">>|just_in_time3(T)]
+        end;
+just_in_time3([A|B]) ->
+    [A|just_in_time3(B)];
+just_in_time3([]) -> [].
+
+
 
 imports([<<"import">>, []], Done, _) -> {[], Done};
 imports([<<"import">>, [H|T]], Done, L) ->
