@@ -38,56 +38,61 @@ compile(Text, Location, JustInTimeFlag) ->
     F =fun(X) -> just_in_time3(just_in_time(X)) end,
     compile_utils:doit2(F, [[], 500, <<">r">>] ++ Tree3).
    
-%let_helper(V, C, Pairs, Code) -> 
-%    Vars2 = dict:store(V, [[],<<"r@">>,N, <<"+">>,<<"@">>], Vars),
-%    [functions(C, Vars, Funs, N+1), <<"r@">>,N,<<"+">>,<<"!">>].
     
-    
-%functions(Tree, Env, Depth) ->
 fip([], _, Dict) -> Dict;
 fip([A|T], D, Dict) ->
-    fip(T, D+1, dict:store(A, [[],<<"r@">>,D, <<"+">>,<<"@">>], Dict)).
+    fip(T, D+1, dict:store(A, [<<"r@">>,D, <<"+">>,<<"@">>], Dict)).
 load_inputs(0, _) -> [];
-load_inputs(Many, 0) -> [[], <<"r@">>, <<"!">>|load_inputs(Many-1, 1)];
-load_inputs(Many, D) -> [[],<<"r@">>,D,<<"+">>,<<"!">>|load_inputs(Many-1, D+1)].
+load_inputs(Many, 0) -> [<<"r@">>, <<"!">>|load_inputs(Many-1, 1)];
+load_inputs(Many, D) -> [<<"r@">>,D,<<"+">>,<<"!">>|load_inputs(Many-1, D+1)].
             
 functions([], _Vars, _, _Depth) -> [];
 functions([[<<"define">>,[Name|V],Code]|T], Vars, Funs, N) ->
     Funs2 = dict:store(Name, true, Funs),
     LV = length(V),
-    X2 = load_inputs(LV, 0) ++ [functions(Code, fip(lists:reverse(V), N, Vars), Funs2, LV)],
+    X2 = load_inputs(LV, 0) ++ functions(Code, fip(lists:reverse(V), N, Vars), Funs2, LV),
     [<<"def">>] ++ X2 ++ [<<"end_fun">>, Name, <<"!">>] ++ functions(T, Vars, Funs2, N);
 functions([<<"let">>, []|Code], Vars, Funs, N) ->
     functions(Code, Vars, Funs, N);
 functions([<<"let">>, [[V,C]|Pairs]|Code], Vars, Funs, N) when not(is_list(V)) ->
-    Vars2 = dict:store(V, [[],<<"r@">>,N, <<"+">>,<<"@">>], Vars),
-    [[],functions(C, Vars, Funs, N+1), <<"r@">>,N,<<"+">>,<<"!">>]++functions([<<"let">>, Pairs|Code], Vars2, Funs, N+1);
-functions([[<<"let">>, Pairs, Code]|T], Vars, Funs, N) ->
-    functions([<<"let">>, Pairs, Code], Vars, Funs, N) ++ functions(T, Vars, Funs, N);
-functions([[Rator|Rand]|T], Vars, Funs, N) when (not(is_integer(Rator)) and( not(is_list(Rator)))) ->
-    A = case dict:find(Rator, Funs) of
-        error -> [Rator|functions(Rand, Vars, Funs, N)];
-        {ok, true} -> 
-                M = if
-                        N > 0 -> [<<"r@">>, N, <<"+">>, <<">r">>, Rator, <<"@">>,<<"call">>,<<"r>">>,<<"drop">>];
-                        true -> [Rator,<<"@">>,<<"call">>]
-                    end,
-                %[[]]++functions(Rand, Vars, Funs, N) ++ [<<"r@">>, N, <<"+">>, <<">r">>, Rator, <<"@">>,<<"call">>]
-                [[]]++functions(Rand, Vars, Funs, N) ++ M
-    end,
-    [A|functions(T, Vars, Funs, N)];
+    Vars2 = dict:store(V, [<<"r@">>,N, <<"+">>,<<"@">>], Vars),
+    [functions(C, Vars, Funs, N+1), <<"r@">>,N,<<"+">>,<<"!">>]++functions([<<"let">>, Pairs|Code], Vars2, Funs, N+1);
+functions([<<"set!">>, Name, Code], Vars, Funs, N) ->
+    functions(Code, Vars, Funs, N) ++ [Name, <<"!">>];
+functions([<<"=">>, A, B], Vars, Funs, N) ->
+    functions(A, Vars, Funs, N) ++
+        functions(B, Vars, Funs, N) ++
+        [<<"===">>, <<"tuck">>, <<"drop">>, <<"drop">>];
+functions([<<"cond">>, []], _, _, _) -> [];
+functions([<<"cond">>, [[<<"true">>, A]|T]], Vars, Funs, N) ->
+    functions(A, Vars, Funs, N);
+functions([<<"cond">>, [[Q, A]|T]], Vars, Funs, N) ->
+    functions(Q, Vars, Funs, N) ++ [<<"if">>] ++
+        functions(A, Vars, Funs, N) ++ [<<"else">>] ++
+        functions([<<"cond">>, T], Vars, Funs, N) ++
+        [<<"then">>];
 functions([H|T], Vars, Funs, N) when is_integer(H)->
     [H|functions(T, Vars, Funs, N)];
-functions([H|T], Vars, Funs, N) when (not(is_integer(H)) and (not(is_list(H)))) ->
-    A = case dict:find(H, Vars) of
-            error -> [H];
-            {ok, Val} -> Val
-        end,
-    A++functions(T, Vars, Funs, N);
+functions([Rator|Rand], Vars, Funs, N) when (not(is_integer(Rator)) and( not(is_list(Rator)))) ->
+    case dict:find(Rator, Vars) of
+        {ok, Val} -> 
+            Val ++ functions(Rand, Vars, Funs, N);
+        error ->
+            A = case dict:find(Rator, Funs) of
+                    error -> [Rator|functions(Rand, Vars, Funs, N)];
+                    {ok, true} -> 
+                        M = if
+                                N > 0 -> [<<"r@">>, N, <<"+">>, <<">r">>, Rator, <<"@">>,<<"call">>,<<"r>">>,<<"drop">>];
+                                true -> [Rator,<<"@">>,<<"call">>]
+                            end,
+                        functions(Rand, Vars, Funs, N) ++ M
+                end,
+            A
+        end;
 functions([H|T], Vars, Funs, N) when is_list(H) ->
-    [functions(H, Vars, Funs, N)|
-     functions(T, Vars, Funs, N)];
-functions(I, _, _, _) when is_integer(I) -> I;
+    functions(H, Vars, Funs, N) ++
+        functions(T, Vars, Funs, N);
+functions(I, _, _, _) when is_integer(I) -> [I];
 functions(I, Vars, _, _) ->
     A = case dict:find(I, Vars) of
             error -> [I];
