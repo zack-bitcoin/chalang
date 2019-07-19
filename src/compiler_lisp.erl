@@ -237,12 +237,16 @@ used_pth([], P, N) -> false;
 used_pth([<<"end_fun">>|_], _, _) -> true;
 used_pth([<<"r@">>, P, <<"+">>, <<"!">>|T], P, 0) -> false;
 used_pth([<<"r@">>, P, <<"+">>, <<"@">>|T], P, 0) -> true;
+used_pth([P, <<"r@">>, <<"+">>, <<"!">>|T], P, 0) -> false;
+used_pth([P, <<"r@">>, <<"+">>, <<"@">>|T], P, 0) -> true;
+used_pth([<<"r@">>, <<"!">>|T], 0, 0) -> false;
 used_pth([<<"r@">>, <<"@">>|T], 0, 0) -> true;
 used_pth([<<"if">>|T], P, N) ->
     used_pth(skip_next_else(T), P, N);
 used_pth([<<"else">>|T], P, N) ->
     used_pth(skip_to_then(T), P, N);
-used_pth([<<"r>">>|T], _, 0) -> false;
+used_pth([<<"r>">>,<<"drop">>|T], _, 0) -> false;
+used_pth([<<"r>">>|T], _, 0) -> true;
 used_pth([<<"r>">>|T], P, N) -> 
     used_pth(T, P, N-1);
 used_pth([<<">r">>|T], P, N) -> 
@@ -324,7 +328,7 @@ just_in_time2([<<"r@">>, 0, <<"+">>|T]) ->
     just_in_time2([<<"r@">>|T]);
 just_in_time2([<<"r@">>, P, <<"+">>, <<"!">>,<<"drop">>|T]) ->
     just_in_time2([<<"swap">>,<<"drop">>,<<"r@">>,P,<<"+">>,<<"!">>|T]);
-just_in_time2([<<"r@">>, P, <<"+">>, <<"!">>|T]) ->
+just_in_time2([<<"block execution">>, <<"r@">>, P, <<"+">>, <<"!">>|T]) ->
     B = used_pth(T, P, 0),
     C = if
             B -> [<<"r@">>, P, <<"+">>, <<"!">>|just_in_time2(T)];
