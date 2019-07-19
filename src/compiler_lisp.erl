@@ -2,7 +2,7 @@
 %If the compiler is written in macros, it is easier to understand, and modify.
 
 -module(compiler_lisp).
--export([doit/2, compile/2, test/0]).
+-export([doit/2, compile/2, compile/3, test/0]).
 %-define(int_bits, 32).
 %-define(int, 0).
 %-define(binary, 2).
@@ -135,6 +135,8 @@ doit(A, L) ->
 
 
 compile(A, L) ->
+    compile(A, L, true).
+compile(A, L, JustInTimeFlag) ->
 
     {Tree1, _} = doit_1(A, [<<"">>], L),
     %io:fwrite("in doit\n"),
@@ -159,7 +161,13 @@ compile(A, L) ->
     %io:fwrite(stringify_lisp(Tree3)),
     Tree35 = rpn(Tree3),%change to reverse polish notation.
     List = flatten(Tree35),
-    List1 = just_in_time(List),
+    List1 = if
+                JustInTimeFlag ->
+                    just_in_time(List);
+                true -> List
+            end,
+%    io:fwrite(stringify_lisp(List1)),
+%    io:fwrite("\n"),
     List2 = variables(List1, {dict:new(), 1}),
     Funcs = dict:new(),
     List4 = to_ops(List2, Funcs),
@@ -223,7 +231,23 @@ no_rff(_, [<<"end_fun">>|_]) -> true;
 no_rff(_, []) -> true;
 no_rff(N, [<<"r@">>,N,<<"+">>,<<"@">>|_]) -> false;
 no_rff(N, [X|T]) -> no_rff(N, T).
-          
+     
+%used_pth(_,_,_) -> true; 
+used_pth([], P, N) -> false;
+used_pth([<<"end_fun">>|_], _, _) -> true;
+used_pth([<<"r@">>, P, <<"+">>, <<"!">>|T], P, 0) -> false;
+used_pth([<<"r@">>, P, <<"+">>, <<"@">>|T], P, 0) -> true;
+used_pth([<<"r@">>, <<"@">>|T], 0, 0) -> true;
+used_pth([<<"if">>|T], P, N) ->
+    used_pth(skip_next_else(T), P, N);
+used_pth([<<"else">>|T], P, N) ->
+    used_pth(skip_to_then(T), P, N);
+used_pth([<<"r>">>|T], _, 0) -> false;
+used_pth([<<"r>">>|T], P, N) -> 
+    used_pth(T, P, N-1);
+used_pth([<<">r">>|T], P, N) -> 
+    used_pth(T, P, N+1);
+used_pth([H|T], P, N) -> used_pth(T, P, N).
 used_r([], _) -> false;
 used_r([<<"end_fun">>|_], _) -> false;
 used_r([<<"if">>|T], N) ->
@@ -282,18 +306,30 @@ just_in_time2([<<"@r">>, N, <<"+">>, <<">r">>|T]) when is_integer(N) ->
 %tail call optimizations
 just_in_time2([F, <<"@">>, <<"r@">>, <<">r">>, <<"call">>, <<"r>">>, <<"drop">>|T]) ->
     B = used_r(T, 0),
-    C = if
-        B -> [F, <<"@">>, <<"r@">>, <<">r">>, <<"call">>, <<"r>">>, <<"drop">>];
-        true -> [F, <<"@">>, <<"call">>]
+    {C, D} = if
+        B -> {[F], [<<"@">>, <<"r@">>, <<">r">>, <<"call">>, <<"r>">>, <<"drop">>]};
+        true -> {[], [F, <<"@">>, <<"call">>]}
         end,
-    C ++ just_in_time2(T);
+    C ++ just_in_time2(D++T);
 just_in_time2([F, <<"@">>, <<"r@">>, N, <<"+">>, <<">r">>, <<"call">>, <<"r>">>, <<"drop">>|T]) ->
     B = used_r(T, 0),
-    C = if
-        B -> [F, <<"@">>, <<"r@">>, N, <<"+">>, <<">r">>, <<"call">>, <<"r>">>, <<"drop">>];
-        true -> [F, <<"@">>, <<"call">>]
+    {C, D} = if
+        B -> {[F, <<"@">>], [<<"r@">>, N, <<"+">>, <<">r">>, <<"call">>, <<"r>">>, <<"drop">>]};
+        true -> {[], [F, <<"@">>, <<"call">>]}
         end,
-    C ++ just_in_time2(T);
+    C ++ just_in_time2(D++T);
+
+%r-stack optimizations related to tail call 
+just_in_time2([<<"r@">>, 0, <<"+">>|T]) ->
+    just_in_time2([<<"r@">>|T]);
+just_in_time2([<<"r@">>, P, <<"+">>, <<"!">>,<<"drop">>|T]) ->
+    just_in_time2([<<"swap">>,<<"drop">>,<<"r@">>,P,<<"+">>,<<"!">>|T]);
+just_in_time2([<<"r@">>, P, <<"+">>, <<"!">>|T]) ->
+    B = used_pth(T, P, 0),
+    C = if
+            B -> [<<"r@">>, P, <<"+">>, <<"!">>|just_in_time2(T)];
+            true -> [<<"drop">>|just_in_time2(T)]
+        end;
 
 %if we repeatedly call functions, we don't have to restore variables for parent function in between. This is a kind of tail call optimization.
 just_in_time2([<<"call">>,<<"r>">>,<<"drop">>,N,<<"@">>,<<"r@">>,M,<<"+">>,<<">r">>|R]) -> 
@@ -311,11 +347,11 @@ just_in_time2([<<"r@">>, <<"@">>, <<"cdr">>, <<"r@">>, <<"@">>, <<"car">>|R]) ->
     [<<"r@">>, <<"@">>, <<"car@">>, <<"swap">>|just_in_time2(R)];
 % now the nth interval for n > 0.
 just_in_time2([<<"r@">>, N, <<"+">>, <<"@">>, P, <<"r@">>, N, <<"+">>, <<"@">>, P|R]) when ((P == <<"car">>) or (P == <<"cdr">>))->
-    [<<"r@">>, N, <<"+">>, <<"@">>, <<P>>, <<"dup">>|just_in_time2(R)];
+    just_in_time2([<<"r@">>, N, <<"+">>, <<"@">>, <<P>>, <<"dup">>|R]);
 just_in_time2([<<"r@">>, N, <<"+">>, <<"@">>, <<"car">>, <<"r@">>, N, <<"+">>, <<"@">>, <<"cdr">>|R]) ->
-    [<<"r@">>, N, <<"+">>, <<"@">>, <<"car@">>|just_in_time2(R)];
+    just_in_time2([<<"r@">>, N, <<"+">>, <<"@">>, <<"car@">>|R]);
 just_in_time2([<<"r@">>, N, <<"+">>, <<"@">>, <<"cdr">>, <<"r@">>, N, <<"+">>, <<"@">>, <<"car">>|R]) ->
-    [<<"r@">>, N, <<"+">>, <<"@">>, <<"car@">>, <<"swap">>|just_in_time2(R)];
+    just_in_time2([<<"r@">>, N, <<"+">>, <<"@">>, <<"car@">>, <<"swap">>|R]);
 
 
 
@@ -383,7 +419,7 @@ just_in_time2([N, <<"r@">>, M, <<"+">>, <<"@">>|R]) when (((N == <<"nil">>) or (
 just_in_time2([1|[<<"*">>|R]]) -> 
     just_in_time2(R);
 %adding 0 is the same as doing nothing
-just_in_time2([0|[<<"+">>|R]]) -> 
+just_in_time2([0, <<"+">>|R]) -> 
     just_in_time2(R);
 %the nop operation does nothing, so we can delete it.
 just_in_time2([<<"nop">>|R]) -> 

@@ -41,7 +41,7 @@
               (true
                (cons
                 (cons (car l)
-                      (cons (@ (+ mbv r@))
+                      (cons (@ (+ r@ mbv))
                             ()))
                 (function_internal_pairs
                  (cdr l)
@@ -163,8 +163,14 @@
              (compile2 mbv (cdr expr) env funs)))
       ((= def (car (car expr)))
        ((! (function_internal
-            (reverse (compile2 mbv (car (cdr (cdr (car expr)))) env funs))
-            (compile2 mbv (car (cdr (cdr (cdr (car expr))))) env funs)
+            (reverse (compile2
+             mbv
+                      (car (cdr (cdr (car expr)))) env funs))
+            (compile2
+                      (+ (length (car (cdr (cdr (car expr)))))
+                         mbv)
+;             mbv
+                      (car (cdr (cdr (cdr (car expr))))) env funs)
             mbv env funs)
            (compile2 mbv (car (cdr (car expr))) env funs))
         (compile2
@@ -218,11 +224,15 @@
                                (b (f a)))
                            b))))
        and and and and and and and and and and
-;                           (a))))
-       ,(compile '(= 100 (let (((a b) (car@ (cons 100 (cons 101 nil)))))
+       ,(compile '(= 100 (let (((a b) (car@ (cons 100 (cons 101 nil)))));binding variables to functions that have more than one output.
                     (a))))
        ,(compile '(= 102 (let (((x y z) (nop 101 102 103)))
                            y)))
        and and
+       ;loading variables from the stack into local variable space
+       ,(compile '(= 23 (nop 11 12 (let (((b c) ()))
+                                     (+ b c)))))
+       and
        ))
 (test)
+;0
