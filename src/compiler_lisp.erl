@@ -196,8 +196,8 @@ just_in_time(X0) ->
     %io:fwrite(X0),
     %io:fwrite("\n"),
     %io:fwrite("\n"),
-    X1 = just_in_time2(X0),
-    X2 = func_input_simplify(X1),
+    X1 = func_input_simplify(X0),
+    X2 = just_in_time2(X1),
     if 
 	(X2 == X0) -> X2;
 	true -> just_in_time(X2)
@@ -328,7 +328,7 @@ just_in_time2([<<"r@">>, 0, <<"+">>|T]) ->
     just_in_time2([<<"r@">>|T]);
 just_in_time2([<<"r@">>, P, <<"+">>, <<"!">>,<<"drop">>|T]) ->
     just_in_time2([<<"swap">>,<<"drop">>,<<"r@">>,P,<<"+">>,<<"!">>|T]);
-just_in_time2([<<"block execution">>, <<"r@">>, P, <<"+">>, <<"!">>|T]) ->
+just_in_time2([<<"r@">>, P, <<"+">>, <<"!">>|T]) ->
     B = used_pth(T, P, 0),
     C = if
             B -> [<<"r@">>, P, <<"+">>, <<"!">>|just_in_time2(T)];
