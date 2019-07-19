@@ -328,7 +328,7 @@ just_in_time2([<<"r@">>, 0, <<"+">>|T]) ->
     just_in_time2([<<"r@">>|T]);
 just_in_time2([<<"r@">>, P, <<"+">>, <<"!">>,<<"drop">>|T]) ->
     just_in_time2([<<"swap">>,<<"drop">>,<<"r@">>,P,<<"+">>,<<"!">>|T]);
-just_in_time2([<<"r@">>, P, <<"+">>, <<"!">>|T]) ->
+just_in_time2([<<"block this">>, <<"r@">>, P, <<"+">>, <<"!">>|T]) ->
     B = used_pth(T, P, 0),
     C = if
             B -> [<<"r@">>, P, <<"+">>, <<"!">>|just_in_time2(T)];
