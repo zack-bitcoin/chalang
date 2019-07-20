@@ -1,5 +1,5 @@
 -module(compile_utils).
--export([quote_unquote/1,remove_comments/1,add_spaces/1,to_words/3,to_lists/1,integers/1,rpn/1,flatten/1,variables/1,variables/2,to_ops/1,stringify_lisp/1,doit/1,doit2/2]).
+-export([quote_unquote/1,remove_comments/1,add_spaces/1,to_words/3,to_lists/1,integers/1,rpn/1,flatten/1,variables/1,variables/2,to_ops/1,stringify_lisp/1,doit/1,doit2/1,is_64/1]).
 
 
 doit(X) ->
@@ -8,8 +8,10 @@ doit(X) ->
     C = add_spaces(B2),
     Words = to_words(C, <<>>, []),
     integers(to_lists(Words)).
-doit2(F, Tree) ->
-    to_ops(variables(F(flatten(Tree)))).
+doit2(Tree) ->
+    Optimized = flatten(Tree),
+    V = variables(Optimized),
+    to_ops(V).
     
 
 integers([A|B]) ->
@@ -46,7 +48,7 @@ variables([H|T], {Dict, Many}) ->
 	if
 	    B -> {[<<"int">>, <<H:32>>], {Dict, Many}};
 	    D -> 
-		io:fwrite("variables case D \n"),
+		%io:fwrite("variables case D \n"),
 		Bin = decode(H),
 		S = size(Bin),
 		{[<<"binary">>, <<S:32>>, Bin], {Dict, Many}};
@@ -75,7 +77,7 @@ is_op(<<"dup">>) -> {true, <<21>>, 1, 2};
 is_op(<<"swap">>) -> {true, <<22>>, 2, 2};
 is_op(<<"tuck">>) -> {true, <<23>>, 3, 3};
 is_op(<<"rot">>) -> {true, <<24>>, 3, 3};
-is_op(<<"2dup">>) -> {true, <<25>>, 4, 4};
+is_op(<<"2dup">>) -> {true, <<25>>, 2, 4};
 is_op(<<"tuckn">>) -> {true, <<26>>, 1, 1};
 is_op(<<"pickn">>) -> {true, <<27>>, 1, 1};
 is_op(<<">r">>) -> {true, <<30>>, 1, 0};
@@ -83,7 +85,7 @@ is_op(<<"r>">>) -> {true, <<31>>, 0, 1};
 is_op(<<"r@">>) -> {true, <<32>>, 0, 1};
 is_op(<<"hash">>) -> {true, <<40>>, 1, 1};
 is_op(<<"verify_sig">>) -> {true, <<41>>, 3, 1};
-is_op(<<"pub2addr">>) -> {true, <<42>>, 1, 1};
+%is_op(<<"pub2addr">>) -> {true, <<42>>, 1, 1};
 is_op(<<"+">>) -> {true, <<50>>, 2, 1};
 is_op(<<"-">>) -> {true, <<51>>, 2, 1};
 is_op(<<"*">>) -> {true, <<52>>, 2, 1};
@@ -121,7 +123,7 @@ is_op(<<"end_fun">>) -> {true, <<111>>, 0, 0};
 is_op(<<"recurse">>) -> {true, <<112, 113>>, 0, 1};
 is_op(<<"call">>) -> {true, <<113>>, 1, 1};
 is_op(<<"@">>) -> {true, <<121>>, 1, 1};
-is_op(<<"get">>) -> {true, <<121>>, 1, 1};
+%is_op(<<"get">>) -> {true, <<121>>, 1, 1};
 is_op(<<"!">>) -> {true, <<120>>, 2, 0};
 is_op(<<"set!">>) -> {true, <<22, 120>>, 2, 0};
 is_op(<<"cons">>) -> {true, <<130>>, 2, 1};

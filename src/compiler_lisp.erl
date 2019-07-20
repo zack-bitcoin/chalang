@@ -402,18 +402,15 @@ just_in_time2([<<"r@">>|[N|[<<"+">>|[<<"@">>|
 
 %for the symmetric functions +, *, and =, we should try and push variables to the left and constants to the right so that we can simplify the function definitions.
 %there are more symmetric functions we might want to do this with: and or xor band bor bxor
-just_in_time2([N,<<"r@">>,M,<<"+">>,<<"@">>,<<"===">>|R]) when (((N== <<"nil">>) or (is_integer(N))) and is_integer(M))->
-    just_in_time2([<<"r@">>,M,<<"+">>,<<"@">>,N,<<"===">>|R]);
-just_in_time2([N,<<"r@">>,M,<<"+">>,<<"@">>,<<"*">>|R]) when (is_integer(N) and is_integer(M))->
-    just_in_time2([<<"r@">>,M,<<"+">>,<<"@">>,N,<<"*">>|R]);
-just_in_time2([N,<<"r@">>,M,<<"+">>,<<"@">>,<<"+">>|R]) when is_integer(N)->
-    just_in_time2([<<"r@">>, M,<<"+">>, <<"@">>,N,<<"+">>|R]);
-just_in_time2([N,<<"r@">>,<<"@">>,<<"===">>|R]) when ((N == <<"nil">>) or (is_integer(N)))->
-    just_in_time2([<<"r@">>, <<"@">>,N,<<"===">>|R]);
-just_in_time2([N,<<"r@">>,<<"@">>,<<"*">>|R]) when is_integer(N)->
-    just_in_time2([<<"r@">>, <<"@">>,N,<<"*">>|R]);
-just_in_time2([N,<<"r@">>,<<"@">>,<<"+">>|R]) when is_integer(N)->
-    just_in_time2([<<"r@">>, <<"@">>,N,<<"+">>|R]);
+just_in_time2([N,<<"r@">>,<<"@">>,F|R]) when (((N == <<"nil">>) or (is_integer(N))) and (((F == <<"+">>) or (F == <<"*">>)) or (F == <<"===">>))) ->
+    just_in_time2([<<"r@">>, <<"@">>,N,F|R]);
+just_in_time2([N,<<"r@">>,M,<<"+">>,<<"@">>,F|R]) when ((((N== <<"nil">>) or (is_integer(N))) and is_integer(M)) and (((F == <<"+">>) or (F == <<"*">>)) or (F == <<"===">>))) ->
+    just_in_time2([<<"r@">>,M,<<"+">>,<<"@">>,N,F|R]);
+just_in_time2([<<"r@">>,<<"@">>,<<"r@">>,M,<<"+">>,<<"@">>,F|R]) when ((is_integer(M)) and (((F == <<"+">>) or (F == <<"*">>)) or (F == <<"===">>))) ->
+    just_in_time2([<<"r@">>,M,<<"+">>,<<"@">>,<<"r@">>,<<"@">>,F|R]);
+just_in_time2([<<"r@">>,N,<<"+">>,<<"@">>,<<"r@">>,M,<<"+">>,<<"@">>,F|R]) when (((((is_integer(N))) and is_integer(M)) and (((F == <<"+">>) or (F == <<"*">>)) or (F == <<"===">>))) and (M > N)) ->
+    just_in_time2([<<"r@">>,M,<<"+">>,<<"@">>,<<"r@">>,N,<<"+">>,<<"@">>,F|R]);
+
 
 %try to keep constants to the right, and variables to the left
 just_in_time2([N, <<"r@">>, <<"@">>|R]) when ((N == <<"nil">>) or (is_integer(N)))->
@@ -455,7 +452,8 @@ just_in_time3([A|B]) ->
     [A|just_in_time3(B)];
 just_in_time3([]) -> [].
 
-
+sym_bin_fun(F) ->
+    (((F == <<"+">>) or (F == <<"*">>)) or (F == <<"===">>)).
 
 imports([<<"import">>, []], Done, _) -> {[], Done};
 imports([<<"import">>, [H|T]], Done, L) ->

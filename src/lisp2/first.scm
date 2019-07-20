@@ -15,6 +15,7 @@
 ;(let ((a 2)
 ;      (b (+ a 1)))
 ;  (+ a b))
+;(nop)
 
 (define (f1 a b d)
   (let ((c (+ a b))
@@ -30,7 +31,7 @@
 ;and
 
 (set! N 9)
-(= 9 (N @))
+(= 9 (@ N))
 ;and
 
 ;(= 4 4)
@@ -50,7 +51,22 @@
 ;(let (((x y) (car@ (cons 8 (cons 9 nil)))))
 ;  (y))
 ;(cons 9 nil)
-(+ 4 5)
-(+ 4 5)
-(let (((x z) (6 5)))
-  (+ x z))
+(= (+ 4 5) 9)
+(= 11 (let (((x z) (6 5)))
+        (+ x z)))
+
+;--DgAAAAAO is <<14,0,0,0,0,14>>
+(= 14 (let (((a b) (split --DgAAAAAO 2)))
+        (a)))
+(define (f2 a b c d)
+  (let ((e (cons a nil))
+        (f (* b (+ c a)))
+        (g (+ d (+ a f))))
+    (cons g e)))
+(f2 9 8 7 6)
+
+(define (f3 a b)
+  (let ((c (+ a 2))
+        (d (* c b)))
+    (f2 d d d d)))
+(f3 2 2)

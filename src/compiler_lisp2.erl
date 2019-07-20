@@ -35,8 +35,18 @@ compile(Text, Location, JustInTimeFlag) ->
     io:fwrite(compile_utils:stringify_lisp(Tree3)),
     io:fwrite("\n"),
     io:fwrite("\n"),
-    F =fun(X) -> just_in_time3(just_in_time(X)) end,
-    compile_utils:doit2(F, [[], 500, <<">r">>] ++ Tree3).
+    io:fwrite(integer_to_list(length(Tree3))),
+    io:fwrite("\n"),
+    io:fwrite("\n"),
+    Tree4 = just_in_time_main(Tree3),
+    io:fwrite(integer_to_list(length(Tree4))),
+    io:fwrite("\n"),
+    io:fwrite("\n"),
+    compile_utils:doit2([[], 500, <<">r">>] ++ Tree4).
+
+just_in_time_main(X) ->     
+    just_in_time2(just_in_time3(just_in_time_loop(just_in_time3(X)))).
+    
    
     
 fip([], _, Dict) -> Dict;
@@ -116,8 +126,6 @@ functions([Rator|Rand], Vars, Funs, N) when (not(is_integer(Rator)) and( not(is_
                     error -> 
                         lists:foldr( fun(Elem, Acc) ->
                                              Elem ++ Acc end, [], lists:map(fun(X) -> functions(X, Vars, Funs, N) end, Rand)) ++ [Rator];
-                    %[Rator|functions(Rand, Vars, Funs, N)];
-                        %[functions(Rand, Vars, Funs, N) ++ [Rator]];
                     {ok, true} -> 
                         M = if
                                 N > 0 -> [<<"r@">>, N, <<"+">>, <<">r">>, Rator, <<"@">>,<<"call">>,<<"r>">>,<<"drop">>];
@@ -149,7 +157,7 @@ tree_internal([H|T]) ->
    
                       
 
-just_in_time(X0) ->
+just_in_time_loop(X0) ->
     %io:fwrite(X0),
     %io:fwrite("\n"),
     %io:fwrite("\n"),
@@ -157,7 +165,7 @@ just_in_time(X0) ->
     X2 = just_in_time2(X1),
     if 
 	(X2 == X0) -> X2;
-	true -> just_in_time(X2)
+	true -> just_in_time_loop(X2)
     end.
 %for every >r we should look ahead in the code to see if we actually need to use the r stack. maybe we can leave this variable on the main stack until it is needed.
 func_input_simplify([<<"r@">>,N,<<"+">>,<<"!">>,<<"r@">>,N,<<"+">>,<<"@">>|R]) when is_integer(N)->
@@ -191,7 +199,9 @@ no_rff(N, [X|T]) -> no_rff(N, T).
      
 %used_pth(_,_,_) -> true; 
 used_pth([], P, N) -> false;
-used_pth([<<"end_fun">>|_], _, _) -> true;
+used_pth([<<"end_fun">>|_], _, _) -> false;
+used_pth([<<"start_fun">>|T], P, N) -> %false;
+    used_pth(skip_to_end_fun(T), P, N);
 used_pth([<<"r@">>, P, <<"+">>, <<"!">>|T], P, 0) -> false;
 used_pth([<<"r@">>, P, <<"+">>, <<"@">>|T], P, 0) -> true;
 used_pth([P, <<"r@">>, <<"+">>, <<"!">>|T], P, 0) -> false;
@@ -224,6 +234,9 @@ used_r([_|T], N) -> used_r(T, N).
 skip_to_then([<<"then">>|T]) -> T;
 skip_to_then([_|T]) -> skip_to_then(T);
 skip_to_then([]) -> [].
+skip_to_end_fun([<<"end_fun">>|T]) -> T;
+skip_to_end_fun([_|T]) -> skip_to_end_fun(T);
+skip_to_end_fun([]) -> [].
 skip_next_else([<<"else">>|T]) ->
     T;
 skip_next_else([H|T]) ->
@@ -237,6 +250,142 @@ skip_to_fromr_drop([<<">r">>|T], T1, N) ->
     skip_to_fromr_drop(T, T1 ++ [<<">r">>], N+1);
 skip_to_fromr_drop([A|B], T1, N) ->
     skip_to_fromr_drop(B, T1 ++ [A], N).
+
+-define(bin_sym(F), (
+(F == <<"+">>) or
+(F == <<"*">>) or
+(F == <<"===">>) or
+(F == <<"and">>) or
+(F == <<"or">>) or
+(F == <<"xor">>) or
+(F == <<"band">>) or
+(F == <<"bor">>) or
+(F == <<"bxor">>)
+)).
+-define(op1_0(F), (
+(F == <<">r">>)
+)).
+-define(op0_1(F), (
+(is_integer(F)) or
+(F == <<"true">>) or
+(F == <<"false">>) or
+(F == <<">r">>) or
+(F == <<"r@">>) or
+(F == <<"height">>) or
+(F == <<"nil">>)
+)).
+-define(op1_1(F), (
+(F == <<"hash">>) or
+(F == <<"not">>) or
+(F == <<"@">>) or
+(F == <<"car">>) or
+(F == <<"cdr">>) or
+(F == <<"reverse">>)
+)).
+-define(op2_2(F), (
+(F == <<"swap">>) or
+(F == <<"car@">>) or
+(F == <<"split">>)
+)).
+-define(op2_1(F), (
+(?bin_sym(F)) or
+(F == <<"-">>) or
+(F == <<"/">>) or
+(F == <<"<">>) or
+(F == <<">">>) or
+(F == <<"rem">>) or
+(F == <<"cons">>) or
+(F == <<"++">>)
+)).
+-define(sorted_op(F), (
+                   (is_integer(F)) or
+                   (?op1_0(F)) or
+                   (?op0_1(F)) or
+                   (?op1_1(F)) or
+                   (?op2_2(F)) or
+                   (?op2_1(F))
+)).
+r_combinator_helper(L, 0, 0) -> L;
+r_combinator_helper(L, 1, N) -> 
+    [<<"swap">>] ++ r_combinator_helper(L, 0, N);
+r_combinator_helper(L, 2, N) ->
+    [<<"tuck">>] ++ r_combinator_helper(L, 0, N);
+r_combinator_helper(L, M, 1) ->
+    r_combinator_helper(L, M, 0) ++ [<<"swap">>];
+r_combinator_helper(L, M, 2) ->
+    r_combinator_helper(L, M, 0) ++ [<<"rot">>];
+r_combinator_helper(_, _, _) -> error.
+
+
+
+op_to_ints(F) ->
+    if
+        ?op1_0(F) -> {1, 0};
+        ?op0_1(F) -> {0, 1};
+        ?op1_1(F) -> {1, 1};
+        ?op2_1(F) -> {2, 1};
+        ?op2_2(F) -> {2, 2}
+    end.
+ops_to_ints(X) -> ops_to_ints(X, 0, 0).
+ops_to_ints([], A, B) -> {A, B};
+ops_to_ints([F|T], A, B) ->
+    {A1, B1} = op_to_ints(F),
+    C = B - A1,
+    if
+        (C > -1) -> ops_to_ints(T, A, C+B1);
+        true -> ops_to_ints(T, A-C, B1)
+    end.
+r_combinator(L) when is_list(L)->%protects the top thing on the stack from a variety of kinds of pairs of functions, so we don't have to use the r-stack so much.
+    {A, B} = ops_to_ints(L),
+    r_combinator_helper(L, A, B).
+%r_combinator(F) ->%protects the top thing on the stack from a variety of kinds of functions, so we don't have to use the r-stack so much.
+%    {A, B} = op_to_ints(F),
+%    r_combinator_helper([F], A, B).
+
+jitrc(S, NoChange, N, T) ->
+    B = if
+            (N==0) -> no_rff0(T);
+            true -> no_rff(N, T)
+        end,
+    {Q, R} = if
+                 B -> 
+                     {Take, Give} = ops_to_ints(S),
+                     if
+                         ((Take < 3) and (Give < 3)) -> {[], r_combinator(S)};
+                         true -> NoChange
+                     end;
+                 true -> NoChange
+             end,
+    Q ++ just_in_time2(R ++ T).
+    
+                      
+                
+
+%common combinations of opcodes that cancel to nothing
+just_in_time2([<<"rot">>, <<"tuck">>|R]) -> 
+    just_in_time2(R);
+just_in_time2([<<"tuck">>, <<"rot">>|R]) -> 
+    just_in_time2(R);
+just_in_time2([<<"swap">>, <<"swap">>|R]) -> 
+    just_in_time2(R);
+just_in_time2([<<"dup">>, <<"drop">>|R]) -> 
+    just_in_time2(R);
+just_in_time2([<<">r">>, <<"r>">>|R]) -> 
+    just_in_time2(R);
+just_in_time2([<<"r>">>, <<">r">>|R]) -> 
+    just_in_time2(R);
+just_in_time2([<<"dup">>,<<">r">>,<<"dup">>,<<"r>">>|R]) -> 
+    [<<"dup">>,<<"dup">>|just_in_time2(R)];
+
+
+
+just_in_time2([<<"swap">>, F|T]) when ?bin_sym(F) ->
+    just_in_time2([F|T]);
+just_in_time2([<<"tuck">>, F, F|T]) when ?bin_sym(F) ->
+    just_in_time2([F, F|T]);
+just_in_time2([<<"rot">>, F, F|T]) when ?bin_sym(F) ->
+    just_in_time2([F, F|T]);
+
 
 %if we are doing math with 2 constants, this is something that can be done at compile time.
 just_in_time2([N, M, <<"+">>|R]) 
@@ -284,13 +433,34 @@ just_in_time2([F, <<"@">>, <<"r@">>, N, <<"+">>, <<">r">>, <<"call">>, <<"r>">>,
 just_in_time2([<<"r@">>, 0, <<"+">>|T]) ->
     just_in_time2([<<"r@">>|T]);
 just_in_time2([<<"r@">>, P, <<"+">>, <<"!">>,<<"drop">>|T]) ->
+    %move variable load right, to increase the odds tha we can combine it with the read
     just_in_time2([<<"swap">>,<<"drop">>,<<"r@">>,P,<<"+">>,<<"!">>|T]);
-just_in_time2([<<"block this">>, <<"r@">>, P, <<"+">>, <<"!">>|T]) ->
-    B = used_pth(T, P, 0),
-    C = if
-            B -> [<<"r@">>, P, <<"+">>, <<"!">>|just_in_time2(T)];
-            true -> [<<"drop">>|just_in_time2(T)]
-        end;
+
+%if we save something, and load it right away, and we only load it that one time, then sometimes we can optimize this.
+just_in_time2([<<"r@">>,<<"!">>,F,<<"r@">>,<<"@">>|T]) when ?sorted_op(F) ->
+    NoChange = {[<<"r@">>], [<<"!">>,F,<<"r@">>,<<"@">>]},
+    S = [F],
+    jitrc(S, NoChange, 0, T);
+just_in_time2([<<"r@">>,N,<<"+">>,<<"!">>,F,<<"r@">>,N, <<"+">>, <<"@">>|T]) when (is_integer(N) and ?sorted_op(F)) ->
+    NoChange =  {[<<"r@">>], [N, <<"+">>,<<"!">>,F,<<"r@">>,N,<<"+">>,<<"@">>]},
+    S = [F],
+    jitrc(S, NoChange, N, T);
+just_in_time2([<<"r@">>,<<"!">>,F,G,<<"r@">>,<<"@">>|T]) when (?sorted_op(F) and ?sorted_op(G)) ->
+    NoChange = {[<<"r@">>], [<<"!">>,F,G,<<"r@">>,<<"@">>]},
+    S = [F, G],
+    jitrc(S, NoChange, 0, T);
+just_in_time2([<<"r@">>,N,<<"+">>,<<"!">>,F,G,<<"r@">>,N, <<"+">>, <<"@">>|T]) when (is_integer(N) and ?sorted_op(F) and ?sorted_op(G)) ->
+    NoChange =  {[<<"r@">>], [N, <<"+">>,<<"!">>,F,G,<<"r@">>,N,<<"+">>,<<"@">>]},
+    S = [F,G],
+    jitrc(S, NoChange, N, T);
+just_in_time2([<<"r@">>,<<"!">>,F,G,H,<<"r@">>,<<"@">>|T]) when (?sorted_op(F) and ?sorted_op(G) and ?sorted_op(H)) ->
+    NoChange = {[<<"r@">>], [<<"!">>,F,G,H,<<"r@">>,<<"@">>]},
+    S = [F, G, H],
+    jitrc(S, NoChange, 0, T);
+just_in_time2([<<"r@">>,N,<<"+">>,<<"!">>,F,G,H,<<"r@">>,N, <<"+">>, <<"@">>|T]) when (is_integer(N) and ?sorted_op(F) and ?sorted_op(G) and ?sorted_op(H)) ->
+    NoChange =  {[<<"r@">>], [N, <<"+">>,<<"!">>,F,G,H,<<"r@">>,N,<<"+">>,<<"@">>]},
+    S = [F,G,H],
+    jitrc(S, NoChange, N, T);
 
 %if we repeatedly call functions, we don't have to restore variables for parent function in between. This is a kind of tail call optimization.
 just_in_time2([<<"call">>,<<"r>">>,<<"drop">>,N,<<"@">>,<<"r@">>,M,<<"+">>,<<">r">>|R]) -> 
@@ -315,22 +485,6 @@ just_in_time2([<<"r@">>, N, <<"+">>, <<"@">>, <<"cdr">>, <<"r@">>, N, <<"+">>, <
     just_in_time2([<<"r@">>, N, <<"+">>, <<"@">>, <<"car@">>, <<"swap">>|R]);
 
 
-
-%common combinations of opcodes that cancel to nothing
-just_in_time2([<<"rot">>, <<"tuck">>|R]) -> 
-    just_in_time2(R);
-just_in_time2([<<"tuck">>, <<"rot">>|R]) -> 
-    just_in_time2(R);
-just_in_time2([<<"swap">>, <<"swap">>|R]) -> 
-    just_in_time2(R);
-just_in_time2([<<"dup">>, <<"drop">>|R]) -> 
-    just_in_time2(R);
-just_in_time2([<<">r">>, <<"r>">>|R]) -> 
-    just_in_time2(R);
-just_in_time2([<<"r>">>, <<">r">>|R]) -> 
-    just_in_time2(R);
-just_in_time2([<<"dup">>,<<">r">>,<<"dup">>,<<"r>">>|R]) -> 
-    [<<"dup">>,<<"dup">>|just_in_time2(R)];
 
 %we want to use the variables in last-in-first-out order if possible, since this often leads to more opportunities to optimize.
 %just_in_time2([<<"r@">>, <<"@">>, <<"r@">>, N, <<"+">>, <<"@">>|R]) when is_integer(N)-> 
@@ -357,24 +511,28 @@ just_in_time2([<<"r@">>|[N|[<<"+">>|[<<"@">>|
 
 %for the symmetric functions +, *, and =, we should try and push variables to the left and constants to the right so that we can simplify the function definitions.
 %there are more symmetric functions we might want to do this with: and or xor band bor bxor
-just_in_time2([N,<<"r@">>,M,<<"+">>,<<"@">>,<<"===">>|R]) when (((N== <<"nil">>) or (is_integer(N))) and is_integer(M))->
-    just_in_time2([<<"r@">>,M,<<"+">>,<<"@">>,N,<<"===">>|R]);
-just_in_time2([N,<<"r@">>,M,<<"+">>,<<"@">>,<<"*">>|R]) when (is_integer(N) and is_integer(M))->
-    just_in_time2([<<"r@">>,M,<<"+">>,<<"@">>,N,<<"*">>|R]);
-just_in_time2([N,<<"r@">>,M,<<"+">>,<<"@">>,<<"+">>|R]) when is_integer(N)->
-    just_in_time2([<<"r@">>, M,<<"+">>, <<"@">>,N,<<"+">>|R]);
-just_in_time2([N,<<"r@">>,<<"@">>,<<"===">>|R]) when ((N == <<"nil">>) or (is_integer(N)))->
-    just_in_time2([<<"r@">>, <<"@">>,N,<<"===">>|R]);
-just_in_time2([N,<<"r@">>,<<"@">>,<<"*">>|R]) when is_integer(N)->
-    just_in_time2([<<"r@">>, <<"@">>,N,<<"*">>|R]);
-just_in_time2([N,<<"r@">>,<<"@">>,<<"+">>|R]) when is_integer(N)->
-    just_in_time2([<<"r@">>, <<"@">>,N,<<"+">>|R]);
+
+% integer and local variable
+
+just_in_time2([N,<<"r@">>,<<"@">>,F|R]) when (((N == <<"nil">>) or (is_integer(N))) and ?bin_sym(F)) ->
+    just_in_time2([<<"r@">>, <<"@">>,N,F|R]);
+just_in_time2([N,<<"r@">>,M,<<"+">>,<<"@">>,F|R]) when (((N== <<"nil">>) or (is_integer(N))) and ?bin_sym(F)) ->
+    just_in_time2([<<"r@">>,M,<<"+">>,<<"@">>,N,F|R]);
+%two local variables
+just_in_time2([<<"r@">>,<<"@">>,<<"r@">>,M,<<"+">>,<<"@">>,F|R]) when ((is_integer(M)) and ?bin_sym(F)) ->
+    just_in_time2([<<"r@">>,M,<<"+">>,<<"@">>,<<"r@">>,<<"@">>,F|R]);
+just_in_time2([<<"r@">>,N,<<"+">>,<<"@">>,<<"r@">>,M,<<"+">>,<<"@">>,F|R]) when ((((is_integer(N))) and is_integer(M)) and ((M > N) and ?bin_sym(F))) ->
+    just_in_time2([<<"r@">>,M,<<"+">>,<<"@">>,<<"r@">>,N,<<"+">>,<<"@">>,F|R]);
+
+
 
 %try to keep constants to the right, and variables to the left
 just_in_time2([N, <<"r@">>, <<"@">>|R]) when ((N == <<"nil">>) or (is_integer(N)))->
     just_in_time2([<<"r@">>, <<"@">>, N, <<"swap">>|R]);
 just_in_time2([N, <<"r@">>, M, <<"+">>, <<"@">>|R]) when (((N == <<"nil">>) or (is_integer(N))) and (is_integer(M))) ->
     just_in_time2([<<"r@">>, M, <<"+">>, <<"@">>, N, <<"swap">>|R]);
+just_in_time2([<<"r@">>, N, <<"+">>, <<"@">>, <<"r@">>, M, <<"+">>, <<"@">>|R]) when ((((N == <<"nil">>) or (is_integer(N))) and (is_integer(M))) and (M > N)) ->
+    just_in_time2([<<"r@">>, M, <<"+">>, <<"@">>, <<"r@">>, N, <<"+">>, <<"@">>, <<"swap">>|R]);
 
 %multiplying by 1 is the same as doing nothing
 just_in_time2([1|[<<"*">>|R]]) -> 
@@ -400,6 +558,12 @@ just_in_time2([]) -> [].
 
 
 
+just_in_time3([<<"r@">>, <<"!">>|T]) ->
+    B = used_pth(T, 0, 0),
+    C = if
+            B -> [<<"r@">>, <<"!">>|just_in_time3(T)];
+            true -> [<<"drop">>|just_in_time3(T)]
+        end;
 just_in_time3([<<"r@">>, P, <<"+">>, <<"!">>|T]) ->
     B = used_pth(T, P, 0),
     C = if
