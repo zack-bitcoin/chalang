@@ -10,7 +10,7 @@ doit(A, L) when is_list(A) ->
     doit(list_to_binary(A), L);
 doit(Text, Location) ->
     List = compile(Text, Location, true),
-    disassembler:doit(List),
+    %disassembler:doit(List),
     Gas = 10000,
     VM = chalang:vm(List, Gas*100, Gas*10, Gas, Gas, []),
     {List, VM}.
@@ -28,19 +28,19 @@ imports1(A, Done, L) ->
 
 compile(Text, Location, JustInTimeFlag) ->
     Tree = compile_utils:doit(Text),
-    io:fwrite(compile_utils:stringify_lisp(Tree)),
-    io:fwrite("\n"),
-    Tree3 = functions(Tree, dict:new(), dict:new(), 0),
-    io:fwrite("\n"),
-    io:fwrite(compile_utils:stringify_lisp(Tree3)),
-    io:fwrite("\n"),
-    io:fwrite("\n"),
+    Tree3 = lisp2forth(Tree, dict:new(), dict:new(), 0),
+    %io:fwrite("\n"),
+    %io:fwrite(compile_utils:stringify_lisp(Tree)),
+    %io:fwrite("\n"),
+    %io:fwrite(compile_utils:stringify_lisp(Tree3)),
+    %io:fwrite("\n"),
+    io:fwrite("\n just in time advantage "),
     io:fwrite(integer_to_list(length(Tree3))),
-    io:fwrite("\n"),
-    io:fwrite("\n"),
+    %io:fwrite("\n"),
+    io:fwrite(" : "),
     Tree4 = just_in_time_main(Tree3),
     io:fwrite(integer_to_list(length(Tree4))),
-    io:fwrite("\n"),
+    %io:fwrite("\n"),
     io:fwrite("\n"),
     compile_utils:doit2([[], 500, <<">r">>] ++ Tree4).
 
@@ -57,8 +57,16 @@ load_inputs(Many, 0) -> [<<"r@">>, <<"!">>|load_inputs(Many-1, 1)];
 load_inputs(Many, D) -> [<<"r@">>,D,<<"+">>,<<"!">>|load_inputs(Many-1, D+1)].
 let_setup_inputs([], _, _, _) -> [];
 let_setup_inputs([[A, V]|Pairs], Vars, Funs, N) ->
-    functions(V, Vars, Funs, N+1) ++
-        let_setup_inputs2(A, N).
+    lisp2forth(V, Vars, Funs, N+1) ++
+        let_setup_inputs2(A, N);
+let_setup_inputs(X, _, _, _) ->
+    io:fwrite("\n\nError: wrong format for let. this should be a list of pairs: \n"),
+    io:fwrite(compile_utils:stringify_lisp(X)),
+    io:fwrite("\n\n"),
+    io:fwrite("example list of pairs:"),
+    io:fwrite(compile_utils:stringify_lisp([[1,2],[1,3],[5,2]])),
+    io:fwrite("\n\n"),
+    1=2.
 let_setup_inputs2(0, N) -> [];
 let_setup_inputs2(ManyIn, N) when is_integer(ManyIn)->
     [<<"r@">>, N, <<"+">>, <<"!">>] ++ let_setup_inputs2(ManyIn-1, N+1);
@@ -68,10 +76,10 @@ let_setup_inputs2(_, N) ->
     let_setup_inputs2(1, N).
 
 let_internal([], Code, Vars, Funs, N) ->
-    functions(Code, Vars, Funs, N);
+    lisp2forth(Code, Vars, Funs, N);
 let_internal([[V, C]|Pairs], Code, Vars, Funs, N) when not(is_list(V))->
     Vars2 = dict:store(V, [<<"r@">>,N, <<"+">>,<<"@">>], Vars),
-    functions(C, Vars, Funs, N+1) ++ [<<"r@">>,N,<<"+">>,<<"!">>]++let_internal(Pairs, Code, Vars2, Funs, N+1);
+    lisp2forth(C, Vars, Funs, N+1) ++ [<<"r@">>,N,<<"+">>,<<"!">>]++let_internal(Pairs, Code, Vars2, Funs, N+1);
 let_internal(Pairs, Code, Vars, Funs, N) ->
     let_setup_inputs( Pairs, Vars, Funs, N) ++
         let_setup_env(Pairs, Code, Vars, Funs, N).
@@ -85,66 +93,103 @@ let_setup_env([[V,C]|Pairs], Code, Vars, Funs, N) ->
     Vars2 = let_setup_env2(Vars, N, lists:reverse(V)),
     let_internal(Pairs, Code, Vars2, Funs, N+length(V)).
             
-functions([], _Vars, _, _Depth) -> [];
-functions([[<<"define">>,[Name|V],Code]|T], Vars, Funs, N) ->
-    Funs2 = dict:store(Name, true, Funs),
+lisp2forth([], _Vars, _, _Depth) -> [];
+lisp2forth([[<<"define">>,[Name|V],Code]|T], Vars, Funs, N) ->
     LV = length(V),
-    X2 = load_inputs(LV, 0) ++ functions(Code, fip(lists:reverse(V), N, Vars), Funs2, LV),
-    [<<"def">>] ++ X2 ++ [<<"end_fun">>, Name, <<"!">>] ++ functions(T, Vars, Funs2, N);
-%functions([<<"let">>, [[V,C]|Pairs]|Code], Vars, Funs, N) when not(is_list(V)) ->
-%    let_internal([[V, C]|Pairs], Code, Vars, Funs, N);
-functions([<<"let">>, Pairs|Code], Vars, Funs, N) ->
+    Funs2 = dict:store(Name, LV, Funs),
+    X2 = load_inputs(LV, 0) ++ lisp2forth(Code, fip(lists:reverse(V), N, Vars), Funs2, LV),
+    [<<"def">>] ++ X2 ++ [<<"end_fun">>, Name, <<"!">>] ++ lisp2forth(T, Vars, Funs2, N);
+lisp2forth([[<<"define">>|T1]|_], _, _, _) ->
+    io:fwrite("\n\nError: badly formed define\n"),
+    io:fwrite(compile_utils:stringify_lisp([<<"define">>|T1])),
+    io:fwrite("\n"),
+    error;
+lisp2forth([<<"define">>|T1], _, _, _) ->
+    io:fwrite("\n\nError: badly formed define\n"),
+    io:fwrite(compile_utils:stringify_lisp([<<"define">>|T1])),
+    io:fwrite("\n"),
+    error;
+lisp2forth([<<"let">>, Pairs|Code], Vars, Funs, N) ->
     let_internal(Pairs, Code, Vars, Funs, N);
-%    let_setup_inputs( Pairs, Vars, Funs, N) ++
-%        let_setup_env(Pairs, Code, Vars, Funs, N);
-functions([<<"set!">>, Name, Code], Vars, Funs, N) ->
-    functions(Code, Vars, Funs, N) ++ [Name, <<"!">>];
-functions([<<"=">>, A, B], Vars, Funs, N) ->
-    functions(A, Vars, Funs, N) ++
-        functions(B, Vars, Funs, N) ++
+lisp2forth([<<"set!">>, Name, Code], Vars, Funs, N) ->
+    lisp2forth(Code, Vars, Funs, N) ++ [Name, <<"!">>];
+lisp2forth([<<"set!">>|T], Vars, Funs, N) ->
+    io:fwrite("\n\nError: badly formed set!\n"),
+    io:fwrite(compile_utils:stringify_lisp([<<"set!">>|T])),
+    io:fwrite("\n"),
+    error;
+lisp2forth([<<"=">>, A, B], Vars, Funs, N) ->
+    lisp2forth(A, Vars, Funs, N) ++
+        lisp2forth(B, Vars, Funs, N) ++
         [<<"===">>, <<"tuck">>, <<"drop">>, <<"drop">>];
-functions([<<"cond">>, []], _, _, _) -> [];
-functions([<<"cond">>, [[<<"true">>, A]|T]], Vars, Funs, N) ->
-    functions(A, Vars, Funs, N);
-functions([<<"cond">>, [[Q, A]|T]], Vars, Funs, N) ->
-    functions(Q, Vars, Funs, N) ++ [<<"if">>] ++
-        functions(A, Vars, Funs, N) ++ [<<"else">>] ++
-        functions([<<"cond">>, T], Vars, Funs, N) ++
+lisp2forth([<<"=">>|T], _, _, _) ->
+    io:fwrite("\n\nError: badly formed equality check\n"),
+    io:fwrite(compile_utils:stringify_lisp([<<"=">>|T])),
+    io:fwrite("\n"),
+    error;
+lisp2forth([<<"cond">>], _, _, _) -> [];
+lisp2forth([<<"cond">>,[<<"true">>, A]|T], Vars, Funs, N) ->
+    lisp2forth(A, Vars, Funs, N);
+lisp2forth([<<"cond">>, [Q, A]|T], Vars, Funs, N) ->
+    lisp2forth(Q, Vars, Funs, N) ++ [<<"if">>] ++
+        lisp2forth(A, Vars, Funs, N) ++ [<<"else">>] ++
+        lisp2forth([<<"cond">>|T], Vars, Funs, N) ++
         [<<"then">>];
-functions([<<"tree">>, T], _, _, _) ->
-    [[]] ++ tree_internal(T);
-%functions([<<"+">>, A, B], Vars, Funs, N) ->
-%    functions(A, Vars, Funs, N) ++ functions(B, Vars, Funs, N) ++ [<<"+">>];
-functions([H|T], Vars, Funs, N) when is_integer(H)->
-    [H|functions(T, Vars, Funs, N)];
-functions([Rator|Rand], Vars, Funs, N) when (not(is_integer(Rator)) and( not(is_list(Rator)))) ->
-    case dict:find(Rator, Vars) of
-        {ok, Val} -> 
-            Val ++ functions(Rand, Vars, Funs, N);
-        error ->
-            A = case dict:find(Rator, Funs) of
-                    error -> 
-                        B = compile_utils:is_64(Rator),
-                        if
-                            B -> [Rator|functions(Rand, Vars, Funs, N)];
-                            true ->%must be an opcode
-                                lists:foldr( fun(Elem, Acc) ->
-                                                     Elem ++ Acc end, [], lists:map(fun(X) -> functions(X, Vars, Funs, N) end, Rand)) ++ [Rator]
-                        end;
-                    {ok, true} -> 
-                        M = if
-                                N > 0 -> [<<"r@">>, N, <<"+">>, <<">r">>, Rator, <<"@">>,<<"call">>,<<"r>">>,<<"drop">>];
-                                true -> [Rator,<<"@">>,<<"call">>]
-                            end,
-                        functions(Rand, Vars, Funs, N) ++ M
-                end,
-            A
-        end;
-functions([H|T], Vars, Funs, N) when is_list(H) ->
-    functions(H, Vars, Funs, N) ++
-        functions(T, Vars, Funs, N);
-functions(I, _, _, _) when is_integer(I) -> [I];
-functions(I, Vars, _, _) ->
+lisp2forth([<<"cond">>|T], _, _, _) ->
+    io:fwrite("\n\n Error: badly formed cond\n"),
+    io:fwrite(compile_utils:stringify_lisp([<<"cond">>|T])),
+    io:fwrite("\n\n"),
+    error;
+lisp2forth([<<"forth">>|T], _, _, _) ->
+    [T];
+lisp2forth([<<"tree">>|T], _, _, _) ->
+    tree_internal(T);
+lisp2forth([H|T], Vars, Funs, N) when is_integer(H)->
+    [H|lisp2forth(T, Vars, Funs, N)];
+lisp2forth([Rator|Rand], Vars, Funs, N) when (not(is_integer(Rator)) and( not(is_list(Rator)))) ->
+    case compile_utils:is_op(Rator) of
+        {true, Code, In, Out} -> 
+            if
+                (length(Rand) == In) -> 
+                    %is a valid opcode.
+                    lists:foldr( fun(Elem, Acc) ->
+                                         Elem ++ Acc end, [], lists:map(fun(X) -> lisp2forth(X, Vars, Funs, N) end, Rand)) ++ [Rator];
+                true ->
+                    io:fwrite("\n\nError: wrong number of inputs to opcode: " ++ binary_to_list(Rator) ++ "\n"),
+                    io:fwrite(compile_utils:stringify_lisp([Rator|Rand])),
+                    io:fwrite("\n\n"),
+                    error
+            end;
+        {false, _, _, _} ->
+            case dict:find(Rator, Vars) of
+                {ok, Val} -> 
+                    Val ++ lisp2forth(Rand, Vars, Funs, N);
+                error ->
+                    case dict:find(Rator, Funs) of
+                        error -> %binary or external variable
+                            [Rator|lisp2forth(Rand, Vars, Funs, N)];
+                        {ok, Ins} -> 
+                            if
+                                (Ins == length(Rand)) ->
+                                    M = if
+                                            N > 0 -> [<<"r@">>, N, <<"+">>, <<">r">>, Rator, <<"@">>,<<"call">>,<<"r>">>,<<"drop">>];
+                                            true -> [Rator,<<"@">>,<<"call">>]
+                                        end,
+                                    lisp2forth(Rand, Vars, Funs, N) ++ M;
+                                true ->
+                                    io:fwrite("\n\n wrong number of inputs to function\n"),
+                                    io:fwrite(compile_utils:stringify_lisp([Rator|Rand])),
+                                    io:fwrite("\n\n"),
+                                    error
+                            end
+                    end
+            end
+    end;
+lisp2forth([H|T], Vars, Funs, N) when is_list(H) ->
+    lisp2forth(H, Vars, Funs, N) ++
+        lisp2forth(T, Vars, Funs, N);
+lisp2forth(I, _, _, _) when is_integer(I) -> [I];
+lisp2forth(I, Vars, _, _) ->
     A = case dict:find(I, Vars) of
             error -> [I];
             {ok, Val} -> Val
@@ -340,10 +385,10 @@ ops_to_ints([F|T], A, B) ->
         (C > -1) -> ops_to_ints(T, A, C+B1);
         true -> ops_to_ints(T, A-C, B1)
     end.
-r_combinator(L) when is_list(L)->%protects the top thing on the stack from a variety of kinds of pairs of functions, so we don't have to use the r-stack so much.
+r_combinator(L) when is_list(L)->%protects the top thing on the stack from a variety of kinds of pairs of lisp2forth, so we don't have to use the r-stack so much.
     {A, B} = ops_to_ints(L),
     r_combinator_helper(L, A, B).
-%r_combinator(F) ->%protects the top thing on the stack from a variety of kinds of functions, so we don't have to use the r-stack so much.
+%r_combinator(F) ->%protects the top thing on the stack from a variety of kinds of lisp2forth, so we don't have to use the r-stack so much.
 %    {A, B} = op_to_ints(F),
 %    r_combinator_helper([F], A, B).
 
@@ -467,7 +512,7 @@ just_in_time2([<<"r@">>,N,<<"+">>,<<"!">>,F,G,H,<<"r@">>,N, <<"+">>, <<"@">>|T])
     S = [F,G,H],
     jitrc(S, NoChange, N, T);
 
-%if we repeatedly call functions, we don't have to restore variables for parent function in between. This is a kind of tail call optimization.
+%if we repeatedly call lisp2forth, we don't have to restore variables for parent function in between. This is a kind of tail call optimization.
 just_in_time2([<<"call">>,<<"r>">>,<<"drop">>,N,<<"@">>,<<"r@">>,M,<<"+">>,<<">r">>|R]) -> 
     [<<"call">>,N,<<"@">>|just_in_time2(R)];
 just_in_time2([<<"call">>,<<"r>">>,<<"drop">>,N,<<"@">>,<<"r@">>,<<">r">>|R]) -> 

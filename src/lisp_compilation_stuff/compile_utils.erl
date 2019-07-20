@@ -1,5 +1,5 @@
 -module(compile_utils).
--export([quote_unquote/1,remove_comments/1,add_spaces/1,to_words/3,to_lists/1,integers/1,rpn/1,flatten/1,variables/1,variables/2,to_ops/1,stringify_lisp/1,doit/1,doit2/1,is_64/1]).
+-export([quote_unquote/1,remove_comments/1,add_spaces/1,to_words/3,to_lists/1,integers/1,rpn/1,flatten/1,variables/1,variables/2,to_ops/1,stringify_lisp/1,doit/1,doit2/1,is_64/1,is_op/1,stringify_lisp/1]).
 
 
 doit(X) ->
@@ -13,7 +13,6 @@ doit2(Tree) ->
     V = variables(Optimized),
     to_ops(V).
     
-
 integers([A|B]) ->
     [integers(A)|
      integers(B)];
