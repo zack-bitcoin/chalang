@@ -34,13 +34,12 @@ compile(Text, Location, JustInTimeFlag) ->
     %io:fwrite("\n"),
     %io:fwrite(compile_utils:stringify_lisp(Tree3)),
     %io:fwrite("\n"),
+    %io:fwrite("\n"),
+    Tree4 = just_in_time_main(Tree3),
     io:fwrite("\n just in time advantage "),
     io:fwrite(integer_to_list(length(Tree3))),
-    %io:fwrite("\n"),
     io:fwrite(" : "),
-    Tree4 = just_in_time_main(Tree3),
     io:fwrite(integer_to_list(length(Tree4))),
-    %io:fwrite("\n"),
     io:fwrite("\n"),
     compile_utils:doit2([[], 500, <<">r">>] ++ Tree4).
 
@@ -151,7 +150,6 @@ lisp2forth([Rator|Rand], Vars, Funs, N) when (not(is_integer(Rator)) and( not(is
         {true, Code, In, Out} -> 
             if
                 (length(Rand) == In) -> 
-                    %is a valid opcode.
                     lists:foldr( fun(Elem, Acc) ->
                                          Elem ++ Acc end, [], lists:map(fun(X) -> lisp2forth(X, Vars, Funs, N) end, Rand)) ++ [Rator];
                 true ->
