@@ -1,5 +1,5 @@
 -module(compiler_lisp2).
--export([test/0, doit/2]).
+-export([test/0, doit/2,compile/3]).
 
 
 test() ->
