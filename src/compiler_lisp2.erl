@@ -124,8 +124,13 @@ functions([Rator|Rand], Vars, Funs, N) when (not(is_integer(Rator)) and( not(is_
         error ->
             A = case dict:find(Rator, Funs) of
                     error -> 
-                        lists:foldr( fun(Elem, Acc) ->
-                                             Elem ++ Acc end, [], lists:map(fun(X) -> functions(X, Vars, Funs, N) end, Rand)) ++ [Rator];
+                        B = compile_utils:is_64(Rator),
+                        if
+                            B -> [Rator|functions(Rand, Vars, Funs, N)];
+                            true ->%must be an opcode
+                                lists:foldr( fun(Elem, Acc) ->
+                                                     Elem ++ Acc end, [], lists:map(fun(X) -> functions(X, Vars, Funs, N) end, Rand)) ++ [Rator]
+                        end;
                     {ok, true} -> 
                         M = if
                                 N > 0 -> [<<"r@">>, N, <<"+">>, <<">r">>, Rator, <<"@">>,<<"call">>,<<"r>">>,<<"drop">>];
