@@ -108,6 +108,24 @@ let_setup_env([[V,C]|Pairs], Code, Vars, Funs, N) ->
 let_setup_env(_, _, _, _, _) ->
     %{[],[{error, "bad let statement", []}]}.
     {[],[]}.
+
+%case_internal([], Default, Vars, Funs, N) ->
+%    {L1, Err1} = lisp2forth(Default, Vars, Funs, N),
+%    {[<<"drop">>]++L1, Err1};
+case_internal([], Vars, Funs, N) ->
+    {[<<"drop">>], []};
+case_internal([[<<"else">>,R]|_], Vars, Funs, N) ->
+    {L2, Err2} = lisp2forth(R, Vars, Funs, N),
+    {[<<"drop">>]++L2, []};
+case_internal([[C,R]|Pairs], Vars, Funs, N) ->
+    {L1, Err1} = lisp2forth(C, Vars, Funs, N),
+    {L2, Err2} = lisp2forth(R, Vars, Funs, N),
+    {L3, Err3} = case_internal(Pairs, Vars, Funs, N),
+    L4 = L1 ++ [<<"===">>,<<"if">>,<<"drop">>,<<"drop">>]++L2 ++ [<<"else">>,<<"drop">>]++L3++[<<"then">>],
+    {L4, Err1++Err2++Err3};
+case_internal(T, _, _, _) ->
+    {[], [{error, "unsupported case format #2 ", T}]}.
+    
             
 lisp2forth([], _Vars, _, _Depth) -> {[], []};
 lisp2forth([[<<"define">>,[Name|V],Code]|T], Vars, Funs, N) ->
@@ -147,6 +165,12 @@ lisp2forth([<<"cond">>, [Q, A]|T], Vars, Funs, N) ->
     {L4, Err1 ++ Err2 ++ Err3};
 lisp2forth([<<"cond">>|T], _, _, _) ->
     {[], [{error, "badly formed cond", [<<"cond">>|T]}]};
+lisp2forth([<<"case">>,Name|Pairs], Vars, Funs, N) ->
+    {L1, Err1} = lisp2forth([Name], Vars, Funs, N),
+    {L2, Err2} = case_internal(Pairs, Vars, Funs, N),
+    {L1++L2, Err1++Err1};
+lisp2forth([<<"case">>|T], Vars, Funs, N) ->
+    {[],[{error, "unsupported case format", [<<"case">>|T]}]};
 lisp2forth([<<"forth">>|T], _, _, _) ->
     {[T], []};
 lisp2forth([<<"tree">>|T], _, _, _) ->
