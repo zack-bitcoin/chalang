@@ -3,7 +3,7 @@
 -define(immutable, true).
 
 test() ->
-    {ok, T} = file:read_file("src/lisp2/first.scm"),
+    {ok, T} = file:read_file("src/lisp2/second.scm"),
     doit(T, "src/lisp2/").
 
 doit(A, L) when is_list(A) ->
@@ -102,6 +102,8 @@ let_internal(Pairs, Code, Vars, Funs, N) ->
     {L1++L2, Err1++Err2}.
 
 let_setup_env2(Vars, _, [], Err) -> {Vars, Err};
+let_setup_env2(Vars, N, [<<"_">>|L], Err0) ->
+    let_setup_env2(Vars, N+1, L, Err0);
 let_setup_env2(Vars, N, [H|L], Err0) ->
     %Vars2 = dict:store(H,[<<"r@">>, N, <<"+">>, <<"@">>],Vars),
     {Vars2, Err} = update_vars(H,[<<"r@">>, N, <<"+">>, <<"@">>],Vars),
@@ -110,6 +112,7 @@ let_setup_env2(Vars, N, [H|L], Err0) ->
 let_setup_env([[V,C]|Pairs], Code, Vars, Funs, N) ->
     {Vars2, Err} = let_setup_env2(Vars, N, lists:reverse(V), []),
     {L1, Err2} = let_internal(Pairs, Code, Vars2, Funs, N+length(V)),
+    %{L1, Err2} = let_setup_env(Pairs, Code, Vars2, Funs, N+length(V)),
     {L1, Err++Err2};
 let_setup_env(_, _, _, _, _) ->
     %{[],[{error, "bad let statement", []}]}.
@@ -152,10 +155,12 @@ globals_internal([Name|T], Vars, Funs, N) when ((not (is_integer(Name))) and (no
 globals_internal(C, Vars, Funs, N) ->
     {[], Vars, [{error, "unsupported globals format", C}]}.
 update_vars(Key, Val, Vars) ->
+    %io:fwrite(packer:pack(Vars)),
     E = dict:find(Key, Vars),
     if 
         (E == error) ->
             {dict:store(Key, Val, Vars), []};
+        (Key == <<"_">>) -> {Vars,[]};
         ?immutable -> {Vars, [{error, "immutable requirement prevents re-defining variables", [Key, Val]}]};
         true -> {dict:store(Key, Val, Vars), []}
     end.
