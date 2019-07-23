@@ -61,7 +61,7 @@ just_in_time_main(X) ->
     
    
     
-fip([], _, Dict) -> Dict;
+fip([], _, Dict) -> {Dict, []};
 fip([A|T], D, Dict) ->
     {Dict2, Err} = update_vars(A, [<<"r@">>,D, <<"+">>,<<"@">>], Dict),
     {Dict3, Err2} = fip(T, D+1, Dict2),
@@ -171,13 +171,18 @@ lisp2forth([<<"!">>|T], _, _, _) when ?immutable ->
     {[], [{error, "cannot update global variables in immutable mode", [<<"!">>|T]}]};
 lisp2forth([[<<"define">>,[Name|V],Code]|T], Vars, Funs, N) ->
     LV = length(V),
-    Funs2 = dict:store(Name, LV, Funs),
-    {Vars2, Err0} = fip(lists:reverse(V), N, Vars),
-    {L1, Err1} = lisp2forth(Code, Vars2, Funs2, LV),
-    X2 = load_inputs(LV, 0) ++ L1,
-    {L2, Err2} = lisp2forth(T, Vars, Funs2, N),
-    L3 = [<<"def">>] ++ X2 ++ [<<"end_fun">>, Name, <<"!">>] ++ L2,
-    {L3, Err0++Err1 ++ Err2};
+    case dict:find(Name, Funs) of
+        error ->
+            Funs2 = dict:store(Name, LV, Funs),
+            {Vars2, Err0} = fip(lists:reverse(V), N, Vars),
+            {L1, Err1} = lisp2forth(Code, Vars2, Funs2, LV),
+            X2 = load_inputs(LV, 0) ++ L1,
+            {L2, Err2} = lisp2forth(T, Vars, Funs2, N),
+            L3 = [<<"def">>] ++ X2 ++ [<<"end_fun">>, Name, <<"!">>] ++ L2,
+            {L3, Err0++Err1 ++ Err2};
+        _ ->
+            {[], [{error, "cannot re-define function "++binary_to_list(Name), [<<"define">>,[Name|V], Code]}]}
+    end;
 lisp2forth([[<<"define">>|T1]|_], _, _, _) ->
     {[], [{error, "badly formed define", [<<"define">>|T1]}]};
 lisp2forth([<<"define">>|T1], _, _, _) ->
