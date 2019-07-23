@@ -33,12 +33,12 @@ imports1(A, Done, L) ->
 compile(Text, Location, JustInTimeFlag) ->
     Tree = compile_utils:doit(Text),
     {Tree3, Errors} = lisp2forth(Tree, dict:new(), dict:new(), 0),
-    %io:fwrite("\n"),
-    %io:fwrite(compile_utils:stringify_lisp(Tree)),
-    %io:fwrite("\n"),
-    %io:fwrite(compile_utils:stringify_lisp(Tree3)),
-    %io:fwrite("\n"),
-    %io:fwrite("\n"),
+    io:fwrite("\n"),
+    io:fwrite(compile_utils:stringify_lisp(Tree)),
+    io:fwrite("\n"),
+    io:fwrite(compile_utils:stringify_lisp(Tree3)),
+    io:fwrite("\n"),
+    io:fwrite("\n"),
     case Errors of
         [] ->
             Tree4 = just_in_time_main(Tree3),
@@ -154,6 +154,35 @@ constants_internal([Name|T], Vars, Funs, N) when ((not (is_integer(Name))) and (
 %    {L1, Vars3, Err0++Err1};
 constants_internal(C, Vars, Funs, N) ->
     {[], Vars, [{error, "unsupported constants format", C}]}.
+make_lexical2(Name, [], D) -> {[], D};
+make_lexical2(Name, [[N, V]|T], Dict) ->
+    N2 = <<Name/binary, <<".">>/binary, N/binary>>,
+    Dict2 = dict:store(N, N2, Dict),
+    {L1, Dict3} = make_lexical2(Name, T, Dict2),
+    {[[N2,V]|L1], Dict3};
+make_lexical2(Name, [N|T], Dict) ->
+    N2 = <<Name/binary, <<".">>/binary, N/binary>>,
+    Dict2 = dict:store(N, N2, Dict),
+    {L1, Dict3} = make_lexical2(Name, T, Dict2),
+    {[N2|L1], Dict3}.
+    
+make_lexical(_, [], D) -> {[], D};
+make_lexical(Name, [[<<"var">>|T1]|T2], Dict) ->
+    {L1, Dict2} = make_lexical2(Name, T1, Dict),
+    {L2, Dict3} = make_lexical(Name, T2, Dict2),
+    {[[<<"var">>|L1]|L2], Dict3};
+make_lexical(Name, [H|T], Dict) when is_list(H) ->
+    {L1, Dict2} = make_lexical(Name, H, Dict),
+    {L2, Dict3} = make_lexical(Name, T, Dict2),
+    {[L1|L2], Dict3};
+make_lexical(Name, [H|T], Dict) ->
+    A = case dict:find(H, Dict) of
+            error -> H;
+            {ok, V} -> V
+        end,
+    {L1, Dict2} = make_lexical(Name, T, Dict),
+    {[A|L1], Dict2}.
+
 update_vars(Key, Val, Vars) ->
     %io:fwrite(packer:pack(Vars)),
     E = dict:find(Key, Vars),
@@ -169,8 +198,9 @@ update_vars(Key, Val, Vars) ->
 lisp2forth([], _Vars, _, _Depth) -> {[], []};
 lisp2forth([<<"!">>|T], _, _, _) when ?immutable ->
     {[], [{error, "cannot update global variables in immutable mode", [<<"!">>|T]}]};
-lisp2forth([[<<"define">>,[Name|V],Code]|T], Vars, Funs, N) ->
+lisp2forth([[<<"define">>,[Name|V],Code0]|T], Vars, Funs, N) ->
     LV = length(V),
+    {Code, _} = make_lexical(Name, Code0, dict:new()),
     case dict:find(Name, Funs) of
         error ->
             Funs2 = dict:store(Name, LV, Funs),
@@ -187,14 +217,14 @@ lisp2forth([[<<"define">>|T1]|_], _, _, _) ->
     {[], [{error, "badly formed define", [<<"define">>|T1]}]};
 lisp2forth([<<"define">>|T1], _, _, _) ->
     {[], [{error, "badly formed define", [<<"define">>|T1]}]};
-lisp2forth([[<<"const">>|T1]|T2],Vars, Funs, N) ->
+lisp2forth([[<<"var">>|T1]|T2],Vars, Funs, N) ->
     {L1, Vars2, Err1} = constants_internal(T1, Vars, Funs, N),
     {L2, Err2} = lisp2forth(T2, Vars2, Funs, N),
     {L1 ++ L2, Err1 ++ Err2};
-lisp2forth([[<<"const">>|T1]|T2], Vars, Funs, N) ->
-    {[], [{error, "badly formed constants", [[<<"const">>|T1]|T2]}]};
-lisp2forth([<<"const">>|T1], Vars, Funs, N) ->
-    {[], [{error, "badly formed constants", [<<"const">>|T1]}]};
+lisp2forth([[<<"var">>|T1]|T2], Vars, Funs, N) ->
+    {[], [{error, "badly formed constants", [[<<"var">>|T1]|T2]}]};
+lisp2forth([<<"var">>|T1], Vars, Funs, N) ->
+    {[], [{error, "badly formed constants", [<<"var">>|T1]}]};
 lisp2forth([<<"let">>, Pairs|Code], Vars, Funs, N) ->
     let_internal(Pairs, Code, Vars, Funs, N);
 lisp2forth([<<"set!">>|T], _, _, _) when ?immutable ->
