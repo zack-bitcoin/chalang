@@ -131,29 +131,29 @@ case_internal([[C,R]|Pairs], Vars, Funs, N) ->
     {L4, Err1++Err2++Err3};
 case_internal(T, _, _, _) ->
     {[], [{error, "unsupported case format #2 ", T}]}.
-globals_internal([], Vars, _, _) -> {[], Vars, []};
+constants_internal([], Vars, _, _) -> {[], Vars, []};
     
-globals_internal([[Name, Value]|T], Vars, Funs, N) when ((not (is_integer(Name))) and (not (is_list(Name))))->
+constants_internal([[Name, Value]|T], Vars, Funs, N) when ((not (is_integer(Name))) and (not (is_list(Name))))->
     {L1, Err1} = lisp2forth(Value, Vars, Funs, N),
     L2 = L1 ++ [Name, <<"!">>],
     %Vars2 = dict:store(Name, [Name], Vars),
     {Vars2, Err0} = update_vars(Name, [Name], Vars),
-    {L3, Vars3, Err2} = globals_internal(T, Vars2, Funs, N),
+    {L3, Vars3, Err2} = constants_internal(T, Vars2, Funs, N),
     {L2++L3, Vars3, Err0++Err1++Err2};
-globals_internal([Name|T], Vars, Funs, N) when ((not (is_integer(Name))) and (not (is_list(Name))))->
+constants_internal([Name|T], Vars, Funs, N) when ((not (is_integer(Name))) and (not (is_list(Name))))->
     %{L1, Err1} = lisp2forth(Value, Vars, Funs, N),
     L2 = [Name, <<"!">>],
     %Vars2 = dict:store(Name, [Name], Vars),
     {Vars2, Err0} = update_vars(Name, [Name], Vars),
-    {L3, Vars3, Err2} = globals_internal(T, Vars2, Funs, N),
+    {L3, Vars3, Err2} = constants_internal(T, Vars2, Funs, N),
     {L2++L3, Vars3, Err0++Err2};
-%globals_internal([Name|T], Vars, Funs, N) when ((not (is_integer(Name))) and (not (is_list(Name)))) ->
+%constants_internal([Name|T], Vars, Funs, N) when ((not (is_integer(Name))) and (not (is_list(Name)))) ->
     %Vars2 = dict:store(Name, [Name], Vars),
 %    {Vars2, Err0} = update_vars(Name, [Name], Vars),
-%    {L1, Vars3, Err1} = globals_internal(T, Vars2, Funs, N),
+%    {L1, Vars3, Err1} = constants_internal(T, Vars2, Funs, N),
 %    {L1, Vars3, Err0++Err1};
-globals_internal(C, Vars, Funs, N) ->
-    {[], Vars, [{error, "unsupported globals format", C}]}.
+constants_internal(C, Vars, Funs, N) ->
+    {[], Vars, [{error, "unsupported constants format", C}]}.
 update_vars(Key, Val, Vars) ->
     %io:fwrite(packer:pack(Vars)),
     E = dict:find(Key, Vars),
@@ -187,14 +187,14 @@ lisp2forth([[<<"define">>|T1]|_], _, _, _) ->
     {[], [{error, "badly formed define", [<<"define">>|T1]}]};
 lisp2forth([<<"define">>|T1], _, _, _) ->
     {[], [{error, "badly formed define", [<<"define">>|T1]}]};
-lisp2forth([[<<"var">>|T1]|T2],Vars, Funs, N) ->
-    {L1, Vars2, Err1} = globals_internal(T1, Vars, Funs, N),
+lisp2forth([[<<"const">>|T1]|T2],Vars, Funs, N) ->
+    {L1, Vars2, Err1} = constants_internal(T1, Vars, Funs, N),
     {L2, Err2} = lisp2forth(T2, Vars2, Funs, N),
     {L1 ++ L2, Err1 ++ Err2};
-lisp2forth([[<<"var">>|T1]|T2], Vars, Funs, N) ->
-    {[], [{error, "badly formed globals", [[<<"var">>|T1]|T2]}]};
-lisp2forth([<<"var">>|T1], Vars, Funs, N) ->
-    {[], [{error, "badly formed globals", [<<"var">>|T1]}]};
+lisp2forth([[<<"const">>|T1]|T2], Vars, Funs, N) ->
+    {[], [{error, "badly formed constants", [[<<"const">>|T1]|T2]}]};
+lisp2forth([<<"const">>|T1], Vars, Funs, N) ->
+    {[], [{error, "badly formed constants", [<<"const">>|T1]}]};
 lisp2forth([<<"let">>, Pairs|Code], Vars, Funs, N) ->
     let_internal(Pairs, Code, Vars, Funs, N);
 lisp2forth([<<"set!">>|T], _, _, _) when ?immutable ->
@@ -239,6 +239,9 @@ lisp2forth([Rator|Rand], Vars, Funs, N) when (not(is_integer(Rator)) and( not(is
     case compile_utils:is_op(Rator) of
         {true, Code, In, Out} -> 
             if
+                (In == any) ->
+                    {L1, Err1} = lists:foldr( fun({Elem, Err}, {Acc, AccErr}) -> {Elem ++ Acc, Err ++ AccErr} end, {[],[]}, lists:map(fun(X) -> lisp2forth(X, Vars, Funs, N) end, Rand)),
+                    {L1 ++ [Rator], Err1};
                 (length(Rand) == In) -> 
                     {L1, Err1} = lists:foldr( fun({Elem, Err}, {Acc, AccErr}) -> {Elem ++ Acc, Err ++ AccErr} end, {[],[]}, lists:map(fun(X) -> lisp2forth(X, Vars, Funs, N) end, Rand)),
                     {L1 ++ [Rator], Err1};

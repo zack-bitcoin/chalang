@@ -119,7 +119,7 @@ is_op(<<"many_funs">>) -> {true, <<101>>, 0, 1};
 is_op(<<"start_fun">>) -> {true, <<110>>, 3, 0};
 is_op(<<"def">>) -> {true, <<114>>, 3, 0};
 is_op(<<"end_fun">>) -> {true, <<111>>, 0, 0};
-is_op(<<"recurse">>) -> {true, <<112, 113>>, 0, 1};
+is_op(<<"recurse">>) -> {true, <<112, 113>>, any, 1};
 is_op(<<"call">>) -> {true, <<113>>, 1, 1};
 is_op(<<"@">>) -> {true, <<121>>, 1, 1};
 %is_op(<<"get">>) -> {true, <<121>>, 1, 1};
