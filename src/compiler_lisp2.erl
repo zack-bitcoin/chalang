@@ -1,6 +1,6 @@
 -module(compiler_lisp2).
 -export([test/0, doit/2,compile/3]).
-
+-define(immutable, true).
 
 test() ->
     {ok, T} = file:read_file("src/lisp2/first.scm"),
@@ -63,7 +63,10 @@ just_in_time_main(X) ->
     
 fip([], _, Dict) -> Dict;
 fip([A|T], D, Dict) ->
-    fip(T, D+1, dict:store(A, [<<"r@">>,D, <<"+">>,<<"@">>], Dict)).
+    {Dict2, Err} = update_vars(A, [<<"r@">>,D, <<"+">>,<<"@">>], Dict),
+    {Dict3, Err2} = fip(T, D+1, Dict2),
+    {Dict3, Err++Err2}.
+%    fip(T, D+1, dict:store(A, [<<"r@">>,D, <<"+">>,<<"@">>], Dict)).
 load_inputs(0, _) -> [];
 load_inputs(Many, 0) -> [<<"r@">>, <<"!">>|load_inputs(Many-1, 1)];
 load_inputs(Many, D) -> [<<"r@">>,D,<<"+">>,<<"!">>|load_inputs(Many-1, D+1)].
@@ -87,24 +90,27 @@ let_setup_inputs2(_, N) ->
 let_internal([], Code, Vars, Funs, N) ->
     lisp2forth(Code, Vars, Funs, N);
 let_internal([[V, C]|Pairs], Code, Vars, Funs, N) when not(is_list(V))->
-    Vars2 = dict:store(V, [<<"r@">>,N, <<"+">>,<<"@">>], Vars),
+    %Vars2 = dict:store(V, [<<"r@">>,N, <<"+">>,<<"@">>], Vars),
+    {Vars2, Err0} = update_vars(V, [<<"r@">>,N, <<"+">>,<<"@">>], Vars),
     {L1, Err1} = lisp2forth(C, Vars, Funs, N+1),
     {L2, Err2} = let_internal(Pairs, Code, Vars2, Funs, N+1),
-    {L1 ++ [<<"r@">>,N,<<"+">>,<<"!">>]++ L2, Err1++Err2};
+    {L1 ++ [<<"r@">>,N,<<"+">>,<<"!">>]++ L2, Err0++Err1++Err2};
 let_internal(Pairs, Code, Vars, Funs, N) ->
 %matching from a function with multiple outputs.
     {L1, Err1} = let_setup_inputs( Pairs, Vars, Funs, N),
     {L2, Err2} = let_setup_env(Pairs, Code, Vars, Funs, N),
     {L1++L2, Err1++Err2}.
 
-let_setup_env2(Vars, _, []) -> Vars;
-let_setup_env2(Vars, N, [H|L]) ->
-    Vars2 = dict:store(H,[<<"r@">>, N, <<"+">>, <<"@">>],Vars),
-    let_setup_env2(Vars2, N+1, L).
+let_setup_env2(Vars, _, [], Err) -> {Vars, Err};
+let_setup_env2(Vars, N, [H|L], Err0) ->
+    %Vars2 = dict:store(H,[<<"r@">>, N, <<"+">>, <<"@">>],Vars),
+    {Vars2, Err} = update_vars(H,[<<"r@">>, N, <<"+">>, <<"@">>],Vars),
+    let_setup_env2(Vars2, N+1, L, Err0++Err).
             
 let_setup_env([[V,C]|Pairs], Code, Vars, Funs, N) ->
-    Vars2 = let_setup_env2(Vars, N, lists:reverse(V)),
-    let_internal(Pairs, Code, Vars2, Funs, N+length(V));
+    {Vars2, Err} = let_setup_env2(Vars, N, lists:reverse(V), []),
+    {L1, Err2} = let_internal(Pairs, Code, Vars2, Funs, N+length(V)),
+    {L1, Err++Err2};
 let_setup_env(_, _, _, _, _) ->
     %{[],[{error, "bad let statement", []}]}.
     {[],[]}.
@@ -123,41 +129,66 @@ case_internal([[C,R]|Pairs], Vars, Funs, N) ->
 case_internal(T, _, _, _) ->
     {[], [{error, "unsupported case format #2 ", T}]}.
 globals_internal([], Vars, _, _) -> {[], Vars, []};
+    
 globals_internal([[Name, Value]|T], Vars, Funs, N) when ((not (is_integer(Name))) and (not (is_list(Name))))->
     {L1, Err1} = lisp2forth(Value, Vars, Funs, N),
     L2 = L1 ++ [Name, <<"!">>],
-    Vars2 = dict:store(Name, [Name], Vars),
+    %Vars2 = dict:store(Name, [Name], Vars),
+    {Vars2, Err0} = update_vars(Name, [Name], Vars),
     {L3, Vars3, Err2} = globals_internal(T, Vars2, Funs, N),
-    {L2++L3, Vars3, Err1++Err2};
-globals_internal([Name|T], Vars, Funs, N) when ((not (is_integer(Name))) and (not (is_list(Name)))) ->
-    Vars2 = dict:store(Name, [Name], Vars),
-    globals_internal(T, Vars2, Funs, N);
+    {L2++L3, Vars3, Err0++Err1++Err2};
+globals_internal([Name|T], Vars, Funs, N) when ((not (is_integer(Name))) and (not (is_list(Name))))->
+    %{L1, Err1} = lisp2forth(Value, Vars, Funs, N),
+    L2 = [Name, <<"!">>],
+    %Vars2 = dict:store(Name, [Name], Vars),
+    {Vars2, Err0} = update_vars(Name, [Name], Vars),
+    {L3, Vars3, Err2} = globals_internal(T, Vars2, Funs, N),
+    {L2++L3, Vars3, Err0++Err2};
+%globals_internal([Name|T], Vars, Funs, N) when ((not (is_integer(Name))) and (not (is_list(Name)))) ->
+    %Vars2 = dict:store(Name, [Name], Vars),
+%    {Vars2, Err0} = update_vars(Name, [Name], Vars),
+%    {L1, Vars3, Err1} = globals_internal(T, Vars2, Funs, N),
+%    {L1, Vars3, Err0++Err1};
 globals_internal(C, Vars, Funs, N) ->
     {[], Vars, [{error, "unsupported globals format", C}]}.
+update_vars(Key, Val, Vars) ->
+    E = dict:find(Key, Vars),
+    if 
+        (E == error) ->
+            {dict:store(Key, Val, Vars), []};
+        ?immutable -> {Vars, [{error, "immutable requirement prevents re-defining variables", [Key, Val]}]};
+        true -> {dict:store(Key, Val, Vars), []}
+    end.
+            
             
 lisp2forth([], _Vars, _, _Depth) -> {[], []};
+lisp2forth([<<"!">>|T], _, _, _) when ?immutable ->
+    {[], [{error, "cannot update global variables in immutable mode", [<<"!">>|T]}]};
 lisp2forth([[<<"define">>,[Name|V],Code]|T], Vars, Funs, N) ->
     LV = length(V),
     Funs2 = dict:store(Name, LV, Funs),
-    {L1, Err1} = lisp2forth(Code, fip(lists:reverse(V), N, Vars), Funs2, LV),
+    {Vars2, Err0} = fip(lists:reverse(V), N, Vars),
+    {L1, Err1} = lisp2forth(Code, Vars2, Funs2, LV),
     X2 = load_inputs(LV, 0) ++ L1,
     {L2, Err2} = lisp2forth(T, Vars, Funs2, N),
     L3 = [<<"def">>] ++ X2 ++ [<<"end_fun">>, Name, <<"!">>] ++ L2,
-    {L3, Err1 ++ Err2};
+    {L3, Err0++Err1 ++ Err2};
 lisp2forth([[<<"define">>|T1]|_], _, _, _) ->
     {[], [{error, "badly formed define", [<<"define">>|T1]}]};
 lisp2forth([<<"define">>|T1], _, _, _) ->
     {[], [{error, "badly formed define", [<<"define">>|T1]}]};
-lisp2forth([[<<"globals">>|T1]|T2],Vars, Funs, N) ->
+lisp2forth([[<<"vars">>|T1]|T2],Vars, Funs, N) ->
     {L1, Vars2, Err1} = globals_internal(T1, Vars, Funs, N),
     {L2, Err2} = lisp2forth(T2, Vars2, Funs, N),
     {L1 ++ L2, Err1 ++ Err2};
-lisp2forth([[<<"globals">>|T1]|T2], Vars, Funs, N) ->
-    {[], [{error, "badly formed globals", [[<<"globals">>|T1]|T2]}]};
-lisp2forth([<<"globals">>|T1], Vars, Funs, N) ->
-    {[], [{error, "badly formed globals", [<<"globals">>|T1]}]};
+lisp2forth([[<<"vars">>|T1]|T2], Vars, Funs, N) ->
+    {[], [{error, "badly formed globals", [[<<"vars">>|T1]|T2]}]};
+lisp2forth([<<"vars">>|T1], Vars, Funs, N) ->
+    {[], [{error, "badly formed globals", [<<"vars">>|T1]}]};
 lisp2forth([<<"let">>, Pairs|Code], Vars, Funs, N) ->
     let_internal(Pairs, Code, Vars, Funs, N);
+lisp2forth([<<"set!">>|T], _, _, _) when ?immutable ->
+    {[], [{error, "cannot update global variables in immutable mode", [<<"set!">>|T]}]};
 lisp2forth([<<"set!">>, Name, Code], Vars, Funs, N) ->
     {L1, Err1} =  lisp2forth(Code, Vars, Funs, N),
     {L1 ++ [Name, <<"!">>], Err1};

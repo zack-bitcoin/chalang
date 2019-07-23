@@ -32,9 +32,8 @@
      c))
                                         ;and
 
-;(globals (N 9))
-;(set! N 9)
-;(= 9 (@ N))
+(vars (N 9))
+(= 9 (@ N))
 ;and
 
 
@@ -47,12 +46,13 @@
 ;(let ((y 5))
 ;  y)
 
-                                        ;(= (+ 4 5) 9)
-(globals A Z);(Z 5))
-(! 5 Z)
-(= 11 (let (((x z) (6 (@ Z))))
+(;this code block has local namespace
+ (vars (Z 5))
+ (= 11 (let (((x z) (6 (@ Z))))
         (+ x z)))
-
+)
+(vars (Z 6))
+(= 6 (@ Z))
 ;--DgAAAAAO is <<14,0,0,0,0,14>>
 (= 14 (let (((a b) (split --DgAAAAAO 2)))
         (a)))
