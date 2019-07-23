@@ -177,14 +177,14 @@ lisp2forth([[<<"define">>|T1]|_], _, _, _) ->
     {[], [{error, "badly formed define", [<<"define">>|T1]}]};
 lisp2forth([<<"define">>|T1], _, _, _) ->
     {[], [{error, "badly formed define", [<<"define">>|T1]}]};
-lisp2forth([[<<"vars">>|T1]|T2],Vars, Funs, N) ->
+lisp2forth([[<<"var">>|T1]|T2],Vars, Funs, N) ->
     {L1, Vars2, Err1} = globals_internal(T1, Vars, Funs, N),
     {L2, Err2} = lisp2forth(T2, Vars2, Funs, N),
     {L1 ++ L2, Err1 ++ Err2};
-lisp2forth([[<<"vars">>|T1]|T2], Vars, Funs, N) ->
-    {[], [{error, "badly formed globals", [[<<"vars">>|T1]|T2]}]};
-lisp2forth([<<"vars">>|T1], Vars, Funs, N) ->
-    {[], [{error, "badly formed globals", [<<"vars">>|T1]}]};
+lisp2forth([[<<"var">>|T1]|T2], Vars, Funs, N) ->
+    {[], [{error, "badly formed globals", [[<<"var">>|T1]|T2]}]};
+lisp2forth([<<"var">>|T1], Vars, Funs, N) ->
+    {[], [{error, "badly formed globals", [<<"var">>|T1]}]};
 lisp2forth([<<"let">>, Pairs|Code], Vars, Funs, N) ->
     let_internal(Pairs, Code, Vars, Funs, N);
 lisp2forth([<<"set!">>|T], _, _, _) when ?immutable ->

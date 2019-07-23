@@ -32,7 +32,7 @@
      c))
                                         ;and
 
-(vars (N 9))
+(var (N 9))
 (= 9 (@ N))
 ;and
 
@@ -47,11 +47,11 @@
 ;  y)
 
 (;this code block has local namespace
- (vars (Z 5))
+ (var (Z 5))
  (= 11 (let (((x z) (6 (@ Z))))
         (+ x z)))
 )
-(vars (Z 6))
+(var (Z 6))
 (= 6 (@ Z))
 ;--DgAAAAAO is <<14,0,0,0,0,14>>
 (= 14 (let (((a b) (split --DgAAAAAO 2)))
