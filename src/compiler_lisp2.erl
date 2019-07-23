@@ -13,7 +13,7 @@ doit(Text, Location) ->
     case List of
         error -> ok;
         _ ->
-    %disassembler:doit(List),
+    disassembler:doit(List),
             Gas = 10000,
             VM = chalang:vm(List, Gas*100, Gas*10, Gas, Gas, []),
             {List, VM}
@@ -109,9 +109,6 @@ let_setup_env(_, _, _, _, _) ->
     %{[],[{error, "bad let statement", []}]}.
     {[],[]}.
 
-%case_internal([], Default, Vars, Funs, N) ->
-%    {L1, Err1} = lisp2forth(Default, Vars, Funs, N),
-%    {[<<"drop">>]++L1, Err1};
 case_internal([], Vars, Funs, N) ->
     {[<<"drop">>], []};
 case_internal([[<<"else">>,R]|_], Vars, Funs, N) ->
@@ -125,7 +122,18 @@ case_internal([[C,R]|Pairs], Vars, Funs, N) ->
     {L4, Err1++Err2++Err3};
 case_internal(T, _, _, _) ->
     {[], [{error, "unsupported case format #2 ", T}]}.
-    
+globals_internal([], Vars, _, _) -> {[], Vars, []};
+globals_internal([[Name, Value]|T], Vars, Funs, N) when ((not (is_integer(Name))) and (not (is_list(Name))))->
+    {L1, Err1} = lisp2forth(Value, Vars, Funs, N),
+    L2 = L1 ++ [Name, <<"!">>],
+    Vars2 = dict:store(Name, [Name], Vars),
+    {L3, Vars3, Err2} = globals_internal(T, Vars2, Funs, N),
+    {L2++L3, Vars3, Err1++Err2};
+globals_internal([Name|T], Vars, Funs, N) when ((not (is_integer(Name))) and (not (is_list(Name)))) ->
+    Vars2 = dict:store(Name, [Name], Vars),
+    globals_internal(T, Vars2, Funs, N);
+globals_internal(C, Vars, Funs, N) ->
+    {[], Vars, [{error, "unsupported globals format", C}]}.
             
 lisp2forth([], _Vars, _, _Depth) -> {[], []};
 lisp2forth([[<<"define">>,[Name|V],Code]|T], Vars, Funs, N) ->
@@ -140,6 +148,14 @@ lisp2forth([[<<"define">>|T1]|_], _, _, _) ->
     {[], [{error, "badly formed define", [<<"define">>|T1]}]};
 lisp2forth([<<"define">>|T1], _, _, _) ->
     {[], [{error, "badly formed define", [<<"define">>|T1]}]};
+lisp2forth([[<<"globals">>|T1]|T2],Vars, Funs, N) ->
+    {L1, Vars2, Err1} = globals_internal(T1, Vars, Funs, N),
+    {L2, Err2} = lisp2forth(T2, Vars2, Funs, N),
+    {L1 ++ L2, Err1 ++ Err2};
+lisp2forth([[<<"globals">>|T1]|T2], Vars, Funs, N) ->
+    {[], [{error, "badly formed globals", [[<<"globals">>|T1]|T2]}]};
+lisp2forth([<<"globals">>|T1], Vars, Funs, N) ->
+    {[], [{error, "badly formed globals", [<<"globals">>|T1]}]};
 lisp2forth([<<"let">>, Pairs|Code], Vars, Funs, N) ->
     let_internal(Pairs, Code, Vars, Funs, N);
 lisp2forth([<<"set!">>, Name, Code], Vars, Funs, N) ->
@@ -166,7 +182,7 @@ lisp2forth([<<"cond">>, [Q, A]|T], Vars, Funs, N) ->
 lisp2forth([<<"cond">>|T], _, _, _) ->
     {[], [{error, "badly formed cond", [<<"cond">>|T]}]};
 lisp2forth([<<"case">>,Name|Pairs], Vars, Funs, N) ->
-    {L1, Err1} = lisp2forth([Name], Vars, Funs, N),
+    {L1, Err1} = lisp2forth(Name, Vars, Funs, N),
     {L2, Err2} = case_internal(Pairs, Vars, Funs, N),
     {L1++L2, Err1++Err1};
 lisp2forth([<<"case">>|T], Vars, Funs, N) ->
@@ -183,8 +199,7 @@ lisp2forth([Rator|Rand], Vars, Funs, N) when (not(is_integer(Rator)) and( not(is
         {true, Code, In, Out} -> 
             if
                 (length(Rand) == In) -> 
-                    {L1, Err1} = lists:foldr( fun({Elem, Err}, {Acc, AccErr}) ->
-                                         {Elem ++ Acc, Err ++ AccErr} end, {[],[]}, lists:map(fun(X) -> lisp2forth(X, Vars, Funs, N) end, Rand)),
+                    {L1, Err1} = lists:foldr( fun({Elem, Err}, {Acc, AccErr}) -> {Elem ++ Acc, Err ++ AccErr} end, {[],[]}, lists:map(fun(X) -> lisp2forth(X, Vars, Funs, N) end, Rand)),
                     {L1 ++ [Rator], Err1};
                 true ->
                     {[], [{error, "wrong number of inputs to opcode: " ++ binary_to_list(Rator), [Rator|Rand]}]}
@@ -197,8 +212,19 @@ lisp2forth([Rator|Rand], Vars, Funs, N) when (not(is_integer(Rator)) and( not(is
                 error ->
                     case dict:find(Rator, Funs) of
                         error -> %binary or external variable
-                            {L1, Err1} = lisp2forth(Rand, Vars, Funs, N),
-                            {[Rator|L1], Err1};
+                            {L1, Err1} = lisp2forth(Rator, Vars, Funs, N),
+                            {L2, Err2} = lisp2forth(Rand, Vars, Funs, N),
+                            {L1++L2, Err1++Err2};
+%                            B = compile_utils:is_64(Rator),
+%                            if
+%                                B -> 
+%                                    {L1, Err1} = lisp2forth(Rand, Vars, Funs, N),
+%                                    {[Rator|L1], Err1};
+%                                true ->
+                            %{L1, Err1} = lisp2forth(Rand, Vars, Funs, N),
+                            %{[Rator|L1], Err1};
+%                                    {[], [{error, "undefined value " ++ binary_to_list(Rator), Rator}]}
+%                            end;
                         {ok, Ins} -> 
                             if
                                 (Ins == length(Rand)) ->
@@ -221,7 +247,15 @@ lisp2forth([H|T], Vars, Funs, N) when is_list(H) ->
 lisp2forth(I, _, _, _) when is_integer(I) -> {[I], []};
 lisp2forth(I, Vars, _, _) ->
     A = case dict:find(I, Vars) of
-            error -> {[I], []};
+            error -> 
+                B = compile_utils:is_64(I),
+                {B2,_,_,_} = compile_utils:is_op(I),
+                if
+                    B -> {[I], []};
+                    B2 -> {[I], []};
+                    true -> {[], [{error, "undefined variable " ++ binary_to_list(I), I}]}
+                end;
+%                {[I], []};
             {ok, Val} -> {Val, []}
         end.
    

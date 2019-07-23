@@ -1,7 +1,5 @@
 
-;(tree ((1) 2))
-
-(let ((x 1)
-      (a (+ x 1))
-      (b (+ a x)))
-  (b))
+                                        ;(tree ((1) 2))
+(globals Zack)
+(! 5 Zack)
+(+ 1 (@ Zac))
