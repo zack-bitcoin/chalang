@@ -3,7 +3,7 @@
 -define(immutable, true).
 
 test() ->
-    {ok, T} = file:read_file("src/lisp2/second.scm"),
+    {ok, T} = file:read_file("src/lisp2/sort.scm"),
     doit(T, "src/lisp2/").
 
 doit(A, L) when is_list(A) ->
@@ -141,17 +141,9 @@ constants_internal([[Name, Value]|T], Vars, Funs, N) when ((not (is_integer(Name
     {L3, Vars3, Err2} = constants_internal(T, Vars2, Funs, N),
     {L2++L3, Vars3, Err0++Err1++Err2};
 constants_internal([Name|T], Vars, Funs, N) when ((not (is_integer(Name))) and (not (is_list(Name))))->
-    %{L1, Err1} = lisp2forth(Value, Vars, Funs, N),
-    L2 = [Name, <<"!">>],
-    %Vars2 = dict:store(Name, [Name], Vars),
     {Vars2, Err0} = update_vars(Name, [Name], Vars),
     {L3, Vars3, Err2} = constants_internal(T, Vars2, Funs, N),
-    {L2++L3, Vars3, Err0++Err2};
-%constants_internal([Name|T], Vars, Funs, N) when ((not (is_integer(Name))) and (not (is_list(Name)))) ->
-    %Vars2 = dict:store(Name, [Name], Vars),
-%    {Vars2, Err0} = update_vars(Name, [Name], Vars),
-%    {L1, Vars3, Err1} = constants_internal(T, Vars2, Funs, N),
-%    {L1, Vars3, Err0++Err1};
+    {L3, Vars3, Err0++Err2};
 constants_internal(C, Vars, Funs, N) ->
     {[], Vars, [{error, "unsupported constants format", C}]}.
 make_lexical2(Name, [], D) -> {[], D};
@@ -196,11 +188,11 @@ update_vars(Key, Val, Vars) ->
             
             
 lisp2forth([], _Vars, _, _Depth) -> {[], []};
-lisp2forth([<<"!">>|T], _, _, _) when ?immutable ->
-    {[], [{error, "cannot update global variables in immutable mode", [<<"!">>|T]}]};
-lisp2forth([[<<"define">>,[Name|V],Code0]|T], Vars, Funs, N) ->
+%lisp2forth([<<"!">>|T], _, _, _) when ?immutable ->
+%    {[], [{error, "cannot update global variables in immutable mode", [<<"!">>|T]}]};
+lisp2forth([[<<"define">>,[Name|V],Code]|T], Vars, Funs, N) ->
     LV = length(V),
-    {Code, _} = make_lexical(Name, Code0, dict:new()),
+%    {Code, _} = make_lexical(Name, Code0, dict:new()),
     case dict:find(Name, Funs) of
         error ->
             Funs2 = dict:store(Name, LV, Funs),
@@ -227,8 +219,8 @@ lisp2forth([<<"var">>|T1], Vars, Funs, N) ->
     {[], [{error, "badly formed constants", [<<"var">>|T1]}]};
 lisp2forth([<<"let">>, Pairs|Code], Vars, Funs, N) ->
     let_internal(Pairs, Code, Vars, Funs, N);
-lisp2forth([<<"set!">>|T], _, _, _) when ?immutable ->
-    {[], [{error, "cannot update global variables in immutable mode", [<<"set!">>|T]}]};
+%lisp2forth([<<"set!">>|T], _, _, _) when ?immutable ->
+%    {[], [{error, "cannot update global variables in immutable mode", [<<"set!">>|T]}]};
 lisp2forth([<<"set!">>, Name, Code], Vars, Funs, N) ->
     {L1, Err1} =  lisp2forth(Code, Vars, Funs, N),
     {L1 ++ [Name, <<"!">>], Err1};
@@ -258,6 +250,8 @@ lisp2forth([<<"case">>,Name|Pairs], Vars, Funs, N) ->
     {L1++L2, Err1++Err1};
 lisp2forth([<<"case">>|T], Vars, Funs, N) ->
     {[],[{error, "unsupported case format", [<<"case">>|T]}]};
+lisp2forth([<<"quote">>|T], _, _, _) ->
+    {[T], []};
 lisp2forth([<<"forth">>|T], _, _, _) ->
     {[T], []};
 lisp2forth([<<"tree">>|T], _, _, _) ->
@@ -269,10 +263,7 @@ lisp2forth([Rator|Rand], Vars, Funs, N) when (not(is_integer(Rator)) and( not(is
     case compile_utils:is_op(Rator) of
         {true, Code, In, Out} -> 
             if
-                (In == any) ->
-                    {L1, Err1} = lists:foldr( fun({Elem, Err}, {Acc, AccErr}) -> {Elem ++ Acc, Err ++ AccErr} end, {[],[]}, lists:map(fun(X) -> lisp2forth(X, Vars, Funs, N) end, Rand)),
-                    {L1 ++ [Rator], Err1};
-                (length(Rand) == In) -> 
+                ((In == any) or (length(Rand) == In)) -> 
                     {L1, Err1} = lists:foldr( fun({Elem, Err}, {Acc, AccErr}) -> {Elem ++ Acc, Err ++ AccErr} end, {[],[]}, lists:map(fun(X) -> lisp2forth(X, Vars, Funs, N) end, Rand)),
                     {L1 ++ [Rator], Err1};
                 true ->
@@ -287,23 +278,14 @@ lisp2forth([Rator|Rand], Vars, Funs, N) when (not(is_integer(Rator)) and( not(is
                     case dict:find(Rator, Funs) of
                         error -> %binary or external variable
                             {L1, Err1} = lisp2forth(Rator, Vars, Funs, N),
+                            %{L2, Err2} = lists:foldr( fun({Elem, Err}, {Acc, AccErr}) -> {Elem ++ Acc, Err ++ AccErr} end, {[],[]}, lists:map(fun(X) -> lisp2forth(X, Vars, Funs, N) end, Rand)),
                             {L2, Err2} = lisp2forth(Rand, Vars, Funs, N),
                             {L1++L2, Err1++Err2};
-%                            B = compile_utils:is_64(Rator),
-%                            if
-%                                B -> 
-%                                    {L1, Err1} = lisp2forth(Rand, Vars, Funs, N),
-%                                    {[Rator|L1], Err1};
-%                                true ->
-                            %{L1, Err1} = lisp2forth(Rand, Vars, Funs, N),
-                            %{[Rator|L1], Err1};
-%                                    {[], [{error, "undefined value " ++ binary_to_list(Rator), Rator}]}
-%                            end;
                         {ok, Ins} -> 
                             if
                                 (Ins == length(Rand)) ->
                                     M = if
-                                            N > 0 -> [<<"r@">>, N, <<"+">>, <<">r">>, Rator, <<"@">>,<<"call">>,<<"r>">>,<<"drop">>];
+                                            N > 0 -> [Rator, <<"@">>, <<"r@">>, N, <<"+">>, <<">r">>, <<"call">>,<<"r>">>,<<"drop">>];
                                             true -> [Rator,<<"@">>,<<"call">>]
                                         end,
                                     {L1, Err1} = lisp2forth(Rand, Vars, Funs, N),
