@@ -22,6 +22,8 @@ new_state(Height, Slash) ->
 	   slash = Slash}.
 -define(int, 0).
 -define(binary, 2).
+-define(int1, 3).
+-define(int2, 4).
 -define(print, 10).
 -define(return, 11).
 -define(nop, 12).
@@ -42,6 +44,7 @@ new_state(Height, Slash) ->
 -define(add, 50).
 -define(remainder, 57).
 -define(eq, 58).
+-define(eq2, 59).
 -define(caseif, 70).
 -define(else, 71).
 -define(then, 72).
@@ -101,7 +104,7 @@ test(Script, OpGas, RamGas, Funs, Vars, State) ->
 	   fun_limit = Funs,
 	   ram_current = size(Script), 
 	   state = State,
-           version = 1,
+           version = 2,
            verbose = false},
     %compiler_chalang:print_binary(Script),
     %io:fwrite("\nrunning a script =============\n"),
@@ -172,6 +175,18 @@ run2([<<?binary:8, H:32, Script/binary>>|Tail], D) ->
 	true -> {error, "read binary underflow"}
     end;
 run2([<<?int:8, V:?int_bits, Script/binary>>|T], D) ->
+    NewD = D#d{stack = [<<V:?int_bits>>|D#d.stack],
+	       ram_current = D#d.ram_current + 1,
+	       op_gas = D#d.op_gas - 1},
+    run1([Script|T], NewD);
+run2([<<?int1:8, V:8, Script/binary>>|T], D) ->
+    true = (D#d.version > 1),
+    NewD = D#d{stack = [<<V:?int_bits>>|D#d.stack],
+	       ram_current = D#d.ram_current + 1,
+	       op_gas = D#d.op_gas - 1},
+    run1([Script|T], NewD);
+run2([<<?int2:8, V:16, Script/binary>>|T], D) ->
+    true = (D#d.version > 1),
     NewD = D#d{stack = [<<V:?int_bits>>|D#d.stack],
 	       ram_current = D#d.ram_current + 1,
 	       op_gas = D#d.op_gas - 1},
@@ -454,6 +469,20 @@ run4(X, D) when (X >= ?add) and (X < ?eq) ->
 	    end;
         _ -> {error, "arithmetic stack underflow"}
     end;
+run4(?eq2, D) ->
+    true = (D#d.version > 1),
+    case D#d.stack of
+        [A|[B|T]] ->
+            C = if
+                    A == B -> 1;
+                    true -> 0
+                end,
+            S = [<<C:?int_bits>>|T],
+            D#d{stack = S, 
+                op_gas = D#d.op_gas - 1,
+                ram_current = D#d.ram_current + 1};
+        _ -> {error, "eq stack underflow"}
+    end;
 run4(?eq, D) ->
     case D#d.stack of
         [A|[B|_]] ->
@@ -668,6 +697,10 @@ balanced_f(<<?fun_end:8, Script/binary>>, 1) ->
 balanced_f(<<?fun_end:8, _/binary>>, 0) -> false;
 balanced_f(<<?int:8, _:?int_bits, Script/binary>>, X) ->
     balanced_f(Script, X);
+balanced_f(<<?int1:8, _:8, Script/binary>>, X) ->
+    balanced_f(Script, X);
+balanced_f(<<?int2:8, _:16, Script/binary>>, X) ->
+    balanced_f(Script, X);
 balanced_f(<<?binary:8, H:32, Script/binary>>, D) ->
     X = H * 8,
     <<_:X, Script2/binary>> = Script,
@@ -678,6 +711,10 @@ none_of(X) -> none_of(X, ?return).
 none_of(<<>>, _) -> true;
 none_of(<<X:8, _/binary>>, X) -> false;
 none_of(<<?int:8, _:?int_bits, Script/binary>>, X) -> 
+    none_of(Script, X);
+none_of(<<?int1:8, _:8, Script/binary>>, X) -> 
+    none_of(Script, X);
+none_of(<<?int2:8, _:16, Script/binary>>, X) -> 
     none_of(Script, X);
 none_of(<<?binary:8, H:32, Script/binary>>, D) -> 
     X = H * 8,
@@ -699,6 +736,10 @@ replace(Old, New, Binary, Pointer) ->
 	    <<D:Pointer, New/binary, R2/binary>>;
 	<<_:Pointer, ?int:8, _:?int_bits, _/binary>> ->
 	    replace(Old, New, Binary, Pointer+8+?int_bits);
+	<<_:Pointer, ?int1:8, _:8, _/binary>> ->
+	    replace(Old, New, Binary, Pointer+8+8);
+	<<_:Pointer, ?int2:8, _:16, _/binary>> ->
+	    replace(Old, New, Binary, Pointer+8+16);
 	<<_:Pointer, ?binary:8, H:32, _/binary>> ->
 	    X = H * 8,
 	    replace(Old, New, Binary, Pointer+8+32+X);
@@ -717,6 +758,14 @@ split(X, B, N) ->
 	    split(X, B, N+8+?int_bits);
 	<<_:N, ?int:8, _/binary>> ->
 	    {error, "integer underflow in function definition"};
+	<<_:N, ?int1:8, _:8, _/binary>> ->
+	    split(X, B, N+8+8);
+	<<_:N, ?int1:8, _/binary>> ->
+	    {error, "integer underflow in function definition"};
+	<<_:N, ?int2:8, _:16, _/binary>> ->
+	    split(X, B, N+8+16);
+	<<_:N, ?int2:8, _/binary>> ->
+	    {error, "integer underflow in function definition"};
 	<<A:N, X:8, T/binary>> ->
 	    {<<A:N>>, T, N};
 	<<_:N, _:8, _/binary>> ->
@@ -730,6 +779,14 @@ split_if(X, B, N) ->
 	<<_:N, (?int):8, _:(?int_bits), _/binary>> ->
 	    split_if(X, B, N+8+?int_bits);
 	<<_:N, (?int):8, _/binary>> ->
+	    {error, "integer underflow in case statment"};
+	<<_:N, (?int1):8, _:8, _/binary>> ->
+	    split_if(X, B, N+8+8);
+	<<_:N, (?int1):8, _/binary>> ->
+	    {error, "integer underflow in case statment"};
+	<<_:N, (?int2):8, _:16, _/binary>> ->
+	    split_if(X, B, N+8+16);
+	<<_:N, (?int2):8, _/binary>> ->
 	    {error, "integer underflow in case statment"};
 	<<_:N, (?binary):8, H:32, _/binary>> ->
 	    split_if(X, B, N+40+(H*8));

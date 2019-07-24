@@ -144,6 +144,14 @@ to_opcodes([<<"int">>|[B|T]], F, Out, V) ->
     Num = list_to_integer(binary_to_list(B)),
     G = <<Num:?int_bits>>,
     to_opcodes(T, F, [G|[0|Out]], V);
+to_opcodes([<<"int1">>|[B|T]], F, Out, V) ->
+    Num = list_to_integer(binary_to_list(B)),
+    G = <<Num:8>>,
+    to_opcodes(T, F, [G|[3|Out]], V);
+to_opcodes([<<"int2">>|[B|T]], F, Out, V) ->
+    Num = list_to_integer(binary_to_list(B)),
+    G = <<Num:16>>,
+    to_opcodes(T, F, [G|[4|Out]], V);
 to_opcodes([<<"binary">>|[M|[B|T]]], F, Out, V) ->
     %io:fwrite("binary\n"),
     Bin = base64:decode(B),
@@ -194,6 +202,8 @@ make_binary([H|T], B) ->
 
 w2o(<<"int">>) -> 0;
 w2o(<<"binary">>) -> 2;
+w2o(<<"int1">>) -> 3;
+w2o(<<"int2">>) -> 4;
 w2o(<<"print">>) -> 10;
 w2o(<<"return">>) -> 11;
 w2o(<<"nop">>) -> 12;
@@ -221,8 +231,8 @@ w2o(<<">">>) -> 54;
 w2o(<<"<">>) -> 55;
 w2o(<<"^">>) -> 56;
 w2o(<<"rem">>) -> 57;
-%w2o(<<"=">>) -> 58;
 w2o(<<"==">>) -> 58;
+w2o(<<"=2">>) -> 59;
 w2o(<<"if">>) -> 70;
 w2o(<<"else">>) -> 71;
 w2o(<<"then">>) -> 72;
