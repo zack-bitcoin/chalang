@@ -10,4 +10,5 @@ int 10 int 1 > int 1 all
 int 10 int 1 < int 0 all
 int 10 int 5 rem int 0 =2 and
  int1 10 int2 10 =2 and
+ int1 10 int0 10 =2 and
 ;

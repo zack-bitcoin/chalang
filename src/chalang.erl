@@ -191,6 +191,13 @@ run2([<<?int2:8, V:16, Script/binary>>|T], D) ->
 	       ram_current = D#d.ram_current + 1,
 	       op_gas = D#d.op_gas - 1},
     run1([Script|T], NewD);
+run2([<<X:8, Script/binary>>|T], D) when ((X > 139) and (X < 176))->
+    Y = X - 140,
+    true = (D#d.version > 1),
+    NewD = D#d{stack = [<<Y:?int_bits>>|D#d.stack],
+	       ram_current = D#d.ram_current + 1,
+	       op_gas = D#d.op_gas - 1},
+    run1([Script|T], NewD);
 run2([<<?caseif:8, Script/binary>>|Tail], D) ->
     [<<B:32>>|NewStack] = D#d.stack,
     case split_if(?else, Script) of

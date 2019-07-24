@@ -103,6 +103,9 @@ doit2(134) -> " ++";
 doit2(135) -> " split";
 doit2(136) -> " reverse";
 doit2(137) -> " is_list?";
+doit2(N) when ((N > 139) and (N < 176)) ->
+    Y = N - 140,
+    " " ++ integer_to_list(Y);
 
 doit2(X) -> 
     %io:fwrite("\nthat is not a legal opcode: "),
