@@ -9,6 +9,12 @@ doit(<<2, N:32, T/binary>>) ->
     <<A:M, T2/binary>> = T,
     io:fwrite(" "++binary_to_list(base64:encode(<<A:M>>))),
     doit(T2);
+doit(<<3, I:8, T/binary>>) ->
+    io:fwrite(" "++integer_to_list(I)),
+    doit(T);
+doit(<<4, I:16, T/binary>>) ->
+    io:fwrite(" "++integer_to_list(I)),
+    doit(T);
 doit(<<N, T/binary>>) ->
     io:fwrite(doit2(N)),
     doit(T);
@@ -18,6 +24,8 @@ doit(<<>>) ->
 
 doit2(0) -> " int";
 doit2(2) -> " binary";
+doit2(3) -> " int1";
+doit2(4) -> " int2";
 doit2(10) -> " print";
 doit2(11) -> " return";
 doit2(12) -> " nop";
@@ -49,6 +57,7 @@ doit2(55) -> " <";
 doit2(56) -> " ^ ";
 doit2(57) -> " rem";
 doit2(58) -> " =";
+doit2(59) -> " =2";
 
 doit2(70) -> "\nif";
 doit2(71) -> " else";
