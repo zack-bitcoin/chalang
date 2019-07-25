@@ -8,6 +8,10 @@ opcode, symbol for compiled language, stack changes
 
 2 binary % ( N -- L ) % the next N * 8 bits are put on the stack as a single binary.
 
+3 int1  % ( -- X ) % the next 8 bits = 1 byte are put on the stack as a 4-byte binary, which is our representation of integers
+
+4 int2  % ( -- X ) % the next 16 bits = 2 byte are put on the stack as 4-byte binary.
+
 
 # other opcodes
 
@@ -78,6 +82,8 @@ only works with 4-byte integers. Results are 4-byte integers. 32-bits. The integ
 57 rem (A B -- C) only works for integers.
 
 58 == ( X Y -- true/false X Y )
+
+59 ==2 ( X Y -- true/false )
 
 
 # conditions opcodes
@@ -173,6 +179,8 @@ only works with 4-byte integers. Results are 4-byte integers. 32-bits. The integ
          %( N List -- ListA ListB ) % ListA has N elements, listA appended to ListB makes List.
 
 136 reverse % % ( F -- G ) %only works on lists
+
+140 - 175 : load the integer (op# - 140). so we can load integers 0-36 in 1 byte.
 
 
 These are compiler macros to make it easier to program.
