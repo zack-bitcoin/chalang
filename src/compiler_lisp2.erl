@@ -3,7 +3,7 @@
 -define(immutable, true).
 
 test() ->
-    {ok, T} = file:read_file("src/lisp2/sort.scm"),
+    {ok, T} = file:read_file("src/lisp2/first.scm"),
     doit(T, "src/lisp2/").
 
 doit(A, L) when is_list(A) ->

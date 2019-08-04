@@ -173,10 +173,17 @@ to_lists([], X, 0) ->
 to_lists(_, _, N) when N > 0->
     io:fwrite("not enough close parenthasis )"),
     error.
-       
-
+      
+grab_string(<<"\"", R/binary>>, S) -> {S, R};
+grab_string(<<C:8, R/binary>>, S) -> 
+    grab_string(R, <<S/binary, C:8>>).
 to_words(<<>>, <<>>, Out) -> lists:reverse(Out);
 to_words(<<>>, N, Out) -> lists:reverse([N|Out]);
+to_words(<<"\"", B/binary>>, <<>>, Out) ->
+    {S, R} = grab_string(B, <<>>),
+    S2 = base64:encode(S),
+    N = << <<"--">>/binary, S2/binary>>,
+    to_words(R, <<>>, [N|Out]);
 to_words(<<"\t", B/binary>>, X, Out) ->
     to_words(<<" ", B/binary>>, X, Out);
 to_words(<<"\n", B/binary>>, X, Out) ->
@@ -213,7 +220,7 @@ is_int(<<>>) -> true;
 is_int(<<X:8, Y/binary>>) -> 
     ((X>47) and (X<58)) and is_int(Y);
 is_int(_) -> false.
--define(Binary, <<45:8, 45:8>>).
+%-define(Binary, <<45:8, 45:8>>).
 is_64(<<45,45, Y/binary>>) ->
     is_64_2(Y);
 is_64(_) -> false.
