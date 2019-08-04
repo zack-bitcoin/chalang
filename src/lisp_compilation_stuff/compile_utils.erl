@@ -176,7 +176,10 @@ to_lists(_, _, N) when N > 0->
       
 grab_string(<<"\"", R/binary>>, S) -> {S, R};
 grab_string(<<C:8, R/binary>>, S) -> 
-    grab_string(R, <<S/binary, C:8>>).
+    grab_string(R, <<S/binary, C:8>>);
+grab_string(<<>>, _) -> 
+    io:fwrite("error, unmatched string quotes \"\"\n"),
+    error.
 to_words(<<>>, <<>>, Out) -> lists:reverse(Out);
 to_words(<<>>, N, Out) -> lists:reverse([N|Out]);
 to_words(<<"\"", B/binary>>, <<>>, Out) ->
