@@ -20,9 +20,10 @@
 (define (outcome r1 r2)
   (let (((_ x1) (split r1 1))
         ((_ x2) (split r2 1)))
-    (rem (+ (byte2int x1)
-            (byte2int x2))
-         2)))
+    (> (@ thr)
+       (rem (+ (byte2int x1)
+               (byte2int x2))
+            100))))
 
 (define (valid_reveal r c)
   (= c (hash r)))
