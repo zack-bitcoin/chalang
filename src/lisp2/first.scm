@@ -82,4 +82,9 @@
 
 (= "yes" "yes")
 (= "yes" --eWVz)
+(++ "suc" "cess")
 
+(define (f2 a) 4)
+(define (f1 b)
+  (f2 0 ))
+(f1 1)
