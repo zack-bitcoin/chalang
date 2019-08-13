@@ -44,17 +44,20 @@
         (v2 (valid_reveal (@ reveal2) (@ commit2))))
     (cond ((and v1 v2)
             (return 0
-                    2
+                    3
                     (* 10000
                        (outcome (@ reveal1)
                              (@ reveal2)))))
            (v1 (return (@ time_limit)
-                       1
+                       2
                        0))
            (v2 (return (@ time_limit)
-                       1
+                       2
                        10000))
-           (true print))))
+           (true (return (@ time_limit)
+                         1
+                         (* (@ thr)
+                            10000))))))
 (main)
 
 
