@@ -6,6 +6,17 @@
      time_limit
      thr
      )
+
+;examples of how to calculate the binary values in erlang:
+;base64:encode(<<1, <<"salt">>/binary>>).
+;<<"AXNhbHQ=">>
+;base64:encode(hash:doit(<<1, <<"salt">>/binary>>)).
+;<<"RxEPLwsUGfw5/sENnN90h7RY6oCyZKrnH9m+3CJXGRo=">>
+;base64:encode(<<0, <<"salt">>/binary>>).
+;<<"AHNhbHQ=">>
+;base64:encode(hash:doit(<<0, <<"salt">>/binary>>)).
+;<<"mLsUrLlcdD/h1PXMrWBMr1wyuByGLuvaIlevszzQxaQ=">>
+
 (forth
  --AHNhbHQ= reveal1 !
  --mLsUrLlcdD/h1PXMrWBMr1wyuByGLuvaIlevszzQxaQ= commit1 !
@@ -46,13 +57,5 @@
            (true print))))
 (main)
 
-;base64:encode(<<1, <<"salt">>/binary>>).
-;<<"AXNhbHQ=">>
-;base64:encode(hash:doit(<<1, <<"salt">>/binary>>)).
-;<<"RxEPLwsUGfw5/sENnN90h7RY6oCyZKrnH9m+3CJXGRo=">>
-;base64:encode(<<0, <<"salt">>/binary>>).
-;<<"AHNhbHQ=">>
-;base64:encode(hash:doit(<<0, <<"salt">>/binary>>)).
-;<<"mLsUrLlcdD/h1PXMrWBMr1wyuByGLuvaIlevszzQxaQ=">>
 
 
