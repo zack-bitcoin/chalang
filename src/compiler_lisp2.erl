@@ -3,7 +3,7 @@
 -define(immutable, true).
 
 test() ->
-    {ok, T} = file:read_file("src/lisp2/dice.scm"),
+    {ok, T} = file:read_file("src/lisp2/map.scm"),
     doit(T, "src/lisp2/").
 
 doit(A, L) when is_list(A) ->
@@ -33,12 +33,12 @@ imports1(A, Done, L) ->
 compile(Text, Location, JustInTimeFlag) ->
     Tree = compile_utils:doit(Text),
     {Tree3, Errors} = lisp2forth(Tree, dict:new(), dict:new(), 0),
-    io:fwrite("\n"),
-    io:fwrite(compile_utils:stringify_lisp(Tree)),
-    io:fwrite("\n"),
-    io:fwrite(compile_utils:stringify_lisp(Tree3)),
-    io:fwrite("\n"),
-    io:fwrite("\n"),
+    %io:fwrite("\n"),
+    %io:fwrite(compile_utils:stringify_lisp(Tree)),
+    %io:fwrite("\n"),
+    %io:fwrite(compile_utils:stringify_lisp(Tree3)),
+    %io:fwrite("\n"),
+    %io:fwrite("\n"),
     case Errors of
         [] ->
             Tree4 = just_in_time_main(Tree3),

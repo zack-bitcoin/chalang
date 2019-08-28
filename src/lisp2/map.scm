@@ -15,6 +15,9 @@
 (define (sum a b) (+ a b))
 (fold 'sum 0 (tree 1 2 3 4 5))
 
+(define (or_up a b) (or b (= a 3)))
+(fold 'or_up 0 (tree 1 3 10 2))
+
 (define (filter f l)
   (cond ((= l nil) nil)
         (((car l) (call (@ f)))
