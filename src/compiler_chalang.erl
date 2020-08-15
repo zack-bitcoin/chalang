@@ -141,19 +141,35 @@ rad([<<":">>|[_|T]], Out) -> rad(T, [<<":">>|Out]);
 rad([<<"def">>|T], Out) -> rad(T, [<<"def">>|Out]);
 rad([X|T], Out) -> rad(T, [X|Out]).
 to_opcodes([<<"int">>|[B|T]], F, Out, V) ->
-    Num = list_to_integer(binary_to_list(B)),
-    G = <<Num:?int_bits>>,
-    to_opcodes(T, F, [G|[0|Out]], V);
+    Num = binary_to_integer(B),
+    if
+        Num < 0 ->
+            io:fwrite("no negatives!"),
+            1=2;
+        Num < 36 ->
+            Num2 = Num + 140,
+            G = <<Num2:8>>,
+            to_opcodes(T, F, [G|Out], V);
+        Num < 256 ->
+            G = <<Num:8>>,
+            to_opcodes(T, F, [G|[3|Out]], V);
+        Num < 65536 ->
+            G = <<Num:16>>,
+            to_opcodes(T, F, [G|[4|Out]], V);
+        Num < 4294967296 ->
+            G = <<Num:?int_bits>>,
+            to_opcodes(T, F, [G|[0|Out]], V)
+    end;
 to_opcodes([<<"int1">>|[B|T]], F, Out, V) ->
-    Num = list_to_integer(binary_to_list(B)),
+    Num = binary_to_integer(B),
     G = <<Num:8>>,
     to_opcodes(T, F, [G|[3|Out]], V);
 to_opcodes([<<"int2">>|[B|T]], F, Out, V) ->
-    Num = list_to_integer(binary_to_list(B)),
+    Num = binary_to_integer(B),
     G = <<Num:16>>,
     to_opcodes(T, F, [G|[4|Out]], V);
 to_opcodes([<<"int0">>|[B|T]], F, Out, V) ->
-    Num0 = list_to_integer(binary_to_list(B)),
+    Num0 = binary_to_integer(B),
     true = Num0 < 37,
     true = Num0 > -1,
     Num = Num0 + 140,
@@ -162,7 +178,7 @@ to_opcodes([<<"int0">>|[B|T]], F, Out, V) ->
 to_opcodes([<<"binary">>|[M|[B|T]]], F, Out, V) ->
     %io:fwrite("binary\n"),
     Bin = base64:decode(B),
-    MM = list_to_integer(binary_to_list(M)),
+    MM = binary_to_integer(M),
     true = MM == size(Bin),
     to_opcodes(T, F, [Bin|[<<MM:32>>|[2|Out]]], V);
 to_opcodes([Word|T], F, Out, Vars) ->

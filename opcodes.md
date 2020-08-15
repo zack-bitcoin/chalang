@@ -180,7 +180,7 @@ only works with 4-byte integers. Results are 4-byte integers. 32-bits. The integ
 
 136 reverse % % ( F -- G ) %only works on lists
 
-140 - 175 : load the integer (op# - 140). so we can load integers 0-36 in 1 byte.
+140 - 175 : load the integer (op# - 140). so we can load integers 0-35 in 1 byte.
 
 
 These are compiler macros to make it easier to program.
