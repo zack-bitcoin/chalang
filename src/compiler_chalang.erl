@@ -160,6 +160,10 @@ to_opcodes([<<"int">>|[B|T]], F, Out, V) ->
             G = <<Num:?int_bits>>,
             to_opcodes(T, F, [G|[0|Out]], V)
     end;
+to_opcodes([<<"int4">>|[B|T]], F, Out, V) ->
+    Num = binary_to_integer(B),
+    G = <<Num:?int_bits>>,
+    to_opcodes(T, F, [G|[0|Out]], V);
 to_opcodes([<<"int1">>|[B|T]], F, Out, V) ->
     Num = binary_to_integer(B),
     G = <<Num:8>>,
