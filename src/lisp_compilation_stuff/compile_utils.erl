@@ -1,6 +1,6 @@
 -module(compile_utils).
 -export([quote_unquote/1,remove_comments/1,add_spaces/1,to_words/3,to_lists/1,integers/1,rpn/1,flatten/1,variables/1,variables/2,to_ops/1,stringify_lisp/1,doit/1,doit2/1,is_64/1,is_op/1,stringify_lisp/1]).
-
+%doit, doit2, stringify_lisp, is_op, is_64, 
 
 doit(X) ->
     B = compile_utils:remove_comments(<<X/binary, <<"\n">>/binary>>),
@@ -91,6 +91,7 @@ is_op(<<"*">>) -> {true, <<52>>, 2, 1};
 is_op(<<"/">>) -> {true, <<53>>, 2, 1};
 is_op(<<">">>) -> {true, <<54>>, 2, 1};
 is_op(<<"<">>) -> {true, <<55>>, 2, 1};
+is_op(<<"^">>) -> {true, <<56>>, 2, 1};
 is_op(<<"rem">>) -> {true, <<57>>, 2, 1};
 is_op(<<"===">>) -> {true, <<58>>, 2, 3};
 is_op(<<"if">>) -> {true, <<70>>, 1, 0};

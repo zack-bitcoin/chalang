@@ -439,7 +439,7 @@ skip_to_fromr_drop([A|B], T1, N) ->
 (is_integer(F)) or
 (F == <<"true">>) or
 (F == <<"false">>) or
-(F == <<">r">>) or
+(F == <<"r>">>) or
 (F == <<"r@">>) or
 (F == <<"height">>) or
 (F == <<"nil">>)
@@ -485,8 +485,6 @@ r_combinator_helper(L, M, 1) ->
 r_combinator_helper(L, M, 2) ->
     r_combinator_helper(L, M, 0) ++ [<<"rot">>];
 r_combinator_helper(_, _, _) -> error.
-
-
 
 op_to_ints(F) ->
     if
@@ -577,9 +575,9 @@ just_in_time2([<<">r">>, <<"r@">>|T]) ->
     [<<"dup">>, <<">r">>|just_in_time2(T)];
 just_in_time2([<<"@r">>, N, <<"+">>, <<">r">>|T]) when is_integer(N) ->
     {T1, T2} = skip_to_fromr_drop(T,[],0),
-    B = used_r(T2, 0),
+    B = used_r(T1, 0),
     C = if
-            B -> [N|just_in_time2([<<"+">>, <<">r">>|T])];
+            B -> [<<"@r">>, N|just_in_time2([<<"+">>, <<">r">>|T])];
             true -> just_in_time2(T1 ++ T2)
         end;
     

@@ -13,7 +13,8 @@ doit(A) ->
     B = << <<" ">>/binary, A/binary, <<" \n">>/binary>>,
     C = remove_comments(B),
     D = add_spaces(C),
-    Words = to_words(D, <<>>, []),
+    E = parse_strings(D),
+    Words = to_words(E, <<>>, []),
     Macros = get_macros(Words),
     YWords = remove_macros(Words),
     ZWords = apply_macros(Macros, YWords),
@@ -26,6 +27,19 @@ doit(A) ->
     {X, _} = to_opcodes(BWords, Functions, [], Variables),
     %print_binary(X),
     X.
+parse_strings(<<>>) -> <<>>;
+parse_strings(<<".\" ", Rest/binary>>) -> 
+    {S, B} = start_string(Rest, <<>>),
+    B2 = parse_strings(B),
+    <<S/binary, B2/binary>>;
+parse_strings(<<C, Rest/binary>>) -> 
+    B = parse_strings(Rest),
+    <<C, B/binary>>.
+start_string(<<"\"", Rest/binary>>, S) ->
+    {base64:encode(S), Rest};
+start_string(<<C, Rest/binary>>, S) ->
+    start_string(Rest, <<S/binary, C>>).
+    
 add_spaces(B) -> add_spaces(B, <<"">>).
 add_spaces(<<"">>, B) -> B;
 add_spaces(<<40:8, B/binary >>, Out) ->  % "("
