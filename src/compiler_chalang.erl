@@ -36,7 +36,8 @@ parse_strings(<<C, Rest/binary>>) ->
     B = parse_strings(Rest),
     <<C, B/binary>>.
 start_string(<<"\"", Rest/binary>>, S) ->
-    {base64:encode(S), Rest};
+    S2 = <<" binary ",(integer_to_binary(size(S)))/binary, " ", (base64:encode(S))/binary, " ">>,
+    {S2, Rest};
 start_string(<<C, Rest/binary>>, S) ->
     start_string(Rest, <<S/binary, C>>).
     
@@ -197,7 +198,16 @@ to_opcodes([<<"binary">>|[M|[B|T]]], F, Out, V) ->
     %io:fwrite("binary\n"),
     Bin = base64:decode(B),
     MM = binary_to_integer(M),
-    true = MM == size(Bin),
+    if
+        MM == size(Bin) -> ok;
+        true ->
+            io:fwrite("wrong size of binary \n"),
+            io:fwrite(integer_to_list(MM)),
+            io:fwrite("\n"),
+            io:fwrite(integer_to_list(size(Bin))),
+            io:fwrite("\n"),
+            1=2
+    end,
     to_opcodes(T, F, [Bin|[<<MM:32>>|[2|Out]]], V);
 to_opcodes([Word|T], F, Out, Vars) ->
     case w2o(Word) of

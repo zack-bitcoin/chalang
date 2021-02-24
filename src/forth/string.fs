@@ -3,7 +3,7 @@
 macro test
 
 ." hello world"
-aGVsbG8gd29ybGQ=
+binary 11 aGVsbG8gd29ybGQ=
 
 print == print
 swap drop swap drop

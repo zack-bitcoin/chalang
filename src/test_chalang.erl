@@ -49,7 +49,8 @@ test_func() ->
     
 test() -> test(?loc).
 test(Loc) ->
-    Scripts = [ "string",
+    Scripts = [ "string"],
+    Scripts_old = [
                 "tuckn_test", "if_test", "pickn",
 		"filter",
 		"merge_sort",
