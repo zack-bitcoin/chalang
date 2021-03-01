@@ -161,7 +161,7 @@ to_opcodes([<<"int">>|[B|T]], F, Out, V) ->
         Num < 0 ->
             io:fwrite("no negatives!"),
             1=2;
-        Num < 36 ->
+        Num < 37 ->
             Num2 = Num + 140,
             G = <<Num2:8>>,
             to_opcodes(T, F, [G|Out], V);
