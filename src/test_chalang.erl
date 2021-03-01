@@ -49,8 +49,8 @@ test_func() ->
     
 test() -> test(?loc).
 test(Loc) ->
-    Scripts = [ "string"],
-    Scripts_old = [
+    %Scripts = [ "string"],
+    Scripts = [
                 "tuckn_test", "if_test", "pickn",
 		"filter",
 		"merge_sort",
@@ -58,7 +58,7 @@ test(Loc) ->
 		"macro", "case", "recursion", "map",
 		"math", "hashlock", "case2", 
 		"case_binary", "binary_converter",
-                "function2"
+                "function2", "string"
 	      ],
     Gas = 100000,
     run_scripts(Scripts, Gas, Loc),

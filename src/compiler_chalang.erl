@@ -372,7 +372,14 @@ absorb_var(Variable, {D, Many}) ->
     case dict:find(Variable, D) of
 	error ->
 	    NewD = dict:store(Variable, Many, D),
-	    {<<0, Many:32>>, {NewD, Many+1}};
+            if
+                (Many < 37) ->
+                    {<<(140 + Many):8>>, {NewD, Many+1}};
+                true ->
+                    {<<0, Many:32>>, {NewD, Many+1}}
+            end;
+        {ok, Var} when (Var < 37) ->
+            {<<(140+Var):8>>, {D, Many}};
 	{ok, Var} ->
 	    {<<0, Var:32>>, {D, Many}}
     end.
