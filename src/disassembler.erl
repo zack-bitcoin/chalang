@@ -112,7 +112,7 @@ doit2(X) ->
     %io:fwrite(integer_to_list(X)),
     %io:fwrite("\n"),
     %X=135.
-    integer_to_list(X).
+    " ?" ++ integer_to_list(X) ++ "?". 
 test() ->
     {ok, A} = file:read_file("src/lisp/cond.scm"),
     {_, _, X} = compiler_lisp:doit(A),

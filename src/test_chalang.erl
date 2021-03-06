@@ -55,10 +55,10 @@ test(Loc) ->
 		"filter",
 		"merge_sort",
 		"function", "variable",
-		"macro", "case", "recursion", "map",
+		"macro", "case", "recursion",
 		"math", "hashlock", "case2", 
 		"case_binary", "binary_converter",
-                "function2", "string"
+                "function2", "string", "map"
 	      ],
     Gas = 100000,
     run_scripts(Scripts, Gas, Loc),

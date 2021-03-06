@@ -21,7 +21,7 @@ macro map ( List Fun -- NewList )
 ;
 
 macro test
-[int 5,int 6,int 7]
+[int 5, int 6, int 7]
 square map
 [int 25, int 36, int 49]
 == >r drop drop r>

@@ -685,7 +685,7 @@ run4(?nop, D) -> D;
 run4(?fail, D) -> 
     {error, "fail"};
 run4(X, _) ->
-    io:fwrite(X),
+    io:fwrite(integer_to_list(X)),
     {error, "operation not defined in chalang:run4."}.
 
 memory(L) -> memory(L, 0).

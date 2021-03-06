@@ -161,7 +161,7 @@ to_opcodes([<<"int">>|[B|T]], F, Out, V) ->
         Num < 0 ->
             io:fwrite("no negatives!"),
             1=2;
-        Num < 37 ->
+        Num < 36 ->
             Num2 = Num + 140,
             G = <<Num2:8>>,
             to_opcodes(T, F, [G|Out], V);
@@ -189,7 +189,7 @@ to_opcodes([<<"int2">>|[B|T]], F, Out, V) ->
     to_opcodes(T, F, [G|[4|Out]], V);
 to_opcodes([<<"int0">>|[B|T]], F, Out, V) ->
     Num0 = binary_to_integer(B),
-    true = Num0 < 37,
+    true = Num0 < 36,
     true = Num0 > -1,
     Num = Num0 + 140,
     G = <<Num:8>>,
@@ -373,14 +373,14 @@ absorb_var(Variable, {D, Many}) ->
 	error ->
 	    NewD = dict:store(Variable, Many, D),
             if
-                (Many < 37) ->
+                (Many < 36) ->
                     {<<(140 + Many):8>>, {NewD, Many+1}};
                 (Many < 256) ->
                     {<<3, Many:8>>, {NewD, Many+1}};
                 true ->
                     {<<0, Many:32>>, {NewD, Many+1}}
             end;
-        {ok, Var} when (Var < 37) ->
+        {ok, Var} when (Var < 36) ->
             {<<(140+Var):8>>, {D, Many}};
 	{ok, Var} when (Var < 256) ->
 	    {<<3, Var:8>>, {D, Many}};
