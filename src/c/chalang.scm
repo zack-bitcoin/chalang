@@ -2,6 +2,7 @@
 (import
  (chicken process-context)
  (chicken io)
+ (chicken string)
  srfi-69
  message-digest-primitive
  sha2
@@ -22,17 +23,31 @@
 
 ; cryptography tools
 ; the hash of a list of bytes
+(define (number->string2 x)
+  (let ((a (number->string x 16)))
+    (cond ((eq? 1 (string-length a))
+           (string-append "0" a))
+          (else a))))
 (define (bytes_to_hex b)
   (cond ((eq? b '()) "")
         (else (string-append
-               (number->string (car b) 16)
+               (number->string2 (car b))
                (bytes_to_hex (cdr b))))))
+(define (hex_to_bytes2 l)
+  (cond ((eq? l '()) '())
+        (else (cons (string->number (car l) 16)
+                    (hex_to_bytes2 (cdr l))))))
+(define (hex_to_bytes h)
+  (hex_to_bytes2 (string-chop h 2)))
 (define (hash-hex hex)
   (message-digest-string
    (sha256-primitive)
    (hex->string hex)))
 (define (hash_binary bytes)
-  (hash-hex (bytes_to_hex (cdr bytes))))
+  (cons 'binary (hex_to_bytes
+                 (hash-hex
+                  (bytes_to_hex
+                   (cdr bytes))))))
 
 ; elliptic curve stuff
 (define-ec-parameters secp256k1
@@ -93,7 +108,7 @@
 (define eq2 59)
 (define caseif 70)
 (define caseelse 71)
-(define then 72)
+(define casethen 72)
 (define bool_flip 80)
 (define bool_and 81)
 (define bool_or 82)
@@ -233,6 +248,14 @@
            (read-byte2)))
      (read-byte2)))
 
+(define (list_4_to_int l)
+  (+ (* 256
+        (+ (* 256
+              (+ (* 256 (car l))
+                 (car (cdr l))))
+           (car (cdr (cdr l)))))
+     (car (cdr (cdr (cdr l))))))
+
 ;reading a function from the source code
 (define (read-fun)
   (let ((c (read-byte2)))
@@ -251,15 +274,17 @@
 (define (is_binary l)
   (and (< 0 (length l))
        (eq? 'binary (car l))))
-(define (split_binary2 n l l2)
+(define (split_helper n l l2)
   (cond ((eq? n 0) (cons (reverse l2)
                          (cons l '())))
-        (else (split_binary2
+        (else (split_helper
                (- n 1)
                (cdr l)
                (cons (car l) l2)))))
+(define (split_list n l)
+  (split_helper n l '()))
 (define (split_binary n l)
-  (let* ((pair (split_binary2 n (cdr l) '()))
+  (let* ((pair (split_helper n (cdr l) '()))
          (a (cons 'binary (car pair)))
          (b (cons 'binary (car (cdr pair)))))
     (cons a (cons b '()))))
@@ -291,6 +316,9 @@
 (define (skip_passed x)
   (let ((c (read-byte2)))
     (cond ((eq? x c) 0);done
+          ((eq? x caseif)
+           (skip_passed casethen)
+           (skip_passed x))
           ((eq? c int4)
            (read_4_bytes_to_int)
            (skip_passed x))
@@ -313,6 +341,46 @@
   (newline)
   (set_stack '() state)
   (set_op_gas 0 state))
+
+(define (replace old new code)
+  (cond
+   ((eq? code '()) '())
+   (else
+    (let* ((c (car code))
+           (code2 (cdr code)))
+      (cond ((eq? c int4)
+             (let* ((pair (split_list 4 code2))
+                    (a (car pair))
+                    (b (car (cdr pair))))
+               (cons
+                c (append
+                   a (replace old new b)))))
+            ((eq? c int2)
+             (let* ((pair (split_list 2 code2))
+                    (a (car pair))
+                    (b (car (cdr pair))))
+               (cons
+                c (append
+                   a (replace old new b)))))
+            ((eq? c int1)
+             (cons
+              c (cons
+                 (car code2)
+                 (replace old new (cdr code2)))))
+            ((eq? c binary)
+             (let* ((pair (split_list 4 code2))
+                    (n (list_4_to_int (car pair)))
+                    (pair2 (split_list n (car (cdr pair))))
+                    (binary (car pair2))
+                    (code3 (car (cdr pair2))))
+               (cons
+                c (append (car pair)
+                          (append binary
+                                  (replace old new code3))))))
+            ((eq? c old)
+             (append new code2))
+            (else
+             (cons c (replace old new code2))))))))
 
 
 ;chalang vm
@@ -381,7 +449,8 @@
        ;conditionals
        ((and (eq? c caseif)
              (eq? 0 (car s)))
-        (skip_passed caseelse))
+        (skip_passed caseelse)
+        (set_stack (cdr s) state))
 
        ((eq? c caseif)
         (set_stack
@@ -389,7 +458,10 @@
          state))
 
        ((eq? c caseelse)
-        (skip_passed then))
+        (skip_passed casethen))
+
+       ((eq? c casethen)
+        0)
 
        ;functions
        ((eq? c call)
@@ -399,18 +471,31 @@
           (cond ((eq? d fun_end) 0)
                 (else (set! input (cons d input))))
         ;now call the function
+          (set_stack (cdr s) state)
           (set! input (append (get_fun f_name state)
                               input))))
 
        ((eq? c define_op)
         (let* ((f (read-fun))
-               (name (hash_binary f)))
-          (set_fun name f state)))
+               (name (hash_binary
+                      (cons 'binary f)))
+               (f2 (replace recurse
+                            (append
+                             '(2 0 0 0 32)
+                             (cdr name))
+                            f)))
+          (set_fun name f2 state)))
 
        ((eq? c define2)
         (let* ((f (read-fun))
-               (name (hash_binary f)))
-          (set_fun name f state)
+               (name (hash_binary
+                      (cons 'binary f)))
+               (f2 (replace recurse
+                            (append
+                             '(2 0 0 0 32)
+                             (cdr name))
+                            f)))
+          (set_fun name f2 state)
           (set_stack
            (cons name s)
            state)))
@@ -470,7 +555,7 @@
         (let* ((a (car s))
                (b (car (cdr s)))
                (result 
-                (cond ((eq? a b) 1)
+                (cond ((equal? a b) 1)
                       (else 0))))
           (set_stack
            (cons
@@ -481,7 +566,7 @@
         (let* ((a (car s))
                (b (car (cdr s)))
                (result 
-                (cond ((eq? a b) 1)
+                (cond ((equal? a b) 1)
                       (else 0))))
           (set_stack
            (cons result s)
@@ -695,11 +780,11 @@
 
        ((eq? c fetch_op)
         (let* ((key (car s)))
-          (set_stack (cdr s) state)
-          (get_var key state)))
+          (set_stack (cons (get_var key state)
+                           (cdr s)) state)))
 
        ;operations on lists
-       ((eq? c cons)
+       ((eq? c cons_op)
         (let* ((a (car s))
                (b (car (cdr s)))
                (s2 (cdr (cdr s))))
@@ -707,7 +792,7 @@
                            s2)
                      state)))
 
-       ((eq? c car)
+       ((eq? c car_op)
         (let* ((a1 (car s))
                (b (car a1))
                (a (cdr a1))

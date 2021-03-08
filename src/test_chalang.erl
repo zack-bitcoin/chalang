@@ -2,15 +2,22 @@
 -export([test/0, test/1, run_script/3, test_func/0]).
 
 -define(loc, "src/forth/").
+
+run_compiled_vm(Binary) ->
+    io:fwrite("running compiled vm\n"),
+    file:write_file("./src/c/test_code", 
+                    <<Binary/binary, 10>>),
+    io:fwrite(os:cmd("./src/c/chalang.scm < ./src/c/test_code")).
+
 run_script(X, Gas, Loc) ->
     {ok, A} = file:read_file(Loc ++ X ++ ".fs"),
-    io:fwrite(A),
-    io:fwrite("\n"),
+    %io:fwrite(A),
+    %io:fwrite("\n"),
     B = compiler_chalang:doit(<<A/binary, <<"\n test \n">>/binary>>),
-    io:fwrite("compiled script \n"),
-    disassembler:doit(B),
-    %rp(<<0,B/binary>>),
-    io:fwrite("\n"),
+    run_compiled_vm(B),
+    %io:fwrite("compiled script \n"),
+    %disassembler:doit(B),
+    %io:fwrite("\n"),
     chalang:test(B, Gas, Gas, Gas, Gas, []).
 run_scripts([], _, _) -> ok;
 run_scripts([H|T], Gas, Loc) ->
@@ -78,6 +85,6 @@ test(Loc) ->
     D4 = chalang:test(E, Gas, Gas, Gas, Gas, []),
     [<<1000:32>>,<<0:32>>,<<3:32>>] = chalang:stack(D4),
     S = success,
-    S = compiler_lisp:test(),
+    %S = compiler_lisp:test(),
     %S = compiler_lisp2:test(),
     success.
