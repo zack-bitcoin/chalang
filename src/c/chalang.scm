@@ -3,6 +3,7 @@
  (chicken process-context)
  (chicken io)
  (chicken string)
+ (chicken bitwise)
  srfi-69
  message-digest-primitive
  sha2
@@ -566,6 +567,31 @@
                       (else 0))))
           (set_stack
            (cons result s)
+           state)))
+
+       ;binary logic
+       ((eq? c bin_and)
+        (let* ((a (car s))
+               (b (car (cdr s)))
+               (a2 (bitwise-and a b)))
+          (set_stack
+           (cons a2 (cdr (cdr s)))
+           state)))
+
+       ((eq? c bin_xor)
+        (let* ((a (car s))
+               (b (car (cdr s)))
+               (a2 (bitwise-xor a b)))
+          (set_stack
+           (cons a2 (cdr (cdr s)))
+           state)))
+
+       ((eq? c bin_or)
+        (let* ((a (car s))
+               (b (car (cdr s)))
+               (a2 (bitwise-ior a b)))
+          (set_stack
+           (cons a2 (cdr (cdr s)))
            state)))
 
        ;operations on the stack
