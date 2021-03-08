@@ -85,6 +85,6 @@ test(Loc) ->
     D4 = chalang:test(E, Gas, Gas, Gas, Gas, []),
     [<<1000:32>>,<<0:32>>,<<3:32>>] = chalang:stack(D4),
     S = success,
-    %S = compiler_lisp:test(),
+    S = compiler_lisp:test(),
     %S = compiler_lisp2:test(),
     success.

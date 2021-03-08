@@ -316,7 +316,7 @@
 (define (skip_passed x)
   (let ((c (read-byte2)))
     (cond ((eq? x c) 0);done
-          ((eq? x caseif)
+          ((eq? c caseif)
            (skip_passed casethen)
            (skip_passed x))
           ((eq? c int4)
@@ -378,7 +378,7 @@
                           (append binary
                                   (replace old new code3))))))
             ((eq? c old)
-             (append new code2))
+             (append new (replace old new code2)))
             (else
              (cons c (replace old new code2))))))))
 
@@ -392,12 +392,8 @@
     (cond
      ;termination cases
      ((eq? c #!eof)
-      (write "done")
-      (newline)
       s)
      ((eq? c return)
-      (write "done")
-      (newline)
       s)
      ((eq? c fail)
       (write "failed")
@@ -639,9 +635,8 @@
           (set_alt (cons (car s) alt) state)))
 
        ((eq? c from_r)
-        (let* ((alt (get_alt state))
-               (a (car alt)))
-          (set_stack (cons a s) state)
+        (let* ((alt (get_alt state)))
+          (set_stack (cons (car alt) s) state)
           (set_alt (cdr alt) state)))
 
        ((eq? c r_fetch)
@@ -803,7 +798,7 @@
        ((eq? c nil_op)
         (set_stack (cons '() s) state))
 
-       ((eq? c append)
+       ((eq? c append_op)
         (let* ((a (car s))
                (b (car (cdr s)))
                (pair
@@ -830,7 +825,8 @@
                      state)))
 
        ((eq? c reverse_op)
-        (set_stack (reverse s)
+        (set_stack (cons (reverse (car s))
+                         (cdr s))
                    state))
 
        ((eq? c is_list)
@@ -847,7 +843,11 @@
 
        ((eq? c print_op)
         (write s)
-        (newline))
+        (newline)
+        ;(write (get_alt state))
+        ;(newline)
+        ;(newline)
+        )
 
        (else
         (write "undefined byte: " )

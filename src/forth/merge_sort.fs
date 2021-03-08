@@ -30,7 +30,7 @@ def ( L1 L2 Accumulator -- L3 )
     drop swap nil ==
     if ( if L2 is [] )
       drop drop r> reverse swap ++
-    else
+    else ( jumping from this else to wrong then )
       ( add bigger element to list in r stack )
       drop
       car swap rot car swap rot 2dup
@@ -65,6 +65,7 @@ def ( ListOfSortedLists -- SortedList )
     drop drop
   else
     ( sort the first 2 lists, and append the result to the listofsortedlists. )
+    ( crashes in first merge )
     drop car tuck merge nil cons ++ recurse call
   then
 ;
@@ -74,7 +75,7 @@ macro sort ( UnsortedList -- SortedList )
 ;
 
 macro test
-   [ int 10, int 2, int 13, int 4, int 5 ] sort
+  [ int 10, int 2, int 13, int 4, int 5 ] sort
   [ int 2, int 4, int 5, int 10, int 13 ]
   == tuck drop drop
   %int 0
