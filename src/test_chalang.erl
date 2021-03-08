@@ -57,7 +57,7 @@ test_func() ->
 test() -> test(?loc).
 test(Loc) ->
     %Scripts = [ "string"],
-    Scripts = [
+    Scripts = [ 
                 "tuckn_test", "if_test", "pickn",
 		"filter",
 		"merge_sort",

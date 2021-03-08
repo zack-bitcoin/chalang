@@ -463,14 +463,15 @@
        ;functions
        ((eq? c call)
         ;tail call optimization
-        (let ((d (read-byte2))
-              (f_name (car s)))
+        (let ((d (read-byte2)))
           (cond ((eq? d fun_end) 0)
-                (else (set! input (cons d input))))
+                (else (set! input
+                            (cons d input)))))
         ;now call the function
-          (set_stack (cdr s) state)
-          (set! input (append (get_fun f_name state)
-                              input))))
+        (set_stack (cdr s) state)
+        (set! input (append
+                     (get_fun (car s) state)
+                     input)))
 
        ((eq? c define_op)
         (let* ((f (read-fun))
@@ -481,6 +482,9 @@
                              '(2 0 0 0 32)
                              (cdr name))
                             f)))
+          ;(write "define op ")
+          ;(write f)
+          ;(newline)
           (set_fun name f2 state)))
 
        ((eq? c define2)
