@@ -61,7 +61,7 @@
   "01"
   )
 
-(define (verify_sig data sig pub)
+(define (verify_sig_internal data sig pub)
   (write pub) (newline)
   (write data) (newline)
   (write sig) (newline)
@@ -76,6 +76,7 @@
   0)
 
 ;the opcodes
+
 (define int4 0)
 (define binary 2)
 (define int1 3)
@@ -137,6 +138,7 @@
 (define split 135)
 (define reverse_op 136)
 (define is_list 137)
+;140 - 175 load a single integer
 
 ;integers need to be less than this max value.
 (define max_value 4294967296)
@@ -205,13 +207,15 @@
    (hash-table-set! (vector-ref state 10)
                     key val))
 
-;functions to load command line arguments and start chalang.
 (set! input '())
+
+; (: read-byte2 ( -> (fixnum)))
 (define (read-byte2)
   (cond ((eq? input '()) (read-byte))
         (else (let ((x (car input)))
                 (set! input (cdr input))
                 x))))
+;functions to load command line arguments and start chalang.
 (define cla (list->vector (command-line-arguments)))
 (define (main)
   (set! op_gas 10000)
@@ -336,7 +340,7 @@
           (else (skip_passed x)))))
 
 ;end the program if things go wrong.
-(define (fail message state)
+(define (failure message state)
   (write "failed: ")
   (write message)
   (newline)
@@ -383,6 +387,7 @@
             (else
              (cons c (replace old new code2))))))))
 
+;(write (replace 5 '(1 2) '(0 0 0 0 5 4 0 5 3 5 2 0 0 0 1 5 5 5 11 12)))
 
 ;chalang vm
 (define (chalang state)
@@ -391,500 +396,555 @@
     ;(write c)
     ;(newline)
     (cond
-     ;termination cases
+
+     ;((< c 60)
+     ; (cond
+     
      ((eq? c #!eof)
       s)
-     ((eq? c return)
-      s)
-     ((eq? c fail)
-      (write "failed")
-      (newline)
-      (fail "fail opcode" state)
-      s)
-     (else
-      (cond
-       
-       ;loading data into the stack
-       ((eq? c binary)
-        (set_stack
-         (cons
-          (read_binary (read_4_bytes_to_int))
-          s)
-         state))
+
+     ((eq? c int4)
+      (set_stack
+       (cons
+        (read_4_bytes_to_int)
+        s)
+       state)
+      (chalang state))
+
+     ((eq? c binary)
+      (set_stack
+       (cons
+        (read_binary (read_4_bytes_to_int))
+        s)
+       state)
+      (chalang state))
       
-       ((eq? c int4)
-        (set_stack
-         (cons
-          (read_4_bytes_to_int)
-          s)
-         state))
-       
-       ((eq? c int2)
-        (set_stack
-         (cons
-          (+ (* 256
-                (read-byte2))
-             (read-byte2))
-          s)
-         state))
-       
-       ((eq? c int1)
-        (set_stack
-         (cons
-          (read-byte2)
-          s)
-         state))
-       
-       ((and (> c 139)
-             (< c 176))
-        (set_stack
-         (cons
-          (- c 140)
-          s)
-         state))
+     ((eq? c int1)
+      (set_stack
+       (cons
+        (read-byte2)
+        s)
+       state)
+      (chalang state))
+     
+     ((eq? c int2)
+      (set_stack
+       (cons
+        (+ (* 256
+              (read-byte2))
+           (read-byte2))
+        s)
+       state)
+      (chalang state))
 
-       ;conditionals
-       ((and (eq? c caseif)
-             (eq? 0 (car s)))
-        (skip_passed caseelse)
-        (set_stack (cdr s) state))
-
-       ((eq? c caseif)
-        (set_stack
-         (cdr s)
-         state))
-
-       ((eq? c caseelse)
-        (skip_passed casethen))
-
-       ((eq? c casethen)
-        0)
-
-       ;functions
-       ((eq? c call)
-        ;tail call optimization
-        (let ((d (read-byte2)))
-          (cond ((eq? d fun_end) 0)
-                (else (set! input
-                            (cons d input)))))
-        ;now call the function
-        (set_stack (cdr s) state)
-        (set! input (append
-                     (get_fun (car s) state)
-                     input)))
-
-       ((eq? c define_op)
-        (let* ((f (read-fun))
-               (name (hash_binary
-                      (cons 'binary f)))
-               (f2 (replace recurse
-                            (append
-                             '(2 0 0 0 32)
-                             (cdr name))
-                            f)))
-          ;(write "define op ")
-          ;(write f)
-          ;(newline)
-          (set_fun name f2 state)))
-
-       ((eq? c define2)
-        (let* ((f (read-fun))
-               (name (hash_binary
-                      (cons 'binary f)))
-               (f2 (replace recurse
-                            (append
-                             '(2 0 0 0 32)
-                             (cdr name))
-                            f)))
-          (set_fun name f2 state)
-          (set_stack
-           (cons name s)
-           state)))
-
-       ;boolean logic
-       ((eq? c bool_and)
-        (let* ((a (car s))
-               (b (car (cdr s)))
-               (result
-                (cond ((eq? a 0) 0)
-                      ((eq? b 0) 0)
-                      (else 1))))
-          (set_stack
-           (cons
-            result (cdr (cdr s)))
-           state)))
-
-       ((eq? c bool_or)
-        (let* ((a (car s))
-               (b (car (cdr s)))
-               (result
-                (cond ((and (eq? a 0)
-                            (eq? b 0))
-                       0)
-                      (else 1))))
-          (set_stack
-           (cons
-            result (cdr (cdr s)))
-           state)))
-
-       ((eq? c bool_xor)
-        (let* ((a (car s))
-               (b (car (cdr s)))
-               (result
-                (cond ((and (eq? a 0)
-                            (eq? b 0))
-                       0)
-                      ((eq? a 0) 1)
-                      ((eq? b 0) 1)
-                      (else 0))))
-          (set_stack
-           (cons
-            result (cdr (cdr s)))
-           state)))
-
-       ((eq? c bool_flip)
-        (let* ((a (car s))
-               (result
-                (cond ((eq? a 0) 1)
-                      (else 0))))
-          (set_stack
-           (cons
-            result (cdr s))
-           state)))
-
-       ((eq? c eq2)
-        (let* ((a (car s))
-               (b (car (cdr s)))
-               (result 
-                (cond ((equal? a b) 1)
-                      (else 0))))
-          (set_stack
-           (cons
-            result (cdr (cdr s)))
-           state)))
-
-       ((eq? c eq)
-        (let* ((a (car s))
-               (b (car (cdr s)))
-               (result 
-                (cond ((equal? a b) 1)
-                      (else 0))))
-          (set_stack
-           (cons result s)
-           state)))
-
-       ;binary logic
-       ((eq? c bin_and)
-        (let* ((a (car s))
-               (b (car (cdr s)))
-               (a2 (bitwise-and a b)))
-          (set_stack
-           (cons a2 (cdr (cdr s)))
-           state)))
-
-       ((eq? c bin_xor)
-        (let* ((a (car s))
-               (b (car (cdr s)))
-               (a2 (bitwise-xor a b)))
-          (set_stack
-           (cons a2 (cdr (cdr s)))
-           state)))
-
-       ((eq? c bin_or)
-        (let* ((a (car s))
-               (b (car (cdr s)))
-               (a2 (bitwise-ior a b)))
-          (set_stack
-           (cons a2 (cdr (cdr s)))
-           state)))
-
-       ;operations on the stack
-       ((eq? c drop)
-        (set_stack (cdr s)
-                   state))
-
-       ((eq? c dup)
-        (set_stack (cons (car s) s)
-                   state))
-
-       ((eq? c swap)
-        (let* ((b (car (cdr s))))
-          (set_stack
-           (cons b (cons (car s)
-                         (cdr (cdr s))))
-           state)))
-
-       ((eq? c tuck)
-        (let* ((a1 (car s))
-               (a2 (car (cdr s)))
-               (a3 (car (cdr (cdr s)))))
-          (set_stack
-           (cons
-            a2 (cons
-                a3 (cons
-                    a1 (cdr (cdr (cdr s))))))
-           state)))
-
-       ((eq? c rot)
-        (let* ((a1 (car s))
-               (a2 (car (cdr s)))
-               (a3 (car (cdr (cdr s)))))
-          (set_stack
-           (cons 
-            a3 (cons
-                a1 (cons
-                    a2 (cdr (cdr (cdr s))))))
-           state)))
-
-       ((eq? c ddup)
-        (let* ((a (car s))
-               (b (car (cdr s))))
-          (set_stack
-           (cons a (cons b s))
-           state)))
-
-       ((eq? c tuckn)
-        (let* ((position (car s))
-               (x (car (cdr s)))
-               (s2 (cdr (cdr s))))
-          (set_stack (insert x position s2)
-                     state)))
-
-       ((eq? c pickn)
-        (let* ((position (car s))
-               (s2 (cdr s))
-               (a (nth position s2))
-               (s3 (remove_nth position s2)))
-          (set_stack (cons a s3)
-                     state)))
-
-     ;alt stack operations
-       ((eq? c to_r)
-        (let* ((alt (get_alt state)))
-          (set_stack (cdr s) state)
-          (set_alt (cons (car s) alt) state)))
-
-       ((eq? c from_r)
-        (let* ((alt (get_alt state)))
-          (set_stack (cons (car alt) s) state)
-          (set_alt (cdr alt) state)))
-
-       ((eq? c r_fetch)
-        (let* ((alt (get_alt state))
-              (a (car alt)))
-          (set_stack (cons a s) state)))
-
-       ;crypto opcodes
-       ((eq? c hash_op)
-        (set_stack (cons (hash_binary (car s))
-                         (cdr s))
-                   state))
-
-       ((eq? c verify_sig)
-        (let* ((pub (car s))
-               (data (car (cdr s)))
-               (sig (car (cdr (cdr s))))
-               (s2 (cdr (cdr (cdr s))))
-               (result (verify_sig data sig pub)))
-          (set_stack (cons result s2)
-                     state)))
-          
-       ;arithmetic opcodes
-       ((eq? c add)
-        (let* ((a (car s))
-               (b (car (cdr s)))
-               (a2 (remainder (+ a b) max_value))
-               (s2 (cdr (cdr s))))
-          (set_stack (cons a2 s2)
-                     state)))
-
-       ((eq? c subtract)
-        (let* ((a (car s))
-               (b (car (cdr s)))
-               (a2 (remainder (- b a) max_value))
-               (s2 (cdr (cdr s))))
-          (set_stack (cons a2 s2)
-                     state)))
-       
-       ((eq? c mul)
-        (let* ((a (car s))
-               (b (car (cdr s)))
-               (a2 (remainder (* b a) max_value))
-               (s2 (cdr (cdr s))))
-          (set_stack (cons a2 s2)
-                     state)))
-
-       ((eq? c divide)
-        (let* ((a (car s))
-               (b (car (cdr s)))
-               (r (remainder b a))
-               (a2 (/ (- b r) a))
-               (s2 (cdr (cdr s))))
-          (set_stack (cons a2 s2)
-                     state)))
-
-       ((eq? c gt)
-        (let* ((a (car s))
-               (b (car (cdr s)))
-               (s2 (cdr (cdr s)))
-               (result
-                (cond ((> b a) 1)
-                      (else 0))))
-          (set_stack (cons result s2)
-                     state)))
-
-       ((eq? c lt)
-        (let* ((a (car s))
-               (b (car (cdr s)))
-               (s2 (cdr (cdr s)))
-               (result
-                (cond ((< b a) 1)
-                      (else 0))))
-          (set_stack (cons result s2)
-                     state)))
-
-       ((eq? c pow)
-        (let* ((a (car s))
-               (b (car (cdr s)))
-               (a2 (remainder (expt b a)
-                              max_value))
-               (s2 (cdr (cdr s))))
-          (set_stack (cons a2 s2)
-                     state)))
-        
-       ((eq? c rem)
-        (let* ((a (car s))
-               (b (car (cdr s)))
-               (a2 (remainder b a))
-               (s2 (cdr (cdr s))))
-          (set_stack (cons a2 s2)
-                     state)))
-
-       ;meta data about vm
-       ((eq? c stack_size)
-        (set_stack
-         (cons (length s) s)
-         state))
-
-       ((eq? c height)
-        (set_stack
-         (cons (get_state_height
-                state) s)
-         state))
-
-       ((eq? c gas)
-        (set_stack
-         (cons (get_op_gas state)
-               s)
-         state))
-
-
-       ((eq? c many_vars)
-        (set_stack
-         (cons (get_many_vars state)
-               s)
-         state))
-       
-       ((eq? c many_funs)
-        (set_stack
-         (cons (get_many_funs state)
-               s)
-         state))
-
-       ((eq? c fun_end)
-        0)
-
-
-       ;variables
-       ((eq? c set_op)
-        (let* ((key (car s))
-               (value (car (cdr s)))
-               (s2 (cdr (cdr s))))
-          (set_stack s2 state)
-          (set_var value key state)))
-
-       ((eq? c fetch_op)
-        (let* ((key (car s)))
-          (set_stack (cons (get_var key state)
-                           (cdr s)) state)))
-
-       ;operations on lists
-       ((eq? c cons_op)
-        (let* ((a (car s))
-               (b (car (cdr s)))
-               (s2 (cdr (cdr s))))
-          (set_stack (cons (cons b a)
-                           s2)
-                     state)))
-
-       ((eq? c car_op)
-        (let* ((a1 (car s))
-               (b (car a1))
-               (a (cdr a1))
-               (s2 (cdr s)))
-          (set_stack (cons a (cons b s2))
-                     state)))
-
-       ((eq? c nil_op)
-        (set_stack (cons '() s) state))
-
-       ((eq? c append_op)
-        (let* ((a (car s))
-               (b (car (cdr s)))
-               (pair
-                (cond ((and (is_binary a)
-                            (is_binary b))
-                       (append b (cdr a)))
-                      ((and (list_not_binary a)
-                            (list_not_binary b))
-                       (append b a))
-                      (else (fail "cannot append those" state)
-                            '(0 0)))))
-          (set_stack (cons pair (cdr (cdr s)))
-                     state)))
-               
-
-       ((eq? c split)
-        (let* ((n (car s))
-               (l (car (cdr s)))
-               (pair (split_binary n l))
-               (a (car pair))
-               (b (car (cdr pair)))
-               (s2 (cdr (cdr s))))
-          (set_stack (cons a (cons b s2))
-                     state)))
-
-       ((eq? c reverse_op)
-        (set_stack (cons (reverse (car s))
-                         (cdr s))
-                   state))
-
-       ((eq? c is_list)
-        (let ((a (car s))
-              (result
-               (cond
-                ((list_not_binary a) 1)
-                (else 0))))
-          (set_stack (cons result s)
-                     state)))
-
-       ;other opcodes
-       ((eq? c nop) 0)
-
-       ((eq? c print_op)
-        (write s)
-        (newline)
+     ((eq? c print_op)
+      (write s)
+      (newline)
         ;(write (get_alt state))
         ;(newline)
         ;(newline)
-        )
+      (chalang state))
 
-       (else
-        (write "undefined byte: " )
-        (write c)
-        (newline)
-        (fail "undefined byte: " state)))
-    (chalang state)))))
+     ((eq? c return)
+      s)
+
+     ((eq? c nop) 
+      (chalang state))
+     
+     ((eq? c fail)
+      (write "failed")
+      (newline)
+      (failure "fail opcode" state)
+      s)
+
+     ((eq? c drop)
+      (set_stack (cdr s)
+                 state)
+      (chalang state))
+     
+     ((eq? c dup)
+      (set_stack (cons (car s) s)
+                 state)
+      (chalang state))
+
+     ((eq? c swap)
+      (let* ((b (car (cdr s))))
+        (set_stack
+         (cons b (cons (car s)
+                       (cdr (cdr s))))
+         state))
+      (chalang state))
+     
+     ((eq? c tuck)
+      (let* ((a1 (car s))
+             (a2 (car (cdr s)))
+             (a3 (car (cdr (cdr s)))))
+        (set_stack
+         (cons
+          a2 (cons
+              a3 (cons
+                  a1 (cdr (cdr (cdr s))))))
+         state))
+      (chalang state))
+     
+     ((eq? c rot)
+      (let* ((a1 (car s))
+             (a2 (car (cdr s)))
+             (a3 (car (cdr (cdr s)))))
+        (set_stack
+         (cons 
+          a3 (cons
+              a1 (cons
+                  a2 (cdr (cdr (cdr s))))))
+         state))
+      (chalang state))
+
+     ((eq? c ddup)
+      (let* ((a (car s))
+             (b (car (cdr s))))
+        (set_stack
+         (cons a (cons b s))
+         state))
+      (chalang state))
+
+     ((eq? c tuckn)
+      (let* ((position (car s))
+             (x (car (cdr s)))
+             (s2 (cdr (cdr s))))
+        (set_stack (insert x position s2)
+                   state))
+      (chalang state))
+     
+     ((eq? c pickn)
+      (let* ((position (car s))
+             (s2 (cdr s))
+             (a (nth position s2))
+             (s3 (remove_nth position s2)))
+        (set_stack (cons a s3)
+                   state))
+      (chalang state))
+     
+     ((eq? c to_r)
+      (let* ((alt (get_alt state)))
+        (set_stack (cdr s) state)
+        (set_alt (cons (car s) alt) state))
+      (chalang state))
+     
+     ((eq? c from_r)
+      (let* ((alt (get_alt state)))
+        (set_stack (cons (car alt) s) state)
+        (set_alt (cdr alt) state))
+      (chalang state))
+     
+     ((eq? c r_fetch)
+      (let* ((alt (get_alt state))
+             (a (car alt)))
+        (set_stack (cons a s) state))
+      (chalang state))
+
+     ((eq? c hash_op)
+      (set_stack (cons (hash_binary (car s))
+                       (cdr s))
+                 state)
+      (chalang state))
+     
+     ((eq? c verify_sig)
+      (let* ((pub (car s))
+             (data (car (cdr s)))
+             (sig (car (cdr (cdr s))))
+             (s2 (cdr (cdr (cdr s))))
+             (result (verify_sig_internal data sig pub)))
+        (set_stack (cons result s2)
+                   state))
+      (chalang state))
+          
+     ((eq? c add)
+      (let* ((a (car s))
+             (b (car (cdr s)))
+             (a2 (remainder (+ a b) max_value))
+             (s2 (cdr (cdr s))))
+        (set_stack (cons a2 s2)
+                   state))
+      (chalang state))
+     
+     ((eq? c subtract)
+      (let* ((a (car s))
+             (b (car (cdr s)))
+             (a2 (remainder (- b a) max_value))
+             (s2 (cdr (cdr s))))
+        (set_stack (cons a2 s2)
+                   state))
+      (chalang state))
+     
+     ((eq? c mul)
+      (let* ((a (car s))
+             (b (car (cdr s)))
+             (a2 (remainder (* b a) max_value))
+             (s2 (cdr (cdr s))))
+          (set_stack (cons a2 s2)
+                     state))
+      (chalang state))
+     
+     ((eq? c divide)
+      (let* ((a (car s))
+             (b (car (cdr s)))
+             (r (remainder b a))
+             (a2 (/ (- b r) a))
+             (s2 (cdr (cdr s))))
+        (set_stack (cons a2 s2)
+                   state))
+      (chalang state))
+     
+     ((eq? c gt)
+      (let* ((a (car s))
+             (b (car (cdr s)))
+             (s2 (cdr (cdr s)))
+             (result
+              (cond ((> b a) 1)
+                    (else 0))))
+        (set_stack (cons result s2)
+                   state))
+      (chalang state))
+     
+     ((eq? c lt)
+      (let* ((a (car s))
+             (b (car (cdr s)))
+             (s2 (cdr (cdr s)))
+             (result
+              (cond ((< b a) 1)
+                    (else 0))))
+        (set_stack (cons result s2)
+                   state))
+      (chalang state))
+     
+     ((eq? c pow)
+      (let* ((a (car s))
+             (b (car (cdr s)))
+             (a2 (remainder (expt b a)
+                            max_value))
+             (s2 (cdr (cdr s))))
+        (set_stack (cons a2 s2)
+                   state))
+      (chalang state))
+     
+     ((eq? c rem)
+      (let* ((a (car s))
+             (b (car (cdr s)))
+             (a2 (remainder b a))
+             (s2 (cdr (cdr s))))
+        (set_stack (cons a2 s2)
+                   state))
+      (chalang state))
+
+     ((eq? c eq)
+      (let* ((a (car s))
+             (b (car (cdr s)))
+             (result 
+              (cond ((equal? a b) 1)
+                    (else 0))))
+        (set_stack
+         (cons result s)
+         state))
+      (chalang state))
+
+     ((eq? c eq2)
+      (let* ((a (car s))
+             (b (car (cdr s)))
+             (result 
+              (cond ((equal? a b) 1)
+                    (else 0))))
+        (set_stack
+         (cons
+          result (cdr (cdr s)))
+         state))
+      (chalang state))
+
+     ((and (eq? c caseif)
+           (eq? 0 (car s)))
+      (skip_passed caseelse)
+      (set_stack (cdr s) state)
+      (chalang state))
+     
+     ((eq? c caseif)
+      (set_stack
+       (cdr s)
+       state)
+      (chalang state))
+     
+     ((eq? c caseelse)
+      (skip_passed casethen)
+      (chalang state))
+     
+     ((eq? c casethen)
+      (chalang state))
+
+     ((eq? c bool_flip)
+      (let* ((a (car s))
+             (result
+              (cond ((eq? a 0) 1)
+                    (else 0))))
+        (set_stack
+         (cons
+          result (cdr s))
+         state)
+        (chalang state)))
+
+       ;boolean logic
+     ((eq? c bool_and)
+      (let* ((a (car s))
+             (b (car (cdr s)))
+             (result
+              (cond ((eq? a 0) 0)
+                    ((eq? b 0) 0)
+                    (else 1))))
+        (set_stack
+         (cons
+          result (cdr (cdr s)))
+         state))
+      (chalang state))
+     
+     ((eq? c bool_or)
+      (let* ((a (car s))
+             (b (car (cdr s)))
+             (result
+              (cond ((and (eq? a 0)
+                          (eq? b 0))
+                     0)
+                    (else 1))))
+        (set_stack
+         (cons
+          result (cdr (cdr s)))
+         state))
+      (chalang state))
+
+     ((eq? c bool_xor)
+      (let* ((a (car s))
+             (b (car (cdr s)))
+             (result
+              (cond ((and (eq? a 0)
+                          (eq? b 0))
+                     0)
+                    ((eq? a 0) 1)
+                    ((eq? b 0) 1)
+                    (else 0))))
+        (set_stack
+         (cons
+          result (cdr (cdr s)))
+         state))
+      (chalang state))
+
+       ;binary logic
+     ((eq? c bin_and)
+      (let* ((a (car s))
+             (b (car (cdr s)))
+             (a2 (bitwise-and a b)))
+        (set_stack
+         (cons a2 (cdr (cdr s)))
+         state))
+      (chalang state))
+     
+     ((eq? c bin_or)
+      (let* ((a (car s))
+             (b (car (cdr s)))
+             (a2 (bitwise-ior a b)))
+        (set_stack
+         (cons a2 (cdr (cdr s)))
+         state))
+      (chalang state))
+
+     ((eq? c bin_xor)
+      (let* ((a (car s))
+             (b (car (cdr s)))
+             (a2 (bitwise-xor a b)))
+        (set_stack
+         (cons a2 (cdr (cdr s)))
+         state))
+      (chalang state))
+
+     
+     ((eq? c stack_size)
+      (set_stack
+       (cons (length s) s)
+       state)
+      (chalang state))
+     
+     ((eq? c height)
+      (set_stack
+       (cons (get_state_height
+              state) s)
+       state)
+      (chalang state))
+     
+     ((eq? c gas)
+      (set_stack
+       (cons (get_op_gas state)
+             s)
+       state)
+      (chalang state))
+     
+     ((eq? c ram)
+      (set_stack
+       (cons (get_ram_current state)
+             s)
+       state)
+      (chalang state))
+     
+     ((eq? c many_vars)
+      (set_stack
+       (cons (get_many_vars state)
+             s)
+       state)
+      (chalang state))
+     
+     ((eq? c many_funs)
+      (set_stack
+       (cons (get_many_funs state)
+             s)
+       state)
+      (chalang state))
+
+     ((eq? c define_op)
+      (let* ((f (read-fun))
+             (name (hash_binary
+                    (cons 'binary f)))
+             (f2 (replace recurse
+                          (append
+                           '(2 0 0 0 32)
+                           (cdr name))
+                          f)))
+          ;(write "define op ")
+          ;(write f)
+          ;(newline)
+        (set_fun name f2 state))
+      (chalang state))
+
+     ((eq? c define2)
+      (let* ((f (read-fun))
+             (name (hash_binary
+                    (cons 'binary f)))
+             (f2 (replace recurse
+                          (append
+                           '(2 0 0 0 32)
+                           (cdr name))
+                          f)))
+        (set_fun name f2 state)
+        (set_stack
+         (cons name s)
+         state))
+      (chalang state))
+
+     ((eq? c fun_end)
+      (chalang state))
+
+     ((eq? c call)
+        ;tail call optimization
+        ;(let ((d (read-byte2)))
+        ;  (cond ((eq? d fun_end) 0)
+        ;        (else (set! input
+        ;                    (cons d input)))))
+        ;now call the function
+      (set_stack (cdr s) state)
+      (set! input (append
+                   (get_fun (car s) state)
+                   input))
+      (chalang state))
+     
+     ((eq? c set_op)
+      (let* ((key (car s))
+             (value (car (cdr s)))
+             (s2 (cdr (cdr s))))
+        (set_stack s2 state)
+        (set_var value key state))
+      (chalang state))
+     
+     ((eq? c fetch_op)
+      (let* ((key (car s)))
+        (set_stack (cons (get_var key state)
+                         (cdr s)) state))
+      (chalang state))
+     
+     ((eq? c cons_op)
+      (let* ((a (car s))
+             (b (car (cdr s)))
+             (s2 (cdr (cdr s))))
+        (set_stack (cons (cons b a)
+                         s2)
+                   state))
+      (chalang state))
+     
+     ((eq? c car_op)
+      (let* ((a1 (car s))
+             (b (car a1))
+             (a (cdr a1))
+             (s2 (cdr s)))
+        (set_stack (cons a (cons b s2))
+                   state))
+      (chalang state))
+
+     ((eq? c nil_op)
+      (set_stack (cons '() s) state)
+      (chalang state))
+     
+     ((eq? c append_op)
+      (let* ((a (car s))
+             (b (car (cdr s)))
+             (pair
+              (cond ((and (is_binary a)
+                          (is_binary b))
+                     (append b (cdr a)))
+                    ((and (list_not_binary a)
+                          (list_not_binary b))
+                     (append b a))
+                    (else (failure "cannot append those" state)
+                          '(0 0)))))
+        (set_stack (cons pair (cdr (cdr s)))
+                   state))
+      (chalang state))
+     
+     
+     ((eq? c split)
+      (let* ((n (car s))
+             (l (car (cdr s)))
+             (pair (split_binary n l))
+             (a (car pair))
+             (b (car (cdr pair)))
+             (s2 (cdr (cdr s))))
+        (set_stack (cons a (cons b s2))
+                   state))
+      (chalang state))
+     
+     ((eq? c reverse_op)
+      (set_stack (cons (reverse (car s))
+                       (cdr s))
+                 state)
+      (chalang state))
+     
+     ((eq? c is_list)
+      (let ((a (car s))
+            (result
+             (cond
+              ((list_not_binary a) 1)
+              (else 0))))
+        (set_stack (cons result s)
+                   state))
+      (chalang state))
+
+
+     ((and (> c 139)
+           (< c 176))
+      (set_stack
+       (cons
+        (- c 140)
+        s)
+       state)
+      (chalang state))
+     
+     (else
+      (write "undefined byte: " )
+      (write c)
+      (newline)
+      (failure "undefined byte: " state)))))
+    
 
 
 ;turn it on

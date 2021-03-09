@@ -4,7 +4,7 @@ macro , swap cons ;
 macro ] swap cons reverse ;
 
 : divisible ( x y -- x y b )
-  rem not
+  remainder not
 ;
 
 : divisible_in_list ( x l -- b )
@@ -12,9 +12,9 @@ macro ] swap cons reverse ;
     drop drop drop int 0
   else
     drop
-    car >r swap dup tuck divisible call print
+    car >r swap dup tuck swap rem not 
     if
-      r> drop swap drop drop int 1
+      r> drop drop int 1
     else
       r> recurse call
     then
@@ -30,7 +30,28 @@ macro ] swap cons reverse ;
   then
 ;
 
-( int 5 [ int 2 , int 3 ] divisible_in_list call )
- int 4 [ int 3 , int 2 ]
- append_if_not_divisible call 
+: get_primes ( list start end -- list2 )
+  == if
+    drop drop
+  else
+    >r dup >r swap append_if_not_divisible call
+    r> int 1 + r> recurse call
+  then
+;
+
+( int 4 [ int 2 , int 3 ] divisible_in_list call )
+( int 4 [ int 3 , int 2 ]
+ append_if_not_divisible call
+ int 5 swap
+ append_if_not_divisible call
+ int 6 swap
+ append_if_not_divisible call
+ int 7 swap
+ append_if_not_divisible call )
+
+ [ int 2 ]
+ 
+ int 3 int 5000 get_primes call 
+
+ print
 ( int 5 swap append_if_not_divisible call )

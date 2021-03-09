@@ -7,7 +7,17 @@ run_compiled_vm(Binary) ->
     io:fwrite("running compiled vm\n"),
     file:write_file("./src/c/test_code", 
                     <<Binary/binary, 10>>),
-    io:fwrite(os:cmd("./src/c/chalang.scm < ./src/c/test_code")).
+    %X = os:cmd("./src/c/chalang.scm < ./src/c/test_code"), %slow mode
+    X = os:cmd("./src/c/chalang < ./src/c/test_code"),
+    io:fwrite(X).
+    %true = "(1)\n" == X.
+    %io:fwrite(X).
+    %ok.
+
+
+run_test(B, Gas) ->
+    chalang:test(B, Gas, Gas, 1000, 10000, []).
+    
 
 run_script(X, Gas, Loc) ->
     {ok, A} = file:read_file(Loc ++ X ++ ".fs"),
@@ -15,10 +25,12 @@ run_script(X, Gas, Loc) ->
     %io:fwrite("\n"),
     B = compiler_chalang:doit(<<A/binary, <<"\n test \n">>/binary>>),
     run_compiled_vm(B),
+
     %io:fwrite("compiled script \n"),
     %disassembler:doit(B),
     %io:fwrite("\n"),
-    chalang:test(B, Gas, Gas, Gas, Gas, []).
+    run_test(B, Gas).
+%chalang:test(B, Gas, Gas, 1000, 10000, []).
 run_scripts([], _, _) -> ok;
 run_scripts([H|T], Gas, Loc) ->
     io:fwrite("run script "),
@@ -52,37 +64,42 @@ test_func() ->
     io:fwrite(integer_to_list(size(B))),
     io:fwrite("\n"),
     Gas = 10000,
-    chalang:test(B, Gas, Gas, Gas, Gas, []).
+    run_test(B, Gas).
+%chalang:test(B, Gas, Gas, Gas, Gas, []).
     
 test() -> test(?loc).
 test(Loc) ->
-    %Scripts = [ "string"],
-    Scripts = [ 
-                "tuckn_test", "if_test", "pickn",
-		"filter",
-		"merge_sort",
-		"function", "variable",
-		"macro", "case", "recursion",
+    Scripts = [ "primes" ],
+    Scripts_other = [ 
 		"math", "hashlock", "case2", 
+		"function", "variable",
+                "macro", "case", "recursion",
+                "tuckn_test", "if_test", "pickn",
+		"filter", "map",
+		"merge_sort",
 		"case_binary", "binary_converter",
-                "function2", "string", "map"
+                "function2", "string"
 	      ],
-    Gas = 100000,
+    Gas = 10000000000,
     run_scripts(Scripts, Gas, Loc),
-
+    io:fwrite("ran scripts\n"),
 
     {ok, A} = file:read_file(Loc ++ "satoshi_dice.fs"),
     B = compiler_chalang:doit(<<A/binary, <<"\n test1 \n">>/binary>>),
-    D1 = chalang:test(B, Gas, Gas, Gas, Gas, []),
+    D1 = run_test(B, Gas),
+    %D1 = chalang:test(B, Gas, Gas, Gas, Gas, []),
     [<<0:32>>,<<0:32>>,<<1:32>>] = chalang:stack(D1),
     C = compiler_chalang:doit(<<A/binary, <<"\n test2 \n">>/binary>>),
-    D2 = chalang:test(C, Gas, Gas, Gas, Gas, []),
+    D2 = run_test(C, Gas),
+    %D2 = chalang:test(C, Gas, Gas, Gas, Gas, []),
     [<<1000:32>>,<<0:32>>,<<2:32>>] = chalang:stack(D2),
     D = compiler_chalang:doit(<<A/binary, <<"\n test3 \n">>/binary>>),
-    D3 = chalang:test(D, Gas, Gas, Gas, Gas, []),
+    D3 = run_test(D, Gas),
+    %D3 = chalang:test(D, Gas, Gas, Gas, Gas, []),
     [<<1000:32>>,<<1:32>>,<<2:32>>] = chalang:stack(D3),
     E = compiler_chalang:doit(<<A/binary, <<"\n test4 \n">>/binary>>),
-    D4 = chalang:test(E, Gas, Gas, Gas, Gas, []),
+    %D4 = chalang:test(E, Gas, Gas, Gas, Gas, []),
+    D4 = run_test(E, Gas),
     [<<1000:32>>,<<0:32>>,<<3:32>>] = chalang:stack(D4),
     S = success,
     S = compiler_lisp:test(),
