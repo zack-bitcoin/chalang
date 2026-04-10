@@ -46,7 +46,7 @@ new_state(Height, Slash) ->
 -define(eq, 58).
 -define(eq2, 59).
 -define(caseif, 70).
--define(else, 71).
+-define(els, 71).
 -define(then, 72).
 -define(bool_flip, 80).
 -define(bool_and, 81).
@@ -200,7 +200,7 @@ run2([<<X:8, Script/binary>>|T], D) when ((X > 139) and (X < 176))->
     run1([Script|T], NewD);
 run2([<<?caseif:8, Script/binary>>|Tail], D) ->
     [<<B:32>>|NewStack] = D#d.stack,
-    case split_if(?else, Script) of
+    case split_if(?els, Script) of
 	{error, R1} -> {error, R1};
 	{Case1, Rest, _} ->
 	    case split_if(?then, Rest) of

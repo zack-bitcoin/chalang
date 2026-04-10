@@ -11,3 +11,4 @@ erl_crash.dump
 keys_backup
 a.out
 /src/c/chalang
+/_build/

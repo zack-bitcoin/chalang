@@ -1,0 +1,12 @@
+[{<<"encrypter">>,
+  {git,"https://github.com/zack-bitcoin/encrypter",
+       {ref,"d60d61ef6c43be8bce3272217cfe4f60c528c61b"}},
+  1},
+ {<<"jiffy">>,
+  {git,"https://github.com/davisp/jiffy",
+       {ref,"9ea1b35b6e60ba21dfd4adbd18e7916a831fd7d4"}},
+  2},
+ {<<"pink_hash">>,
+  {git,"https://github.com/BumblebeeBat/pink_crypto",
+       {ref,"7cfcf35068f7545ae8067c6d6c076a647c88d9b8"}},
+  0}].
